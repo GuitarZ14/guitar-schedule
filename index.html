@@ -345,6 +345,30 @@
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; scroll-behavior:auto !important;}
   }
+  /* ===== 课时工资计算器 ===== */
+  .salary-calc{display:flex;flex-direction:column;gap:var(--s5);}
+  .salary-card{background:var(--glass);backdrop-filter:blur(var(--blur)) saturate(160%);border:1px solid var(--glass-border);border-radius:var(--r-lg);padding:var(--s6);box-shadow:var(--sh-1);transition:box-shadow var(--t),transform var(--t);}
+  .salary-card:hover{box-shadow:var(--sh-2);transform:translateY(-2px);}
+  .salary-input-row{display:flex;align-items:center;gap:var(--s4);flex-wrap:wrap;}
+  .salary-input-row label{font-size:15px;color:var(--text-2);white-space:nowrap;font-weight:500;}
+  .salary-input-row input[type=number]{width:140px;padding:12px 16px;border:2px solid var(--line);border-radius:var(--r-md);font-size:22px;font-family:var(--font-display);font-weight:600;color:var(--primary);text-align:center;background:rgba(255,255,255,0.7);transition:border-color var(--t),box-shadow var(--t);}
+  .salary-input-row input[type=number]:focus{border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-soft);outline:none;}
+  .salary-result{text-align:center;padding:var(--s5) var(--s4);background:linear-gradient(135deg, rgba(108,92,231,0.08), rgba(108,92,231,0.03));border-radius:var(--r-md);border:1px solid rgba(108,92,231,0.18);}
+  .salary-result .amount{font-size:48px;font-weight:700;font-family:var(--font-display);color:var(--primary);line-height:1.1;margin-bottom:var(--s2);}
+  .salary-result .amount small{font-size:20px;font-weight:500;}
+  .salary-result .label{font-size:14px;color:var(--muted);margin-bottom:var(--s1);}
+  .salary-breakdown{display:flex;justify-content:center;gap:var(--s5);flex-wrap:wrap;margin-top:var(--s3);}
+  .salary-breakdown-item{text-align:center;padding:var(--s3) var(--s4);background:rgba(255,255,255,0.5);border-radius:var(--r-sm);min-width:120px;border:1px solid var(--line);}
+  .salary-breakdown-item .val{font-size:20px;font-weight:600;font-family:var(--font-display);color:var(--text);}
+  .salary-breakdown-item .lbl{font-size:12px;color:var(--muted-2);margin-top:2px;}
+  .salary-rules{font-size:13px;color:var(--muted-2);line-height:1.8;padding:var(--s3) var(--s4);background:var(--gray-soft);border-radius:var(--r-sm);border:1px solid var(--line);}
+  .salary-rules code{background:rgba(255,255,255,0.7);padding:1px 6px;border-radius:4px;font-size:13px;color:var(--primary);font-family:var(--font-display);}
+  @media(max-width:860px){
+    .salary-result .amount{font-size:36px;}
+    .salary-input-row input[type=number]{width:110px;font-size:18px;}
+    .salary-breakdown{gap:var(--s3);}
+    .salary-breakdown-item{min-width:100px;padding:var(--s2) var(--s3);}
+  }
 </style>
 </head>
 <body>
@@ -364,6 +388,9 @@
       </button>
       <button class="nav-item" data-tab="stats">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-5 3 3 5-7"/></svg>月度统计
+      </button>
+      <button class="nav-item" data-tab="salary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>课时工资
       </button>
     </nav>
     <div class="sidebar-foot">
@@ -410,6 +437,7 @@
         <section id="view-week" class="view"></section>
         <section id="view-edit" class="view" hidden></section>
         <section id="view-stats" class="view" hidden></section>
+        <section id="view-salary" class="view" hidden></section>
       </main>
     </div>
   </div>
@@ -423,6 +451,9 @@
     </button>
     <button data-tab="stats">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-5 3 3 5-7"/></svg>统计
+    </button>
+    <button data-tab="salary">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>工资
     </button>
   </nav>
 </div>
@@ -983,6 +1014,75 @@ function renderStats(){
   document.getElementById('expCsv').onclick=()=>exportCsv(ym,map,totalCount,totalMin);
 }
 
+/* ===== 课时工资计算器 ===== */
+const SALARY_BASE=5500;       // 基础工资
+const SALARY_HOURS=66;        // 包含课时
+const SALARY_OVERTIME_RATE=90;// 超出单价(元/节)
+
+function calcSalary(hours){
+  hours=Math.max(0, Number(hours)||0);
+  if(hours<=SALARY_HOURS) return { base:SALARY_BASE, overtime:0, overtimeHours:0, total:SALARY_BASE };
+  const overtimeHours=hours-SALARY_HOURS;
+  const overtime=overtimeHours*SALARY_OVERTIME_RATE;
+  return { base:SALARY_BASE, overtime, overtimeHours, total:SALARY_BASE+overtime };
+}
+
+function renderSalary(){
+  const savedHours=localStorage.getItem('wb_salary_hours')||'';
+  let html='<div class="salary-calc">';
+  /* 输入卡片 */
+  html+='<div class="salary-card"><div class="salary-input-row">'
+    +'<label for="salaryInput">本月实际授课</label>'
+    +'<input type="number" id="salaryInput" min="0" max="999" step="1" placeholder="输入节数" value="'+esc(savedHours)+'">'
+    +'<label>节</label>'
+    +'</div></div>';
+  /* 结果卡片 */
+  html+='<div class="salary-card salary-result" id="salaryResultBox">';
+  if(savedHours!==''){
+    const r=calcSalary(savedHours);
+    html+='<div class="label">应得工资</div>'
+      +'<div class="amount">¥<span id="salaryTotal">'+r.total.toFixed(0)+'</span></div>'
+      +'<div class="salary-breakdown">'
+      +'<div class="salary-breakdown-item"><div class="val">¥'+r.base.toFixed(0)+'</div><div class="lbl">基础工资</div></div>'
+      +(r.overtimeHours>0?'<div class="salary-breakdown-item"><div class="val" style="color:var(--green)">+'+r.overtime.toFixed(0)+'</div><div class="lbl">超时('+r.overtimeHours+'节×90)</div></div>':'')
+      +'<div class="salary-breakdown-item"><div class="val">'+Number(savedHours)+'/'+SALARY_HOURS+'</div><div class="lbl">实际/标准课时</div></div>'
+      +'</div>';
+  } else {
+    html+='<div class="label" style="color:var(--muted);padding:var(--s5) 0;">↑ 输入课时数即可计算</div>';
+  }
+  html+='</div>';
+  /* 规则说明 */
+  html+='<div class="salary-rules">'
+    +'<b style="color:var(--text)">计算规则</b><br>'
+    +'基础固定工资 <code>'+SALARY_BASE+'</code> 元，包含 <code>'+SALARY_HOURS+'</code> 节课时；'
+    +'超出部分按 <code>'+SALARY_OVERTIME_RATE+'</code> 元/节累加。<br>'
+    +'例：授课 <code>67</code> 节 → '+SALARY_BASE+' + (67-66)×'+SALARY_OVERTIME_RATE+' = <b>'+(SALARY_BASE+SALARY_OVERTIME_RATE)+'</b> 元'
+    +'</div>';
+  html+='</div>';
+
+  const v=document.getElementById('view-salary'); v.innerHTML=html;
+
+  /* 实时计算 */
+  const input=document.getElementById('salaryInput');
+  input.oninput=()=>{
+    const val=input.value.trim();
+    localStorage.setItem('wb_salary_hours', val);
+    const box=document.getElementById('salaryResultBox');
+    if(val===''){
+      box.innerHTML='<div class="label" style="color:var(--muted);padding:var(--s5) 0;">↑ 输入课时数即可计算</div>';
+      return;
+    }
+    const r=calcSalary(val);
+    box.innerHTML='<div class="label">应得工资</div>'
+      +'<div class="amount">¥<span id="salaryTotal">'+r.total.toFixed(0)+'</span></div>'
+      +'<div class="salary-breakdown">'
+      +'<div class="salary-breakdown-item"><div class="val">¥'+r.base.toFixed(0)+'</div><div class="lbl">基础工资</div></div>'
+      +(r.overtimeHours>0?'<div class="salary-breakdown-item"><div class="val" style="color:var(--green)">+'+r.overtime.toFixed(0)+'</div><div class="lbl">超时('+r.overtimeHours+'节×90)</div></div>':'')
+      +'<div class="salary-breakdown-item"><div class="val">'+Number(val)+'/'+SALARY_HOURS+'</div><div class="lbl">实际/标准课时</div></div>'
+      +'</div>';
+  };
+}
+
 /* ===== modals ===== */
 let editingCourseId=null, editingStudentId=null;
 let pendingReturnToCourse=false;  // 从课程弹窗跳去新建学员后，保存学员时自动回弹课程弹窗
@@ -1530,6 +1630,7 @@ function switchTab(){
   document.getElementById('view-week').hidden=currentTab!=='week';
   document.getElementById('view-edit').hidden=currentTab!=='edit';
   document.getElementById('view-stats').hidden=currentTab!=='stats';
+  document.getElementById('view-salary').hidden=currentTab!=='salary';
   // 顶栏控件仅在「课表」页显示
   const onWeek = currentTab==='week';
   ['viewToggle','dateNav','filterStudent'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display = onWeek?'':'none'; });
@@ -1541,6 +1642,7 @@ function render(){
   renderToday(); renderHint();
   if(currentTab==='week'){ if(viewMode==='day') renderDay(); else renderWeek(); }
   else if(currentTab==='edit') renderEdit();
+  else if(currentTab==='salary') renderSalary();
   else renderStats();
 }
 
