@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="吉他教学工作台图标">
+  <rect width="512" height="512" rx="112" fill="#6C5CE7"/>
+  <g fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" transform="translate(128,128) scale(10.667)">
+    <circle cx="7" cy="17" r="3"/>
+    <circle cx="17" cy="9" r="2.5"/>
+    <path d="M10 17l7-6"/>
+    <path d="M19 7l2-2"/>
+  </g>
+</svg>
