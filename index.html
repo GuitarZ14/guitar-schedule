@@ -1032,11 +1032,16 @@ function calcSalary(hours){
 }
 
 function countMonthDoneToToday(){
-  const today=todayStr();            // YYYY-MM-DD
-  const ym=today.slice(0,7);          // YYYY-MM
-  const first=ym+'-01';
-  // 已完成且日期落在 [本月1日, 今日] 内（YYYY-MM-DD 字符串可直接比较）
-  return courses.filter(c=>c.status==='done' && c.date>=first && c.date<=today).length;
+  // 与月度统计页 renderStats/monthMap 保持完全一致的筛选逻辑：
+  // 只算 status==='done' 且日期以当前月份开头（如 "2026-08"）
+  const ym=todayStr().slice(0,7);          // YYYY-MM
+  const today=todayStr();
+  return courses.filter(c=>{
+    if(c.status!=='done') return false;
+    if(c.date.indexOf(ym)!==0) return false;
+    // 再限今天及之前（避免统计未来日期的课程）
+    return c.date<=today;
+  }).length;
 }
 
 function salaryUpdate(val, box){
@@ -1058,6 +1063,9 @@ function salaryUpdate(val, box){
 function renderSalary(){
   const auto=countMonthDoneToToday();
   const today=todayStr();
+  const ym=today.slice(0,7);
+  /* 与统计页对齐：用相同逻辑算出月度总已完成数（含未来日期的，用于对照） */
+  const monthTotalDone=courses.filter(c=>c.status==='done'&&c.date.indexOf(ym)===0).length;
   let html='<div class="salary-calc">';
   /* 输入卡片：本月1日~今日「已上」课时，自动填入，可手动微调 */
   html+='<div class="salary-card"><div class="salary-input-row">'
@@ -1067,7 +1075,7 @@ function renderSalary(){
     +'<button id="salaryRefresh" class="salary-refresh" title="按课程记录重新统计">'
     +'<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>重新统计</button>'
     +'</div>'
-    +'<div class="salary-note">已自动统计 <b>'+today.slice(0,7)+'-01 ~ '+today+'</b> 「已上」课时 <b>'+auto+'</b> 节（如需微调可手动修改）</div></div>';
+    +'<div class="salary-note">统计范围：<b>'+ym+'-01 ~ '+today+'</b>｜状态=「已上」｜结果 <b>'+auto+'</b> 节（本月「已上」总计 '+monthTotalDone+' 节，与统计页一致）</div></div>';
   /* 结果卡片 */
   html+='<div class="salary-card salary-result" id="salaryResultBox"></div>';
   /* 规则说明 */
