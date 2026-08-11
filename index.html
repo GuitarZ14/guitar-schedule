@@ -99,7 +99,6 @@
     background:var(--glass-strong); backdrop-filter:blur(var(--blur)) saturate(160%); -webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
     border-bottom:1px solid var(--glass-border);
   }
-  .topbar-row{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
   .view-toggle{display:inline-flex; background:rgba(31,37,64,0.06); border-radius:var(--r-pill); padding:4px; gap:2px;}
   .view-toggle button{border:none; background:transparent; border-radius:var(--r-pill); padding:7px 18px; min-height:auto; font-size:14px; color:var(--text-2); box-shadow:none;}
   .view-toggle button.active{background:#fff; color:var(--primary); box-shadow:var(--sh-1); font-weight:600;}
@@ -112,6 +111,11 @@
   .acts{display:flex; gap:8px; flex-wrap:wrap;}
   .top-add{display:none;}
   .menu-btn{display:none;}
+  /* 顶栏两层结构：桌面端用 flex 还原为单行（控件在左、新增在右），移动端改为上下堆叠 */
+  .topbar-inner{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .topbar-main{display:flex; align-items:center; gap:10px; margin-left:auto;}
+  .topbar-ctrl{display:flex; align-items:center; gap:14px; flex-wrap:wrap; order:-1;}
+  .top-title{display:none;}
 
   /* ===== 按钮（玻璃） ===== */
   button{
@@ -318,24 +322,37 @@
   #toast{position:fixed; left:50%; bottom:96px; transform:translateX(-50%) translateY(20px); background:var(--text); color:#fff; padding:11px 20px; border-radius:var(--r-pill); font-size:14px; box-shadow:var(--sh-3); opacity:0; pointer-events:none; transition:.25s ease; z-index:80; max-width:86%; text-align:center;}
   #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
-  /* ===== 移动端 ===== */
+  /* ===== 移动端（移动优先：窄屏重排为抽屉 + 底部导航 + 双层顶栏） ===== */
   .bottomnav{display:none;}
   @media(max-width:860px){
-    .sidebar{position:fixed; top:0; left:0; height:100vh; overflow-y:auto; transform:translateX(-100%); transition:transform .3s ease; box-shadow:var(--sh-3);}
+    .sidebar{position:fixed; top:0; left:0; height:100vh; width:min(280px,84vw); overflow-y:auto; transform:translateX(-100%); transition:transform .3s ease; box-shadow:var(--sh-3);}
     .sidebar.open{transform:none;}
     .sidebar-backdrop{display:none; position:fixed; inset:0; background:rgba(31,37,64,0.35); z-index:29;}
     .sidebar-backdrop.show{display:block;}
-    .menu-btn{display:inline-flex; border:none; background:var(--glass); border:1px solid var(--glass-border); border-radius:10px; min-width:40px; min-height:40px; padding:0 12px; font-size:20px; color:var(--text-2); box-shadow:var(--sh-1);}
-    .topbar{padding:10px 14px;}
-    .filter{max-width:130px;}
-    .wrap{padding:14px 14px 96px;}
-    .weekgrid{grid-template-columns:none; display:flex; overflow-x:auto; gap:10px; padding-bottom:10px; -webkit-overflow-scrolling:touch;}
-    .daycol{min-width:152px;}
+    .menu-btn{display:inline-flex; align-items:center; justify-content:center; border:none; background:var(--glass); border:1px solid var(--glass-border); border-radius:10px; min-width:42px; min-height:42px; padding:0; color:var(--text-2); box-shadow:var(--sh-1);}
+    .menu-btn svg{width:22px; height:22px;}
+    .topbar{padding:0; border-bottom:1px solid var(--glass-border); background:var(--glass-strong);}
+    .topbar-inner{flex-direction:column; align-items:stretch; gap:0;}
+    .topbar-main{order:0; margin-left:0; width:100%; display:flex; align-items:center; gap:10px; padding:11px 14px;}
+    .topbar-ctrl{order:1; display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:6px 14px 12px;}
+    .top-title{display:block; margin-right:auto; font-size:17px; font-weight:700; color:var(--text); font-family:var(--font-display);}
+    .top-add-text{display:none;}
+    .top-add{min-height:42px; padding:0 14px;}
+    .view-toggle{flex:0 0 auto;}
+    .view-toggle button{min-height:42px; padding:8px 16px;}
+    .datenav .range{min-width:auto; font-size:14px;}
+    .filter{flex:1; min-width:120px; max-width:none; min-height:42px;}
+    .nav-item{min-height:50px; font-size:15px;}
+    .wrap{padding:14px 14px 104px;}
+    .weekgrid{grid-template-columns:none; display:flex; overflow-x:auto; gap:10px; padding-bottom:10px; -webkit-overflow-scrolling:touch; scroll-snap-type:x mandatory;}
+    .daycol{min-width:150px; scroll-snap-align:start;}
     .kpis{grid-template-columns:repeat(2,1fr);}
+    .panel{padding:16px 14px; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+    th,td{padding:9px 8px; font-size:13px;}
     .bottomnav{display:flex; position:fixed; bottom:0; left:0; right:0; background:var(--glass-strong); backdrop-filter:blur(var(--blur)) saturate(160%); border-top:1px solid var(--glass-border); padding:8px 10px calc(8px + env(safe-area-inset-bottom)); z-index:40; box-shadow:0 -2px 12px rgba(31,37,64,0.10); gap:6px;}
-    .bottomnav button{flex:1; justify-content:center; border-radius:var(--r-sm); background:transparent; border:none; box-shadow:none; flex-direction:column; gap:2px; font-size:11px; padding:6px;}
+    .bottomnav button{flex:1; justify-content:center; border-radius:var(--r-sm); background:transparent; border:none; box-shadow:none; flex-direction:column; gap:3px; font-size:11px; padding:8px 4px; min-height:auto; color:var(--text-2);}
     .bottomnav button.active{background:var(--primary-soft); color:var(--primary);}
-    .bottomnav button svg{width:20px;height:20px;}
+    .bottomnav button svg{width:22px;height:22px;}
   }
   @media(max-width:860px){ .cloud-status{font-size:11px; padding:3px 7px;} }
   /* 键盘焦点环：清晰可见、对比达标 */
@@ -414,22 +431,28 @@
 
   <div class="main-col">
     <header class="topbar">
-      <div class="topbar-row">
-        <button class="menu-btn" id="menuBtn" aria-label="菜单">☰</button>
-        <div class="view-toggle" id="viewToggle">
-          <button data-mode="week" class="active">周</button>
-          <button data-mode="day">日</button>
+      <div class="topbar-inner">
+        <div class="topbar-main">
+          <button class="menu-btn" id="menuBtn" aria-label="菜单">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          </button>
+          <div class="top-title" id="topTitle">课表</div>
+          <button class="primary top-add" id="topAdd">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span class="top-add-text">新增课程</span>
+          </button>
         </div>
-        <div class="datenav" id="dateNav">
-          <button id="navPrev" aria-label="上一页">‹</button>
-          <span class="range" id="navRange"></span>
-          <button id="navToday">今天</button>
-          <button id="navNext" aria-label="下一页">›</button>
-        </div>
-        <span class="spacer"></span>
-        <select id="filterStudent" class="filter"><option value="">全部学员</option></select>
-        <div class="acts" id="topActs">
-          <button class="primary top-add" id="topAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>新增课程</button>
+        <div class="topbar-ctrl" id="topCtrl">
+          <div class="view-toggle" id="viewToggle">
+            <button data-mode="week" class="active">周</button>
+            <button data-mode="day">日</button>
+          </div>
+          <div class="datenav" id="dateNav">
+            <button id="navPrev" aria-label="上一页">‹</button>
+            <span class="range" id="navRange"></span>
+            <button id="navToday">今天</button>
+            <button id="navNext" aria-label="下一页">›</button>
+          </div>
+          <select id="filterStudent" class="filter"><option value="">全部学员</option></select>
         </div>
       </div>
     </header>
@@ -1646,10 +1669,11 @@ function switchTab(){
   document.getElementById('view-edit').hidden=currentTab!=='edit';
   document.getElementById('view-stats').hidden=currentTab!=='stats';
   document.getElementById('view-salary').hidden=currentTab!=='salary';
-  // 顶栏控件仅在「课表」页显示
+  // 顶栏控件仅在「课表」页显示；同步移动端标题
   const onWeek = currentTab==='week';
-  ['viewToggle','dateNav','filterStudent'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display = onWeek?'':'none'; });
+  const topCtrl=document.getElementById('topCtrl'); if(topCtrl) topCtrl.style.display = onWeek?'':'none';
   const topAdd=document.getElementById('topAdd'); if(topAdd) topAdd.style.display = onWeek?'inline-flex':'none';
+  const tt=document.getElementById('topTitle'); if(tt) tt.textContent = ({week:'课表',edit:'学员管理',stats:'月度统计',salary:'课时工资'})[currentTab]||'';
 }
 function render(){
   switchTab();
