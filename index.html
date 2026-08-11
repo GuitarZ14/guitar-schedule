@@ -1401,10 +1401,10 @@ function safeErrMsg(e){
 function localUpdatedAt(){ return localStorage.getItem(STORE.localUpdated) || '0'; }
 function markLocalUpdated(){ localStorage.setItem(STORE.localUpdated, new Date().toISOString()); }
 let autoBackupTimer=null;
-// 防抖自动备份：任何保存后 2.5 秒静默上传
+// 不再自动推送本地数据到云端：避免手机端的旧数据在后台悄悄覆盖云端最新数据（曾导致「恢复还是旧数据」）。
+// 同步改为「显式」：只在用户点击「云端备份 / 云端恢复」时才读写云端。
 function scheduleAutoBackup(){
-  if(autoBackupTimer) clearTimeout(autoBackupTimer);
-  autoBackupTimer = setTimeout(()=>{ if(cloudReady) doBackup(true); }, 2500);
+  /* 已停用自动上传，保留空函数以免改动其它调用点 */
 }
 function setCloudStatus(txt, cls){ const s=document.getElementById('cloudStatusText'); const w=document.getElementById('cloudStatus'); if(s){ s.textContent=txt; } if(w){ w.className='cloud-status '+(cls||''); } }
 // 确保有 binId：优先复用已有云端空间（多设备共享同一个 bin），没有才创建
@@ -1501,9 +1501,8 @@ async function autoRestoreOnLoad(key){
       markLocalUpdated();
       render();
       showToast('已从云端同步最新数据');
-    } else if(localTime > cloudTime){
-      await doBackup(true);
     }
+    // 注意：本地更新时间较新时不再自动上传，避免覆盖云端最新数据；请手动点「云端备份」。
   }catch(e){ console.warn('[自动恢复失败]', e); }
 }
 // 初始化：检测是否已配置 API Key
