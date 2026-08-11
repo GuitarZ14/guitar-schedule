@@ -37,9 +37,11 @@ Class Schedule Card/
 3. **Lighthouse → Progressive Web App**：应全部通过（可安装 + 离线可交互）。
 4. 地址栏右侧出现「安装」图标（Chrome/Edge）。
 
-若 SW 未注册成功：先确认站点为 **HTTPS**（CloudStudio 分享链接已是 https ✓）；
+若 SW 未注册成功：先确认站点为 **HTTPS**（正式部署地址 **GitHub Pages** `https://guitarz14.github.io/guitar-schedule/` 已是 https ✓）；
 再看 Console 是否报 `service-worker.js` 404 或 MIME 错误——这通常是静态服务器未正确返回 `.js`，
-此时可换用任意静态托管（GitHub Pages / Vercel / Netlify）重新部署整套文件。
+此时可换用任意静态托管（CloudStudio 分享链接作为备用部署 / Vercel / Netlify）重新部署整套文件。
+
+> **部署约定**：GitHub Pages（`guitarz14.github.io/guitar-schedule`）为正式地址，桌面快捷方式与 PWA 安装均指向它；CloudStudio 链接仅作备用。两者数据不互通，更新功能只需 `git push`，链接不变、打开即最新。
 
 ---
 
