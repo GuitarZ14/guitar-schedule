@@ -70,7 +70,7 @@
   .app{display:flex; min-height:100vh;}
   .sidebar{
     width:236px; flex-shrink:0; padding:22px 16px; display:flex; flex-direction:column; gap:6px;
-    position:sticky; top:0; height:100vh;
+    position:sticky; top:0; height:100vh; overflow-y:auto;
     background:var(--glass); backdrop-filter:blur(var(--blur)) saturate(160%); -webkit-backdrop-filter:blur(var(--blur)) saturate(160%);
     border-right:1px solid var(--glass-border); z-index:30;
   }
@@ -321,7 +321,7 @@
   /* ===== 移动端 ===== */
   .bottomnav{display:none;}
   @media(max-width:860px){
-    .sidebar{position:fixed; top:0; left:0; height:100vh; transform:translateX(-100%); transition:transform .3s ease; box-shadow:var(--sh-3);}
+    .sidebar{position:fixed; top:0; left:0; height:100vh; overflow-y:auto; transform:translateX(-100%); transition:transform .3s ease; box-shadow:var(--sh-3);}
     .sidebar.open{transform:none;}
     .sidebar-backdrop{display:none; position:fixed; inset:0; background:rgba(31,37,64,0.35); z-index:29;}
     .sidebar-backdrop.show{display:block;}
