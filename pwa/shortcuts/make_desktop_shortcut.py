@@ -7,7 +7,7 @@ import sys
 import platform
 
 APP_NAME = "吉他教学工作台"
-URL = "https://40b67ff2be2348e19375d7752fbf96cc.bj8.agentos-app.net/"
+URL = "https://guitarz14.github.io/guitar-schedule/"
 DESKTOP = os.path.join(os.path.expanduser("~"), "Desktop")
 
 
