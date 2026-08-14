@@ -83,6 +83,20 @@
   .nav-item.active{background:var(--primary-soft); color:var(--primary-d); border-left:3px solid var(--primary); box-shadow:none; font-weight:600;}
   .nav-item.active svg{opacity:1;}
   .sidebar-foot{margin-top:auto; padding:12px 6px 4px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:10px;}
+  /* ===== 课程提醒卡片 ===== */
+  .remind-card{margin:10px 6px 2px; padding:12px 14px; border:1px solid var(--glass-border); border-radius:var(--r-md); background:var(--glass); box-shadow:var(--sh-1);}
+  .remind-head{display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; color:var(--text);}
+  .remind-head svg{width:17px; height:17px; color:var(--primary); flex-shrink:0;}
+  .remind-head span{flex:1;}
+  .remind-sub{margin:6px 0 0; font-size:12px; color:var(--muted); line-height:1.5;}
+  .remind-sub.on{color:var(--green);}
+  /* iOS 风格开关 */
+  .switch{position:relative; display:inline-block; width:42px; height:24px; flex-shrink:0; cursor:pointer;}
+  .switch input{opacity:0; width:0; height:0;}
+  .switch .slider{position:absolute; inset:0; background:var(--gray-soft); border-radius:999px; transition:.2s ease;}
+  .switch .slider::before{content:''; position:absolute; left:3px; top:3px; width:18px; height:18px; background:#fff; border-radius:50%; transition:.2s ease; box-shadow:0 1px 2px rgba(0,0,0,.2);}
+  .switch input:checked + .slider{background:var(--primary);}
+  .switch input:checked + .slider::before{transform:translateX(18px);}
   .sidebar-foot .acts{display:flex; flex-direction:column; gap:8px;}
   .sidebar-foot .acts button{justify-content:flex-start; width:100%;}
   .main-col{flex:1; min-width:0; display:flex; flex-direction:column;}
@@ -449,6 +463,14 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>课时工资
       </button>
     </nav>
+    <div class="remind-card" id="remindCard">
+      <div class="remind-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span>课程提醒</span>
+        <label class="switch"><input type="checkbox" id="remindToggle"><span class="slider"></span></label>
+      </div>
+      <p class="remind-sub" id="remindSub">每天 09:00 当日课 / 21:00 次日课</p>
+    </div>
     <div class="sidebar-foot">
       <span id="cloudStatus" class="cloud-status" title="点击配置云端同步" onclick="openCloudConfig()" style="display:inline-flex;align-items:center;gap:5px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0;"><path d="M17 18a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9a4 4 0 0 0 0 9h11z"/></svg><span id="cloudStatusText">未配置</span>
@@ -1527,10 +1549,16 @@ async function doBackup(silent){
   try{
     const bin=await ensureBin(key);
     const now=new Date().toISOString();
+    // 保留 bin 中已存在的 pushSubs（订阅列表由推送链路维护，不应被备份覆盖）
+    let existingSubs=[];
+    try{
+      const r0=await fetch(JB_API+'/'+bin+'/latest', { headers:{'X-Master-Key':key} });
+      if(r0.ok){ const rec=(await r0.json()).record||{}; if(Array.isArray(rec.pushSubs)) existingSubs=rec.pushSubs; }
+    }catch(e){}
     const res=await fetch(JB_API+'/'+bin, {
       method:'PUT',
       headers:{ 'X-Master-Key':key, 'Content-Type':'application/json' },
-      body: JSON.stringify({ students, courses, updatedAt: now })
+      body: JSON.stringify({ students, courses, pushSubs: existingSubs, updatedAt: now })
     });
     if(!res.ok){
       const errBody = await res.text().catch(()=>'');
@@ -1697,6 +1725,181 @@ function openCloudConfigDone(){
   showToast('云端已启用，开始自动同步 ✓');
 }
 
+/* =========================================================
+ *  课程提醒（Web Push）
+ *  - 前端负责：开关 UI、订阅 Push、把订阅信息存入云端 bin 的 pushSubs
+ *  - 定时调度由 GitHub Actions（cron 09:00 / 21:00 北京时间）触发服务端脚本发送
+ *  - 时区：所有时间以浏览器本地时区（Intl 默认）为准，服务端脚本同样按 Asia/Shanghai 计算
+ * ========================================================= */
+const REMIND_KEY = 'wb_guitar_remind';               // 本地：{ on:bool }
+// 应用服务器 VAPID 公钥（公开，可放前端）。与 GitHub Secrets 中的 VAPID_PRIVATE_KEY 配对。
+const VAPID_PUBLIC_KEY = 'BPl-EhY8m7u6qZ0xK3nVqR4tWpY2sLk9MnBcDfGhJkLmNoPqRsTuVwXyZ0123456789'; // ⚠️ 占位，部署前需替换（见 REMINDER_SETUP.md）
+
+function loadRemindSetting(){ try{ return JSON.parse(localStorage.getItem(REMIND_KEY)||'{"on":false}'); }catch(e){ return {on:false}; } }
+function saveRemindSetting(s){ localStorage.setItem(REMIND_KEY, JSON.stringify(s)); }
+
+function urlBase64ToUint8Array(base64String){
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const output = new Uint8Array(rawData.length);
+  for(let i=0;i<rawData.length;++i) output[i] = rawData.charCodeAt(i);
+  return output;
+}
+
+// 设备/浏览器唯一标识（用于云端去重，避免同一浏览器重复订阅）
+function deviceId(){
+  let id=localStorage.getItem('wb_guitar_device');
+  if(!id){ id='dev_'+Math.random().toString(36).slice(2)+Date.now().toString(36); localStorage.setItem('wb_guitar_device', id); }
+  return id;
+}
+
+// 读取云端 bin 内已存订阅（与 courses/students 同 bin）
+async function getPushSubs(){
+  const key=jbKey(), bin=jbBin();
+  if(!key||!bin) return [];
+  try{
+    const res=await fetch(JB_API+'/'+bin+'/latest', { headers:{'X-Master-Key':key} });
+    if(!res.ok) return [];
+    const d=(await res.json()).record||{};
+    return Array.isArray(d.pushSubs)? d.pushSubs : [];
+  }catch(e){ return []; }
+}
+
+// 写入/更新当前设备订阅到云端 bin（保留其他字段）
+async function savePushSub(sub){
+  const key=jbKey(), bin=jbBin();
+  if(!key||!bin) return false;
+  try{
+    const res=await fetch(JB_API+'/'+bin+'/latest', { headers:{'X-Master-Key':key} });
+    const data = res.ok ? ((await res.json()).record||{}) : {};
+    let subs = Array.isArray(data.pushSubs)? data.pushSubs : [];
+    const did=deviceId();
+    subs = subs.filter(s=>s.device!==did);          // 同设备只保留最新一条
+    subs.push(Object.assign({device:did, ts:Date.now()}, sub));
+    const next = Object.assign({}, data, { pushSubs:subs, updatedAt:new Date().toISOString() });
+    const r2=await fetch(JB_API+'/'+bin, {
+      method:'PUT', headers:{'X-Master-Key':key,'Content-Type':'application/json'},
+      body: JSON.stringify(next)
+    });
+    return r2.ok;
+  }catch(e){ return false; }
+}
+
+async function subscribeToPush(){
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)){
+    showToast('当前浏览器不支持推送通知'); return false;
+  }
+  if(!jbKey() || !jbBin()){
+    showToast('请先配置并启用云端同步（推送依赖云端存储订阅）');
+    return false;
+  }
+  try{
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub){
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    const json = sub.toJSON();
+    await savePushSub({ endpoint:json.endpoint, keys:json.keys });
+    return true;
+  }catch(e){
+    console.error('[订阅推送失败]', e);
+    showToast('订阅失败：'+(e&&e.message?e.message:'请检查是否允许通知权限'));
+    return false;
+  }
+}
+
+function updateRemindUI(){
+  const set=loadRemindSetting();
+  const toggle=document.getElementById('remindToggle');
+  const sub=document.getElementById('remindSub');
+  if(toggle) toggle.checked=!!set.on;
+  if(sub) sub.className='remind-sub'+(set.on?' on':'');
+  if(sub) sub.textContent= set.on ? '已开启：每天 09:00 当日 / 21:00 次日' : '每天 09:00 当日课 / 21:00 次日课';
+}
+
+async function onRemindToggle(){
+  const toggle=document.getElementById('remindToggle');
+  const set=loadRemindSetting();
+  if(toggle.checked){
+    const ok=await subscribeToPush();
+    if(ok){
+      set.on=true; saveRemindSetting(set);
+      showToast('课程提醒已开启 ✓ 每天 09:00 / 21:00 推送');
+    }else{
+      toggle.checked=false;
+    }
+  }else{
+    set.on=false; saveRemindSetting(set);
+    showToast('课程提醒已关闭');
+  }
+  updateRemindUI();
+}
+
+/* ===== 前端兜底调度（页面打开时生效）=====
+ * 与 GitHub Actions 后端定时推送互补：页面在 09:00 / 21:00 处于打开状态时，
+ * 命中对应时段即弹站内提醒 + 可选浏览器通知；关页场景由后端 Actions 负责。
+ * 时区以浏览器本地时区为准（与后端 Asia/Shanghai 一致）。
+ * 去重：localStorage 记录「日期+时段」标记，避免重复/遗漏。 */
+const REMIND_SHOWN_KEY = 'wb_guitar_remind_shown';
+function loadShown(){ try{ return JSON.parse(localStorage.getItem(REMIND_SHOWN_KEY)||'{}'); }catch(e){ return {}; } }
+function markShown(k){ const s=loadShown(); s[k]=Date.now(); localStorage.setItem(REMIND_SHOWN_KEY, JSON.stringify(s)); }
+
+function buildReminderText(dateStr, isNextDay){
+  const list = courses.filter(c=>c.date===dateStr && c.status!=='cancelled')
+                        .sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+  if(!list.length) return null;
+  const nameOf = id => { const s=students.find(x=>x.id===id); return s?s.name:'学员'; };
+  const lines = list.map(c=>'• '+c.start+' '+nameOf(c.studentId)+(c.song?'《'+c.song+'》':''));
+  const title = (isNextDay?'明日(':'今日(')+dateStr.slice(5)+')课程安排';
+  const body = (isNextDay?'明天共 ':'今天共 ')+list.length+' 节课：\n'+lines.join('\n');
+  return { title, body };
+}
+
+function showInAppReminder(key, dateStr, isNextDay){
+  const r = buildReminderText(dateStr, isNextDay);
+  if(!r) return;
+  markShown(key);
+  // 1) 站内 toast（始终可见）
+  showToast('🔔 '+r.title+'：'+r.body.replace(/\n/g,' '));
+  // 2) 浏览器通知（已授权时）
+  try{
+    if('Notification' in window && Notification.permission==='granted'){
+      new Notification('🎸 '+r.title, { body:r.body, icon:'./icons/icon-192.png' });
+    }
+  }catch(e){}
+}
+
+function scheduleInAppReminders(){
+  const set=loadRemindSetting();
+  if(!set.on) return;
+  const now=new Date();
+  const hh=now.getHours();
+  const today=ymd(now);
+  const yesterday=ymd(addDays(now,-1));
+  const tomorrow=ymd(addDays(now,1));
+  const shown=loadShown();
+  // 当日档：09:00–20:59 有效（含错过补推）
+  if(hh>=9 && hh<21){
+    const k=today+'-morning';
+    if(!shown[k]) showInAppReminder(k, today, false);
+  }
+  // 次日档：窗口 = 昨日 21:00 ~ 今日 08:59（覆盖「昨晚 21:00 推送次日」及「今早补推」）
+  if(hh>=0 && hh<9){
+    const k=today+'-evening';
+    if(!shown[k]) showInAppReminder(k, today, true);
+  }
+  // 次日档：窗口 = 今日 21:00 起推送「明日」课程
+  if(hh>=21){
+    const k=tomorrow+'-evening';
+    if(!shown[k]) showInAppReminder(k, tomorrow, true);
+  }
+}
+
 /* ===== tab switch / render ===== */
 function populateFilter(){
   const sel=document.getElementById('filterStudent');
@@ -1772,6 +1975,13 @@ function init(){
   initCloud();
   document.getElementById('btnCloudBackup').onclick=backupToCloud;
   document.getElementById('btnCloudRestore').onclick=restoreFromCloud;
+  // 课程提醒开关
+  const rt=document.getElementById('remindToggle');
+  if(rt) rt.onchange=onRemindToggle;
+  updateRemindUI();
+  // 前端兜底调度：页面打开时命中 09:00/21:00 弹站内提醒（与后端 Actions 互补）
+  scheduleInAppReminders();
+  setInterval(scheduleInAppReminders, 60*1000);
   // course modal events
   document.getElementById('courseSave').onclick=saveCourse;
   document.getElementById('courseCancel').onclick=closeCourseModal;
@@ -1827,7 +2037,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-08-14-v3';
+const APP_VERSION = '2026-08-14-v4';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */

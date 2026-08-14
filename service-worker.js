@@ -3,7 +3,7 @@
  *       JSONBin 备份接口始终走网络（不缓存，避免脏数据）。
  * 更新：改 CACHE 版本号即可让旧缓存失效。
  */
-const CACHE = 'guitar-wb-v3';
+const CACHE = 'guitar-wb-v4';
 
 // 应用外壳（缓存这些即可离线运行；任意文件缺失也不阻断安装）
 const SHELL = [
@@ -111,3 +111,41 @@ function staleWhileRevalidate(req) {
     return cached || network;
   });
 }
+
+/* ===== 课程提醒：接收推送并展示通知 ===== */
+self.addEventListener('push', function (event) {
+  let payload = { title: '吉他教学工作台', body: '你有新的课程提醒', tag: 'guitar-remind' };
+  try {
+    if (event.data) {
+      const d = event.data.json();
+      payload = Object.assign(payload, d);
+    }
+  } catch (e) { /* 用默认文案 */ }
+
+  const opts = {
+    body: payload.body || '',
+    tag: payload.tag || 'guitar-remind',
+    // 防重复：同 tag 新通知替换旧通知；renotify:false 避免已存在时再次响铃
+    renotify: false,
+    data: { url: payload.url || './' },
+    badge: './icons/icon-192.png',
+    icon: './icons/icon-192.png',
+    vibrate: [120, 80, 120]
+  };
+  if (payload.actions) opts.actions = payload.actions;
+
+  event.waitUntil(self.registration.showNotification(payload.title || '课程提醒', opts));
+});
+
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || './';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (cls) {
+      for (const c of cls) {
+        if ('focus' in c) return c.focus();
+      }
+      if (clients.openWindow) return clients.openWindow(target);
+    })
+  );
+});
