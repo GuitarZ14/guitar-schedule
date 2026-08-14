@@ -730,11 +730,13 @@ function renderToday(){
   const todayItems = courses.filter(c=>c.date===today&&c.status!=='done'&&c.status!=='absent'&&c.status!=='cancelled')
                             .sort((a,b)=>a.start.localeCompare(b.start));
   const el=document.getElementById('todayBar');
+  const pendingCount = todayItems.length;
+  const headText = pendingCount > 0 ? `今天还需要上${pendingCount}课` : '今天没有待上课';
   if(!overdue.length && !todayItems.length){
-    el.innerHTML='<div class="today"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>今天要处理</h2><div class="empty">今天暂无待处理课程，教学安排很清爽。</div></div>';
+    el.innerHTML='<div class="today"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>'+esc(headText)+'</h2><div class="empty">今天暂无待处理课程，教学安排很清爽。</div></div>';
     return;
   }
-  let html='<div class="today"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>今天要处理</h2>';
+  let html='<div class="today"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>'+esc(headText)+'</h2>';
   const renderItem=(c,over)=>{
     const d=parseYMD(c.date);
     const when = over ? (d.getMonth()+1)+'月'+d.getDate()+'日' : '今天 '+c.start;
