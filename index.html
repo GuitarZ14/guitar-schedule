@@ -383,6 +383,11 @@
     .salary-breakdown{gap:var(--s3);}
     .salary-breakdown-item{min-width:100px;padding:var(--s2) var(--s3);}
   }
+  /* ===== 统计表节数悬停提示 ===== */
+  .stat-tip{ position:relative; cursor:default; display:inline-flex; align-items:center; justify-content:center; }
+  .stat-tip .stat-tip-box{ display:none; position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%); white-space:nowrap; background:var(--text); color:var(--glass); font-size:12px; line-height:1.6; padding:8px 12px; border-radius:10px; box-shadow:0 4px 14px rgba(0,0,0,.18); z-index:100; pointer-events:none; max-width:320px; white-space:normal; word-break:break-all; text-align:center; }
+  .stat-tip .stat-tip-box::after{ content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:6px solid transparent; border-top-color:var(--text); }
+  .stat-tip:hover .stat-tip-box{ display:block; }
 </style>
 </head>
 <body>
@@ -1026,7 +1031,13 @@ function renderStats(){
     html+='<table><thead><tr><th>学员</th><th class="num">节数</th><th class="num">请假</th><th class="num">总时长</th><th class="num">占比</th></tr></thead><tbody>';
     ids.sort((a,b)=>map[b].min-map[a].min).forEach(id=>{
       const pct=totalMin? Math.round(map[id].min/totalMin*100):0;
-      html+='<tr><td>'+esc(studentName(id))+'</td><td class="num">'+map[id].count+'</td><td class="num">'+(map[id].absent||0)+'</td><td class="num">'+fmtMin(map[id].min)+'</td><td class="num">'+pct+'%</td></tr>';
+      /* 收集该学员本月已上课日期，格式化为"X月X号、…" */
+      const doneDates = courses.filter(c=>c.studentId===id&&c.status==='done'&&c.date.indexOf(ym)===0)
+                               .sort((a,b)=>a.date.localeCompare(b.date))
+                               .map(c=>{ const d=parseYMD(c.date); return (d.getMonth()+1)+'月'+d.getDate()+'号'; });
+      const dateStr = doneDates.length ? doneDates.join('、') : '';
+      const tipHtml = dateStr ? '<span class="stat-tip">'+map[id].count+'<span class="stat-tip-box">'+esc(dateStr)+'</span></span>' : map[id].count;
+      html+='<tr><td>'+esc(studentName(id))+'</td><td class="num">'+tipHtml+'</td><td class="num">'+(map[id].absent||0)+'</td><td class="num">'+fmtMin(map[id].min)+'</td><td class="num">'+pct+'%</td></tr>';
     });
     html+='</tbody></table>';
   }
