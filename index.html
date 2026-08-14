@@ -309,6 +309,7 @@
   input:focus,select:focus,textarea:focus{outline:2px solid var(--primary); outline-offset:1px; border-color:var(--primary);}
   .twocol{display:flex; gap:12px;}
   .twocol label{flex:1;}
+  .dur-display{text-align:center; font-size:13px; color:var(--primary); font-weight:600; margin:-8px 0 4px; min-height:20px; letter-spacing:.3px;}
   .sheet-actions{display:flex; gap:10px; align-items:center; margin-top:8px;}
   .sheet-actions .spacer{flex:1;}
   .inlinenew{font-size:13px; color:var(--primary); background:none; border:none; padding:4px 6px; min-height:auto; margin-top:4px; box-shadow:none;}
@@ -557,6 +558,7 @@
       <label><span class="lab">开始</span><input type="time" id="fStart"></label>
       <label><span class="lab">结束</span><input type="time" id="fEnd"></label>
     </div>
+    <div class="dur-display" id="courseDurDisplay"></div>
     <label><span class="lab">曲目</span><input id="fSong" placeholder="如：童年"></label>
     <label><span class="lab">技巧重点</span><input id="fFocus" placeholder="如：C-G-Am-F 转换"></label>
     <label><span class="lab">学员备注</span><textarea id="fNote" placeholder="本节课备注 / 作业"></textarea></label>
@@ -711,6 +713,15 @@ function addMinutes(timeStr, minutes){
   const nh=Math.floor(total/60)%24;
   const nm=total%60;
   return String(nh).padStart(2,'0')+':'+String(nm).padStart(2,'0');
+}
+function updateCourseDurDisplay(){
+  const el=document.getElementById('courseDurDisplay');
+  if(!el) return;
+  const s=document.getElementById('fStart').value;
+  const e=document.getElementById('fEnd').value;
+  if(!s||!e){ el.textContent=''; return; }
+  const m=dur({start:s,end:e});
+  el.textContent='课时 '+fmtMin(m);
 }
 
 /* ===== 单选框工具 ===== */
@@ -1228,6 +1239,7 @@ function openCourseModal(id){
     setRadio('fStatus', 'planned');
     document.getElementById('courseDelete').style.display='none';
   }
+  updateCourseDurDisplay();
   m.hidden=false;
 }
 // 复制单条课程：作为「新增」打开，自动带入原条目全部字段（可编辑）
@@ -1247,6 +1259,7 @@ function openCourseModalAsCopy(sourceId){
   document.getElementById('fNote').value=src.note||'';
   setRadio('fStatus', src.status);
   document.getElementById('courseDelete').style.display='none';
+  updateCourseDurDisplay();
   document.getElementById('courseModal').hidden=false;
 }
 // 复制整日课表：把某天的全部课程复制到「下一周同一天」(date+7)
@@ -1992,10 +2005,12 @@ function init(){
     if(this.value && !endInput.dataset.manual){
       endInput.value = addMinutes(this.value, DEFAULT_COURSE_DURATION);
     }
+    updateCourseDurDisplay();
   });
   // 用户手动改过结束时间后，不再自动覆盖（除非重新改开始时间）
   document.getElementById('fEnd').addEventListener('change', function(){
     this.dataset.manual = '1';
+    updateCourseDurDisplay();
   });
   document.getElementById('newStudentQuick').onclick=()=>{
     pendingReturnToCourse=true;  // 标记：保存学员后要回弹课程弹窗
@@ -2037,7 +2052,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-08-14-v4';
+const APP_VERSION = '2026-08-14-v5';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
