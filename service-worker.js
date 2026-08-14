@@ -3,7 +3,7 @@
  *       JSONBin 备份接口始终走网络（不缓存，避免脏数据）。
  * 更新：改 CACHE 版本号即可让旧缓存失效。
  */
-const CACHE = 'guitar-wb-v2';
+const CACHE = 'guitar-wb-v3';
 
 // 应用外壳（缓存这些即可离线运行；任意文件缺失也不阻断安装）
 const SHELL = [
@@ -60,9 +60,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 同源资源：缓存优先，未命中再联网并补缓存
+  // 同源资源：index.html 走网络优先（确保更新即时生效）；其余走缓存优先
   if (url.origin === self.location.origin) {
-    event.respondWith(cacheFirst(req));
+    if (url.pathname === '/' || url.pathname.endsWith('index.html')) {
+      event.respondWith(networkFirstShell(req));
+    } else {
+      event.respondWith(cacheFirst(req));
+    }
   }
 });
 
@@ -79,6 +83,18 @@ function cacheFirst(req) {
       })
       .catch(() => caches.match('./index.html'));   // 离线兜底
   });
+}
+
+/* index.html 专用：网络优先，确保更新即时生效；离线时降级到缓存 */
+function networkFirstShell(req) {
+  return fetch(req).then((res) => {
+    if (res && res.ok) {
+      const cp = res.clone();
+      caches.open(CACHE).then((c) => c.put(req, cp));   // 后台更新缓存
+      return res;
+    }
+    throw new Error('network response not ok');
+  }).catch(() => caches.match(req).then((cached) => cached || caches.match('./index.html')));
 }
 
 function staleWhileRevalidate(req) {

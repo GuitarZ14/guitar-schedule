@@ -1788,10 +1788,43 @@ init();
 </script>
 <script>
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
-   仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。 */
+   仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
+   版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
+const APP_VERSION = '2026-08-14-v3';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    navigator.serviceWorker.register('./service-worker.js').catch(function (e) {
+    /* 检测版本变更 → 强制清缓存重载 */
+    const lastVer = localStorage.getItem('wb_app_version');
+    if (lastVer && lastVer !== APP_VERSION) {
+      localStorage.removeItem('wb_app_version');  // 先清除旧标记
+      caches.keys().then(keys => keys.forEach(k => caches.delete(k))).then(() => {
+        localStorage.setItem('wb_app_version', APP_VERSION);
+        location.reload(true);   // 强制重载（绕过所有缓存）
+      });
+      return;  // 等待重载，不继续注册旧 SW
+    }
+    localStorage.setItem('wb_app_version', APP_VERSION);
+
+    navigator.serviceWorker.register('./service-worker.js' + '?v=' + APP_VERSION).then(function (reg) {
+      /* 检测新 SW 版本可用 → 提示用户刷新 */
+      reg.addEventListener('updatefound', function () {
+        const newSW = reg.installing;
+        if (!newSW) return;
+        newSW.addEventListener('statechange', function () {
+          if (newSW.state === 'activated' && navigator.serviceWorker.controller) {
+            // 新 SW 已激活且当前页面由旧 SW 控制 → 提示刷新
+            const toast = document.getElementById('toast');
+            if (toast) {
+              toast.innerHTML = '<div class="toast-msg">🔄 发现新版本，<a href="#" onclick="location.reload(true)" style="color:var(--primary);text-decoration:underline;font-weight:600">点击刷新</a> 获取最新界面</div>';
+              toast.className = 'show';
+              setTimeout(() => toast.classList.remove('show'), 12000);
+            }
+          }
+        });
+      });
+      /* 每 30 分钟主动检查一次 SW 更新 */
+      setInterval(() => reg.update(), 30 * 60 * 1000);
+    }).catch(function (e) {
       console.warn('Service Worker 注册失败（可忽略，本地/离线功能仍可用）：', e);
     });
   });
