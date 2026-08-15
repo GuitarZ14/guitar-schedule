@@ -402,8 +402,9 @@
   .extra-income-item .ei-amt{font-size:14px;font-weight:600;color:var(--green);white-space:nowrap;}
   .extra-income-item .ei-del{width:26px;height:26px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:color var(--t),background var(--t);flex-shrink:0;}
   .extra-income-item .ei-del:hover{color:#e74c3c;background:rgba(231,76,60,0.1);}
-  .extra-income-item .ei-edit{width:26px;height:26px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:color var(--t),background var(--t);flex-shrink:0;}
-  .extra-income-item .ei-edit:hover{color:var(--primary);background:var(--primary-soft);}
+  .extra-income-item .ei-edit{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:rgba(255,255,255,0.6);color:var(--primary);cursor:pointer;font-size:12px;font-family:var(--font-body);font-weight:500;transition:background var(--t),border-color var(--t);flex-shrink:0;white-space:nowrap;}
+  .extra-income-item .ei-edit:hover{background:var(--primary-soft);border-color:var(--primary);}
+  .extra-income-item .ei-edit svg{width:13px;height:13px;flex-shrink:0;}
   /* 编辑模式：条目变为内联表单 */
   .extra-income-item.editing{border-color:var(--primary);background:rgba(255,255,255,0.8);}
   .extra-income-item.editing>.ei-desc,
@@ -1233,7 +1234,7 @@ function renderSalary(){
         +'<input type="number" class="ei-edit-amt" value="'+Number(item.amount).toFixed(0)+'" min="0" step="1">'
         +'<button class="ei-save">保存</button><button class="ei-cancel">取消</button>'
         +'</div>'
-        +'<button class="ei-edit" title="编辑此项"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
+        +'<button class="ei-edit" title="编辑此项"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>编辑</button>'
         +'<button class="ei-del" title="删除此项">&times;</button>'
         +'</div>';
     });
@@ -2177,7 +2178,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-08-15-v7';
+const APP_VERSION = '2026-08-15-v8';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
