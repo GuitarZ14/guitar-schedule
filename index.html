@@ -1872,7 +1872,7 @@ function openCloudConfigDone(){
  * ========================================================= */
 const REMIND_KEY = 'wb_guitar_remind';               // 本地：{ on:bool }
 // 应用服务器 VAPID 公钥（公开，可放前端）。与 GitHub Secrets 中的 VAPID_PRIVATE_KEY 配对。
-const VAPID_PUBLIC_KEY = 'BPl-EhY8m7u6qZ0xK3nVqR4tWpY2sLk9MnBcDfGhJkLmNoPqRsTuVwXyZ0123456789'; // ⚠️ 占位，部署前需替换（见 REMINDER_SETUP.md）
+const VAPID_PUBLIC_KEY = 'BO_t62gQ125b-uzTVKs32Icoc6N4l76WQqYj6jrYG9jtVdht4ae1GLZ-EcHACpvUX1R1NGF1I7_wKtjaJhtT1VY';
 
 function loadRemindSetting(){ try{ return JSON.parse(localStorage.getItem(REMIND_KEY)||'{"on":false}'); }catch(e){ return {on:false}; } }
 function saveRemindSetting(s){ localStorage.setItem(REMIND_KEY, JSON.stringify(s)); }
@@ -2178,7 +2178,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-08-15-v8';
+const APP_VERSION = '2026-08-15-v9';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
