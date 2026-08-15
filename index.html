@@ -402,6 +402,18 @@
   .extra-income-item .ei-amt{font-size:14px;font-weight:600;color:var(--green);white-space:nowrap;}
   .extra-income-item .ei-del{width:26px;height:26px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:color var(--t),background var(--t);flex-shrink:0;}
   .extra-income-item .ei-del:hover{color:#e74c3c;background:rgba(231,76,60,0.1);}
+  .extra-income-item .ei-edit{width:26px;height:26px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:color var(--t),background var(--t);flex-shrink:0;}
+  .extra-income-item .ei-edit:hover{color:var(--primary);background:var(--primary-soft);}
+  /* 编辑模式：条目变为内联表单 */
+  .extra-income-item.editing{border-color:var(--primary);background:rgba(255,255,255,0.8);}
+  .extra-income-item.editing>.ei-desc,
+  .extra-income-item.editing>.ei-amt{display:none;}
+  .extra-income-item.editing .ei-inline-form{display:flex;gap:6px;align-items:center;flex:1;}
+  .extra-income-item:not(.editing) .ei-inline-form{display:none;}
+  .extra-income-item .ei-inline-form input[type=text]{flex:1;min-width:0;font-size:13px;padding:6px 9px;border:1px solid var(--line);border-radius:var(--r-sm);background:#fff;font-family:var(--font-body);color:var(--text);}
+  .extra-income-item .ei-inline-form input[type=number]{width:80px;min-width:60px;font-size:13px;padding:6px 9px;border:1px solid var(--line);border-radius:var(--r-sm);background:#fff;font-family:var(--font-display);font-weight:600;color:var(--green);text-align:center;}
+  .extra-income-item .ei-inline-form .ei-save{padding:5px 10px;border:none;background:var(--primary);color:#fff;border-radius:var(--r-sm);font-size:12px;cursor:pointer;white-space:nowrap;}
+  .extra-income-item .ei-inline-form .ei-cancel{padding:5px 10px;border:none;background:var(--glass);color:var(--text-2);border:1px solid var(--line);border-radius:var(--r-sm);font-size:12px;cursor:pointer;}
   .extra-income-form{display:flex;gap:8px;align-items:flex-end;}
   .extra-income-form input[type=text]{flex:1;min-width:0;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:rgba(255,255,255,0.7);font-family:var(--font-body);color:var(--text);}
   .extra-income-form input[type=number]{width:90px;min-width:70px;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:rgba(255,255,255,0.7);font-family:var(--font-display);font-weight:600;color:var(--green);text-align:center;}
@@ -1216,6 +1228,12 @@ function renderSalary(){
       html+='<div class="extra-income-item" data-eid="'+item.id+'">'
         +'<span class="ei-desc">'+esc(item.desc)+'</span>'
         +'<span class="ei-amt">¥'+Number(item.amount).toFixed(0)+'</span>'
+        +'<div class="ei-inline-form">'
+        +'<input type="text" class="ei-edit-desc" value="'+esc(item.desc)+'" placeholder="项目名称" maxlength="30">'
+        +'<input type="number" class="ei-edit-amt" value="'+Number(item.amount).toFixed(0)+'" min="0" step="1">'
+        +'<button class="ei-save">保存</button><button class="ei-cancel">取消</button>'
+        +'</div>'
+        +'<button class="ei-edit" title="编辑此项"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
         +'<button class="ei-del" title="删除此项">&times;</button>'
         +'</div>';
     });
@@ -1257,18 +1275,50 @@ function renderSalary(){
     saveExtraIncome(arr);
     renderSalary();  // 重新渲染整个工资页（含刷新总额）
   };
-  /* 额外收入：删除（事件委托） */
+  /* 额外收入：编辑 / 删除（事件委托） */
   document.getElementById('extraIncomeList').onclick=function(e){
-    const btn=e.target.closest('.ei-del');
-    if(!btn) return;
-    const item=btn.closest('.extra-income-item');
-    if(!item) return;
-    const eid=item.dataset.eid;
-    confirmDialog('确定删除「'+esc(item.querySelector('.ei-desc').textContent)+'」这条额外收入？',()=>{
-      const arr=loadExtraIncome().filter(x=>x.id!==eid);
-      saveExtraIncome(arr);
+    /* 编辑按钮 → 进入编辑模式 */
+    const editBtn=e.target.closest('.ei-edit');
+    if(editBtn){
+      const item=editBtn.closest('.extra-income-item');
+      if(item) item.classList.add('editing');
+      return;
+    }
+    /* 保存编辑 */
+    const saveBtn=e.target.closest('.ei-save');
+    if(saveBtn){
+      const item=saveBtn.closest('.extra-income-item');
+      if(!item) return;
+      const eid=item.dataset.eid;
+      const newDesc=item.querySelector('.ei-edit-desc').value.trim();
+      const newAmt=parseFloat(item.querySelector('.ei-edit-amt').value);
+      if(!newDesc){ alert('请填写项目名称'); return; }
+      if(isNaN(newAmt)||newAmt<=0){ alert('请填写有效金额'); return; }
+      const arr=loadExtraIncome();
+      const idx=arr.findIndex(x=>x.id===eid);
+      if(idx>=0){ arr[idx].desc=newDesc; arr[idx].amount=newAmt; saveExtraIncome(arr); }
       renderSalary();
-    });
+      return;
+    }
+    /* 取消编辑 */
+    const cancelBtn=e.target.closest('.ei-cancel');
+    if(cancelBtn){
+      const item=cancelBtn.closest('.extra-income-item');
+      if(item) item.classList.remove('editing');
+      return;
+    }
+    /* 删除按钮 */
+    const delBtn=e.target.closest('.ei-del');
+    if(delBtn){
+      const item=delBtn.closest('.extra-income-item');
+      if(!item) return;
+      const eid=item.dataset.eid;
+      confirmDialog('确定删除「'+esc(item.querySelector('.ei-desc').textContent)+'」这条额外收入？',()=>{
+        const arr=loadExtraIncome().filter(x=>x.id!==eid);
+        saveExtraIncome(arr);
+        renderSalary();
+      });
+    }
   };
 }
 
@@ -2127,7 +2177,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-08-15-v6';
+const APP_VERSION = '2026-08-15-v7';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
