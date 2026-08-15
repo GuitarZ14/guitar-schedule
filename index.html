@@ -392,6 +392,23 @@
   .salary-note b{color:var(--primary);}
   .salary-refresh{display:inline-flex;align-items:center;gap:4px;margin-left:auto;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--glass);color:var(--text-2);font-size:13px;font-family:var(--font-body);cursor:pointer;transition:background var(--t),color var(--t),border-color var(--t);}
   .salary-refresh:hover{background:var(--primary-soft);color:var(--primary);border-color:rgba(189,133,92,0.3);}
+  /* ===== 额外收入备注 ===== */
+  .extra-income{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--r-lg);padding:var(--s5) var(--s6);box-shadow:var(--sh-1);}
+  .extra-income h4{margin:0 0 var(--s3);font-size:15px;color:var(--text);font-weight:600;display:flex;align-items:center;gap:6px;}
+  .extra-income h4 svg{width:16px;height:16px;color:var(--green);flex-shrink:0;}
+  .extra-income-list{display:flex;flex-direction:column;gap:6px;margin-bottom:var(--s3);}
+  .extra-income-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,0.5);border-radius:var(--r-sm);border:1px solid var(--line);}
+  .extra-income-item .ei-desc{flex:1;font-size:14px;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .extra-income-item .ei-amt{font-size:14px;font-weight:600;color:var(--green);white-space:nowrap;}
+  .extra-income-item .ei-del{width:26px;height:26px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:color var(--t),background var(--t);flex-shrink:0;}
+  .extra-income-item .ei-del:hover{color:#e74c3c;background:rgba(231,76,60,0.1);}
+  .extra-income-form{display:flex;gap:8px;align-items:flex-end;}
+  .extra-income-form input[type=text]{flex:1;min-width:0;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:rgba(255,255,255,0.7);font-family:var(--font-body);color:var(--text);}
+  .extra-income-form input[type=number]{width:90px;min-width:70px;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:rgba(255,255,255,0.7);font-family:var(--font-display);font-weight:600;color:var(--green);text-align:center;}
+  .extra-income-form button{padding:9px 14px;border:none;background:var(--primary);color:#fff;border-radius:var(--r-sm);font-size:13px;font-family:var(--font-body);cursor:pointer;white-space:nowrap;transition:opacity var(--t);}
+  .extra-income-form button:hover{opacity:.85;}
+  .extra-income-sum{text-align:center;padding:var(--s2) var(--s4);margin-top:var(--s2);font-size:13px;color:var(--muted);}
+  .extra-income-sum b{color:var(--green);font-size:16px;}
   @media(max-width:860px){
     .salary-result .amount{font-size:36px;}
     .salary-input-row input[type=number]{width:110px;font-size:18px;}
@@ -461,7 +478,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-5 3 3 5-7"/></svg>月度统计
       </button>
       <button class="nav-item" data-tab="salary">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>课时工资
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>工资统计
       </button>
     </nav>
     <div class="remind-card" id="remindCard">
@@ -1122,6 +1139,11 @@ function renderStats(){
 const SALARY_BASE=5500;       // 基础工资
 const SALARY_HOURS=66;        // 包含课时
 const SALARY_OVERTIME_RATE=90;// 超出单价(元/节)
+const EXTRA_INCOME_KEY = 'wb_guitar_extra_income';  // 额外收入 localStorage key
+
+function loadExtraIncome(){ try{ return JSON.parse(localStorage.getItem(EXTRA_INCOME_KEY)||'[]'); }catch(e){ return []; } }
+function saveExtraIncome(arr){ localStorage.setItem(EXTRA_INCOME_KEY, JSON.stringify(arr)); }
+function sumExtraIncome(){ return loadExtraIncome().reduce((s,i)=>s+(Number(i.amount)||0),0); }
 
 function calcSalary(hours){
   hours=Math.max(0, Number(hours)||0);
@@ -1151,12 +1173,15 @@ function salaryUpdate(val, box){
     return;
   }
   const r=calcSalary(val);
+  const extra=sumExtraIncome();
+  const grandTotal=r.total+extra;
   box.innerHTML='<div class="label">应得工资</div>'
-    +'<div class="amount">¥<span id="salaryTotal">'+r.total.toFixed(0)+'</span></div>'
+    +'<div class="amount">¥<span id="salaryTotal">'+grandTotal.toFixed(0)+'</span></div>'
     +'<div class="salary-breakdown">'
     +'<div class="salary-breakdown-item"><div class="val">¥'+r.base.toFixed(0)+'</div><div class="lbl">基础工资</div></div>'
     +(r.overtimeHours>0?'<div class="salary-breakdown-item"><div class="val" style="color:var(--green)">+'+r.overtime.toFixed(0)+'</div><div class="lbl">超时('+r.overtimeHours+'节×90)</div></div>':'')
     +'<div class="salary-breakdown-item"><div class="val">'+Number(val)+'/'+SALARY_HOURS+'</div><div class="lbl">实际/标准课时</div></div>'
+    +(extra>0?'<div class="salary-breakdown-item"><div class="val" style="color:var(--green)">+¥'+extra.toFixed(0)+'</div><div class="lbl">额外收入</div></div>':'')
     +'</div>';
 }
 
@@ -1178,6 +1203,30 @@ function renderSalary(){
     +'<div class="salary-note">统计范围：<b>'+ym+'-01 ~ '+today+'</b>｜状态=「已上」｜结果 <b>'+auto+'</b> 节（本月「已上」总计 '+monthTotalDone+' 节，与统计页一致）</div></div>';
   /* 结果卡片 */
   html+='<div class="salary-card salary-result" id="salaryResultBox"></div>';
+  /* 额外收入备注 */
+  const ei=loadExtraIncome();
+  const eiTotal=ei.reduce((s,i)=>s+(Number(i.amount)||0),0);
+  html+='<div class="extra-income">'
+    +'<h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>额外收入备注</h4>'
+    +'<div class="extra-income-list" id="extraIncomeList">';
+  if(ei.length===0){
+    html+='<div style="font-size:13px;color:var(--muted);padding:8px 0;">暂无额外收入记录，可在下方添加（如琴弦更换、维修费、售琴等）</div>';
+  }else{
+    ei.forEach(item=>{
+      html+='<div class="extra-income-item" data-eid="'+item.id+'">'
+        +'<span class="ei-desc">'+esc(item.desc)+'</span>'
+        +'<span class="ei-amt">¥'+Number(item.amount).toFixed(0)+'</span>'
+        +'<button class="ei-del" title="删除此项">&times;</button>'
+        +'</div>';
+    });
+  }
+  html+='</div>'
+    +'<div class="extra-income-sum">额外收入小计：<b>¥'+eiTotal.toFixed(0)+'</b></div>'
+    +'<div class="extra-income-form">'
+    +'<input type="text" id="eiDesc" placeholder="项目名称（如：换琴弦）" maxlength="30">'
+    +'<input type="number" id="eiAmt" placeholder="金额" min="0" step="1">'
+    +'<button id="eiAdd">添加</button>'
+    +'</div></div>';
   /* 规则说明 */
   html+='<div class="salary-rules">'
     +'<b style="color:var(--text)">计算规则</b><br>'
@@ -1196,6 +1245,30 @@ function renderSalary(){
   document.getElementById('salaryRefresh').onclick=()=>{
     const a=countMonthDoneToToday();
     input.value=a; salaryUpdate(a, box);
+  };
+  /* 额外收入：添加 */
+  document.getElementById('eiAdd').onclick=()=>{
+    const desc=document.getElementById('eiDesc').value.trim();
+    const amt=parseFloat(document.getElementById('eiAmt').value);
+    if(!desc){ alert('请填写项目名称'); return; }
+    if(isNaN(amt)||amt<=0){ alert('请填写有效金额'); return; }
+    const arr=loadExtraIncome();
+    arr.push({id:uid(), desc, amount:amt});
+    saveExtraIncome(arr);
+    renderSalary();  // 重新渲染整个工资页（含刷新总额）
+  };
+  /* 额外收入：删除（事件委托） */
+  document.getElementById('extraIncomeList').onclick=function(e){
+    const btn=e.target.closest('.ei-del');
+    if(!btn) return;
+    const item=btn.closest('.extra-income-item');
+    if(!item) return;
+    const eid=item.dataset.eid;
+    confirmDialog('确定删除「'+esc(item.querySelector('.ei-desc').textContent)+'」这条额外收入？',()=>{
+      const arr=loadExtraIncome().filter(x=>x.id!==eid);
+      saveExtraIncome(arr);
+      renderSalary();
+    });
   };
 }
 
@@ -1443,7 +1516,7 @@ function download(name,content,type){
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 function exportJson(){
-  const data={ _type:'guitar-workspace', students, courses };
+  const data={ _type:'guitar-workspace', students, courses, extraIncome:loadExtraIncome() };
   download('吉他教学工作台备份.json', JSON.stringify(data,null,2), 'application/json');
 }
 function exportCsv(ym,map,totalCount,totalMin){
@@ -1466,6 +1539,7 @@ function importJson(file){
       confirmDialog('导入将覆盖当前全部数据，确定继续？', ()=>{
         students=Array.isArray(d.students)?d.students:[];
         courses=d.courses;
+        if(Array.isArray(d.extraIncome)) saveExtraIncome(d.extraIncome);
         saveStudents(); saveCourses();
         weekStart=mondayOf(todayStr()); currentMonth=ymStr(new Date());
         render();
@@ -1476,7 +1550,7 @@ function importJson(file){
 }
 function clearAll(){
   confirmDialog('将清空全部学员与课程数据，且无法恢复（请先导出备份）。确定清空？', ()=>{
-    students=[]; courses=[]; saveStudents(); saveCourses(); render();
+    students=[]; courses=[]; saveExtraIncome([]); saveStudents(); saveCourses(); render();
   });
 }
 
@@ -1571,7 +1645,7 @@ async function doBackup(silent){
     const res=await fetch(JB_API+'/'+bin, {
       method:'PUT',
       headers:{ 'X-Master-Key':key, 'Content-Type':'application/json' },
-      body: JSON.stringify({ students, courses, pushSubs: existingSubs, updatedAt: now })
+      body: JSON.stringify({ students, courses, extraIncome:loadExtraIncome(), pushSubs: existingSubs, updatedAt: now })
     });
     if(!res.ok){
       const errBody = await res.text().catch(()=>'');
@@ -1604,6 +1678,7 @@ async function autoRestoreOnLoad(key){
     if(cloudTime > localTime){
       students = Array.isArray(data.students)? data.students : students;
       courses = Array.isArray(data.courses)? data.courses : courses;
+      if(Array.isArray(data.extraIncome)) saveExtraIncome(data.extraIncome);
       localStorage.setItem(STORE.students, JSON.stringify(students));
       localStorage.setItem(STORE.courses, JSON.stringify(courses));
       markLocalUpdated();
@@ -1933,7 +2008,7 @@ function switchTab(){
   const onWeek = currentTab==='week';
   const topCtrl=document.getElementById('topCtrl'); if(topCtrl) topCtrl.style.display = onWeek?'':'none';
   const topAdd=document.getElementById('topAdd'); if(topAdd) topAdd.style.display = onWeek?'inline-flex':'none';
-  const tt=document.getElementById('topTitle'); if(tt) tt.textContent = ({week:'课表',edit:'学员管理',stats:'月度统计',salary:'课时工资'})[currentTab]||'';
+  const tt=document.getElementById('topTitle'); if(tt) tt.textContent = ({week:'课表',edit:'学员管理',stats:'月度统计',salary:'工资统计'})[currentTab]||'';
 }
 function render(){
   switchTab();
@@ -2052,7 +2127,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-08-14-v5';
+const APP_VERSION = '2026-08-15-v6';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
