@@ -168,12 +168,42 @@ body background:#F3EDE1;  theme-color:#BD855C;
 
 ---
 
+## ⑨ 交互按钮可见性（浅色主题禁隐形按钮）✅ 已踩坑
+
+**上下文**：燕麦米色浅底（`--glass:#FDFBF6` / 页面 `#F3EDE1`）+ 交互控件（编辑/操作类小按钮）。
+
+**坑（2026-08-15）**：编辑按钮做成 `26×26px` 圆形 + `color:var(--muted)` 灰色 + 无边框无背景的纯 SVG 图标 → 在浅底上肉眼几乎不可见；代码已部署、功能正常，但用户反复说"看不到"，排查多轮才定位为**视觉对比度**而非缓存/部署问题。
+
+**约束**：
+① 功能性按钮**禁止**「无边框 + 低对比度灰 + 纯图标 + 小尺寸（<32px）」组合
+② 交互控件至少满足其一：带**文字标签** / 带**边框+浅背景** / 高对比主色
+③ 浅色主题下按钮文字色用 `var(--primary)`（主色），不用 `var(--muted)`
+
+**正解（可见药丸按钮）**：
+```css
+.act-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;
+  border:1px solid var(--line);border-radius:var(--r-sm);
+  background:rgba(255,255,255,0.6);color:var(--primary);
+  font-size:12px;font-weight:500;cursor:pointer;}
+.act-btn:hover{background:var(--primary-soft);border-color:var(--primary);}
+```
+```html
+<button class="act-btn"><svg …></svg>编辑</button>  <!-- 图标 + 文字，必可见 -->
+```
+
+---
+
 ## 提交 / 部署检查清单（每次改完必做）
 
 1. 改 CSS/JS → **升级 `service-worker.js` 的 `CACHE` 版本号**（如 `guitar-wb-v3` → `v4`）+ **同步 `index.html` 的 `APP_VERSION` 哨兵**
 2. `node --check` 提取 script 验证语法（本项目 2 个 script 块）
 3. `git push origin main` → GitHub Pages；`workbuddy_cloudstudio_deploy` → 备份预览
 4. 交付时提醒用户**强制刷新（`Cmd+Shift+R` / `Ctrl+Shift+R`）** 清旧 SW 缓存
+5. **部署后三层验证（缺一不可）**：
+   - ① 部署成功：`curl` 线上源码确认含新功能关键字 + `APP_VERSION` 已升
+   - ② 真实渲染：真实浏览器打开 / 截图确认页面正常加载
+   - ③ 视觉可见：确认新增 UI 元素**看得见**（对比度/尺寸达标），而非仅"HTML 存在"
+   - 注意：同沙箱反复重部署破不了 SW `cacheFirst` 死循环 → 用 `unpublish` + 全新 deploy 换 URL
 
 ---
 
@@ -181,6 +211,8 @@ body background:#F3EDE1;  theme-color:#BD855C;
 
 | 日期 | 场景 | 坑 | 正解 |
 |------|------|----|------|
+| 2026-08-15 | 编辑按钮看不到 | 纯灰图标按钮在浅底不可见，误判为 SW 缓存死循环，多轮排查 | 改带文字+边框+主色的可见药丸按钮；验证分三层（部署/渲染/可见） |
+| 2026-08-15 | CloudStudio 强制刷新无新功能 | 旧沙箱早期 SW 陷入 `cacheFirst` 死循环，同沙箱重部署无效 | `unpublish` 旧沙箱 + 全新 `deploy` 换 URL |
 | 2026-08-14 | tooltip 横向排列 | `flex-wrap` + 独立 span 仍竖堆（td 压窄浮层） | `width:max-content` 突破 td 约束 |
 | 2026-08-14 | 强制刷新旧布局残留 | SW `cacheFirst` 返回旧 index.html | CACHE 升级 + index.html `networkFirst` + APP_VERSION 哨兵 + updatefound 提示 |
 | 2026-08-12 | 主题换肤 | 旧 `rgba()` 主色残留（蓝紫） | 全量 grep 替换 + `theme-color` meta 同步 |
