@@ -1089,41 +1089,32 @@ function renderEdit(){
 /* ===== stats view ===== */
 function monthMap(ym){
   const map={};
-  const init=()=>({count:0,min:0,absent:0,planned:0,plannedMin:0});
+  const init=()=>({count:0,min:0,absent:0});
   courses.filter(c=>c.status==='done'&&c.date.indexOf(ym)===0).forEach(c=>{
     const e=map[c.studentId]||(map[c.studentId]=init());
     e.count++; e.min+=dur(c);
   });
-  // 补上只有请假 / 计划记录的学员
+  // 补上只有请假记录的学员
   courses.filter(c=>c.status==='absent'&&c.date.indexOf(ym)===0).forEach(c=>{
     if(!map[c.studentId]) map[c.studentId]=init();
     map[c.studentId].absent++;
-  });
-  courses.filter(c=>c.status==='planned'&&c.date.indexOf(ym)===0).forEach(c=>{
-    const e=map[c.studentId]||(map[c.studentId]=init());
-    e.planned++; e.plannedMin+=dur(c);
   });
   return map;
 }
 function svgBars(map){
   const ids=Object.keys(map);
   if(!ids.length) return '<p class="empty">本月暂无课程记录。</p>';
-  const data=ids.map(id=>({id, name:studentName(id), min:map[id].min, planned:map[id].plannedMin||0}));
+  const data=ids.map(id=>({id, name:studentName(id), min:map[id].min}));
   const maxDone=Math.max(...data.map(d=>d.min),1);
-  const maxPlan=Math.max(...data.map(d=>d.planned),1);
-  const max=Math.max(maxDone,maxPlan);
-  const bw=16, innerGap=4, groupGap=24, h=150, base=h-26;
+  const max=maxDone;
+  const bw=16, groupGap=24, h=150, base=h-26;
   // 保证 viewBox 宽度不小于 300，避免少数据时过度放大
-  const rawW=data.length*(bw*2+innerGap+groupGap);
+  const rawW=data.length*(bw+groupGap);
   const W=Math.max(rawW,300);
   const offsetX=(W-rawW)/2;  // 居中偏移
   let s='';
   data.forEach((d,i)=>{
-    const gx=offsetX+groupGap/2+i*(bw*2+innerGap+groupGap);
-    // 计划时长（浅色描边副柱，置于右侧）
-    const ph=Math.max(4,d.planned/max*(base-14));
-    const py=base-ph;
-    s+='<rect x="'+(gx+bw+innerGap)+'" y="'+py+'" width="'+bw+'" height="'+ph+'" rx="4" fill="rgba(189,133,92,0.20)" stroke="rgba(189,133,92,0.55)" stroke-width="1"/>';
+    const gx=offsetX+groupGap/2+i*(bw+groupGap);
     // 已上时长（实色，学员色主柱）
     const bh=Math.max(4,d.min/max*(base-14));
     const y=base-bh;
@@ -1133,8 +1124,7 @@ function svgBars(map){
   });
   const svg='<svg viewBox="0 0 '+W+' '+h+'" class="chart" preserveAspectRatio="xMidYMid meet">'+s+'</svg>';
   const legend='<div style="font-size:12px;color:var(--muted);margin-top:8px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">'
-    +'<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:3px;background:var(--primary);display:inline-block;"></span>已上时长</span>'
-    +'<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:3px;background:rgba(189,133,92,0.20);border:1px solid rgba(189,133,92,0.55);display:inline-block;"></span>计划时长</span></div>';
+    +'<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:3px;background:var(--primary);display:inline-block;"></span>已上时长</span></div>';
   return svg+legend;
 }
 function renderStats(){
@@ -1144,22 +1134,19 @@ function renderStats(){
   let totalCount=0,totalMin=0,totalAbsent=0;
   ids.forEach(id=>{ totalCount+=map[id].count; totalMin+=map[id].min; totalAbsent+=(map[id].absent||0); });
   const studentCount=ids.length;
-  const plannedCount = courses.filter(c=>c.status==='planned'&&c.date.indexOf(ym)===0).length;
-  const totalScheduled = totalCount + totalAbsent + plannedCount;
   let html='<div class="weeknav"><span class="range">选择月份</span>'
     +'<input type="month" id="monthPick" value="'+esc(ym)+'" style="max-width:180px">'
     +'<span class="spacer" style="margin-left:auto"></span>'
     +'<button id="expCsv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>导出CSV</button></div>';
   html+='<div class="kpis">'
     +'<div class="kpi"><b>'+totalCount+'</b><span>已上课时(节)</span></div>'
-    +'<div class="kpi"><b>'+totalScheduled+'</b><span>排课总数(节)</span></div>'
     +'<div class="kpi"><b>'+totalAbsent+'</b><span>请假(节)</span></div>'
     +'<div class="kpi"><b>'+studentCount+'</b><span>上课学员</span></div></div>';
   html+='<div class="panel"><h3 style="margin:0 0 10px;color:var(--text);font-size:16px">学员时长分布</h3>'+svgBars(map)+'</div>';
   html+='<div class="panel"><h3 style="margin:0 0 10px;color:var(--text);font-size:16px">明细报表</h3>';
   if(!ids.length) html+='<p class="empty">本月暂无课程记录。</p>';
   else{
-    html+='<table><thead><tr><th>学员</th><th class="num">节数</th><th class="num">计划</th><th class="num">请假</th><th class="num">总时长</th><th class="num">占比</th></tr></thead><tbody>';
+    html+='<table><thead><tr><th>学员</th><th class="num">节数</th><th class="num">请假</th><th class="num">总时长</th><th class="num">占比</th></tr></thead><tbody>';
     ids.sort((a,b)=>map[b].min-map[a].min).forEach(id=>{
       const pct=totalMin? Math.round(map[id].min/totalMin*100):0;
       /* 收集该学员本月已上课日期，格式化为"X月X号"，每个日期独立 <span> 以支持横向流式排列 */
@@ -1169,7 +1156,7 @@ function renderStats(){
       const tipHtml = doneDates.length
         ? '<span class="stat-tip">'+map[id].count+'<span class="stat-tip-box">'+doneDates.map(d=>'<span>'+esc(d)+'</span>').join('')+'</span></span>'
         : map[id].count;
-      html+='<tr><td>'+esc(studentName(id))+'</td><td class="num">'+tipHtml+'</td><td class="num">'+(map[id].planned||0)+'</td><td class="num">'+(map[id].absent||0)+'</td><td class="num">'+fmtMin(map[id].min)+'</td><td class="num">'+pct+'%</td></tr>';
+      html+='<tr><td>'+esc(studentName(id))+'</td><td class="num">'+tipHtml+'</td><td class="num">'+(map[id].absent||0)+'</td><td class="num">'+fmtMin(map[id].min)+'</td><td class="num">'+pct+'%</td></tr>';
     });
     html+='</tbody></table>';
   }
@@ -2206,7 +2193,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-08-16-v1';
+const APP_VERSION = '2026-08-16-v2';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
