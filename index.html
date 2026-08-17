@@ -703,7 +703,9 @@
     </p>
     <label style="font-size:14px;color:var(--text-2);display:block;margin-bottom:4px;">API Key</label>
     <input id="jbKeyInput" type="text" placeholder="粘贴你的 JSONBin API Key" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;font-family:inherit;">
-    <p id="jbKeyHint" style="margin:8px 0 14px;font-size:12px;color:var(--muted);"></p>
+    <p id="jbKeyHint" style="margin:8px 0 10px;font-size:12px;color:var(--muted);"></p>
+    <p style="margin:0 0 10px;font-size:12px;color:var(--muted);line-height:1.5;">保存后点「复制带配置链接」并收藏。以后重新部署，打开此链接会自动恢复云端配置，无需再填 Key。</p>
+    <button type="button" class="ghost" id="btnCopyCfgUrl" onclick="copyConfigUrl()" style="width:100%;margin-bottom:12px;">复制带配置链接</button>
     <div class="sheet-actions">
       <span class="spacer"></span>
       <button type="button" class="ghost" data-close="cloudConfigModal">取消</button>
@@ -726,6 +728,39 @@ function jbKey(){ return localStorage.getItem(STORE.jbKey)||''; }
 function jbBin(){ return localStorage.getItem(STORE.jbBin)||''; }
 function setJBKey(k){ if(k) localStorage.setItem(STORE.jbKey, k.trim()); }
 function setJBBin(id){ if(id) localStorage.setItem(STORE.jbBin, id.trim()); }
+// ===== 配置携带在 URL 片段（#），重新部署后也不丢 =====
+// 片段格式： #jbkey=XXXX&jbbin=YYYY （片段（# 之后）不会发送到服务器，仅存在于浏览器地址栏/书签，安全）
+function readConfigFromHash(){
+  const h=(location.hash||'').replace(/^#/,'');
+  if(!h) return null;
+  const params=new URLSearchParams(h);
+  const key=params.get('jbkey');
+  if(!key) return null;
+  return { key:decodeURIComponent(key), bin: params.get('jbbin')?decodeURIComponent(params.get('jbbin')):'' };
+}
+function applyHashConfig(){
+  const cfg=readConfigFromHash();
+  if(cfg && cfg.key){
+    setJBKey(cfg.key);
+    if(cfg.bin) setJBBin(cfg.bin);
+  }
+}
+function syncHashFromConfig(key, bin){
+  try{
+    const params=new URLSearchParams();
+    if(key) params.set('jbkey', encodeURIComponent(key));
+    if(bin) params.set('jbbin', encodeURIComponent(bin||''));
+    const newHash=params.toString()?('#'+params.toString()):'';
+    if(location.hash!==newHash) history.replaceState(null, '', newHash||location.pathname+location.search);
+  }catch(e){ /* 忽略：不影响备份功能 */ }
+}
+function currentConfigUrl(){
+  const params=new URLSearchParams();
+  const k=jbKey(), b=jbBin();
+  if(k) params.set('jbkey', encodeURIComponent(k));
+  if(b) params.set('jbbin', encodeURIComponent(b));
+  return location.origin+location.pathname+(params.toString()?('#'+params.toString()):'');
+}
 const WEEKDAYS = ['一','二','三','四','五','六','日'];
 let lastClickedDate = null; // 记住用户最后点击的日期列，新增课程时自动填入
 // 学员色板（按学员分色，循环使用）—— 一圈 12 色，区分不同学员的课程
@@ -1865,6 +1900,7 @@ async function saveCloudConfig(){
           render();
           showToast('已从云端同步 ✓（'+Object.keys(d.students||{}).length+' 学员，'+d.courses.length+' 条课程）');
           setCloudStatus('已同步','ok');
+          syncHashFromConfig(key, bestBin);
           openCloudConfigDone();
           return;
         }
@@ -1873,10 +1909,26 @@ async function saveCloudConfig(){
   }
   // 无已有空间 或 全部读取失败 → 上传本地数据
   const ok=await doBackup(false);
-  if(ok){ openCloudConfigDone(); }
+  if(ok){ syncHashFromConfig(key, jbBin()); openCloudConfigDone(); }
 }
 function openCloudConfigDone(){
   showToast('云端已启用，开始自动同步 ✓');
+}
+// 复制「带配置的链接」：把当前 key+bin 写进 URL 片段，重新部署后打开此链接即自动恢复
+function copyConfigUrl(){
+  if(!jbKey()){ alert('请先填入并保存 API Key，再复制链接'); return; }
+  const url=currentConfigUrl();
+  const done=()=>showToast('已复制带配置的链接 ✓（重新部署后打开它即可）');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done, ()=>fallbackCopy(url));
+  }else{ fallbackCopy(url); }
+}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{ document.execCommand('copy'); showToast('已复制带配置的链接 ✓'); }
+  catch(e){ window.prompt('复制下面的链接：', text); }
+  document.body.removeChild(ta);
 }
 
 /* =========================================================
@@ -2126,6 +2178,7 @@ function init(){
   document.getElementById('fileImport').onchange=e=>{ if(e.target.files[0]) importJson(e.target.files[0]); e.target.value=''; };
   document.getElementById('btnClear').onclick=clearAll;
   // 云端备份 / 恢复
+  applyHashConfig(); // 若链接带 #jbkey=... 配置，先写入本地，重新部署后也不丢
   initCloud();
   document.getElementById('btnCloudBackup').onclick=backupToCloud;
   document.getElementById('btnCloudRestore').onclick=restoreFromCloud;
@@ -2193,7 +2246,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-08-16-v2';
+const APP_VERSION = '2026-08-17-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
