@@ -272,6 +272,20 @@
   .row-card .ops button{padding:8px 12px; min-height:40px; font-size:14px;}
   .pill{font-size:12px; padding:3px 10px; border-radius:var(--r-pill); background:var(--primary-soft); color:var(--primary); font-weight:600;}
   .swatch{width:14px;height:14px;border-radius:50%; display:inline-block; margin-right:9px; box-shadow:var(--sh-1); flex-shrink:0;}
+  /* ===== 学员课时模块 ===== */
+  .stu-hours{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+  .stu-hours .hh{display:flex; align-items:baseline; gap:6px; border-radius:var(--r-sm); padding:5px 11px; font-size:12px; background:var(--glass); border:1px solid var(--glass-border); color:var(--muted);}
+  .stu-hours .hh b{font-size:15px; font-weight:700; color:var(--text-2); font-variant-numeric:tabular-nums; font-family:var(--font-display);}
+  .stu-hours .hh .gift{font-size:11px; opacity:.85; font-weight:500;}
+  .stu-hours .hh.remain{background:var(--green-soft); border-color:transparent; color:var(--green);}
+  .stu-hours .hh.remain b{color:var(--green);}
+  .stu-hours .hh.remain.low{background:var(--red-soft); border-color:transparent; color:var(--red);}
+  .stu-hours .hh.remain.low b{color:var(--red);}
+  .stu-hours .hh.unset{background:transparent; border-style:dashed; color:var(--muted-2);}
+  .inline-field{display:flex; align-items:center; gap:10px;}
+  .inline-field input[type=number]{flex:1; min-width:0;}
+  .chk{display:inline-flex; align-items:center; gap:6px; font-size:14px; color:var(--text-2); margin:0; background:var(--glass); border:1px solid var(--glass-border); border-radius:var(--r-sm); padding:9px 13px; min-height:44px; cursor:pointer; white-space:nowrap; flex-shrink:0;}
+  .chk input{width:auto; min-width:auto; margin:0;}
   .empty{color:var(--muted); text-align:center; padding:30px; font-size:14px;}
 
   /* ===== 月度统计 ===== */
@@ -628,6 +642,13 @@
       </select>
     </label>
     <label><span class="lab">备注</span><textarea id="sNote" placeholder="如：左手按弦偏弱"></textarea></label>
+    <label><span class="lab">报名课时（总课时）</span><input type="number" id="sTotal" min="0" inputmode="numeric" placeholder="如：40"></label>
+    <label><span class="lab">赠送课时</span>
+      <div class="inline-field">
+        <input type="number" id="sGift" min="0" inputmode="numeric" placeholder="如：4">
+        <label class="chk"><input type="checkbox" id="sGiftNone" onchange="document.getElementById('sGift').disabled=this.checked; if(this.checked) document.getElementById('sGift').value='';"> 无</label>
+      </div>
+    </label>
     <div class="sheet-actions">
       <button type="button" id="studentDelete" class="danger">删除</button>
       <span class="spacer"></span>
@@ -815,10 +836,10 @@ function findDuplicateCourse(studentId, date, start, end, excludeId){
 }
 
 const SEED_STUDENTS = [
-  {id:'s1', name:'小明', level:'入门弹唱', note:'左手按弦偏弱'},
-  {id:'s2', name:'乐乐', level:'电吉他Solo', note:'节奏感好'},
-  {id:'s3', name:'张同学', level:'进阶弹唱', note:''},
-  {id:'s4', name:'王芳', level:'入门弹唱', note:''},
+  {id:'s1', name:'小明', level:'入门弹唱', note:'左手按弦偏弱', totalHours:40, giftHours:4},
+  {id:'s2', name:'乐乐', level:'电吉他Solo', note:'节奏感好', totalHours:24, giftHours:0},
+  {id:'s3', name:'张同学', level:'进阶弹唱', note:'', totalHours:12, giftHours:2},
+  {id:'s4', name:'王芳', level:'入门弹唱', note:'', totalHours:3, giftHours:0},
 ];
 const SEED_COURSES = [
   {id:'c1', studentId:'s1', date:'2026-08-06', start:'18:00', end:'19:00', song:'童年', focus:'C-G-Am-F 转换', note:'注意扫弦节奏', status:'planned'},
@@ -1104,6 +1125,21 @@ function renderEdit(){
       if(absentCount) html+='<span style="color:#5B9BD5">请假: '+absentCount+'节</span>';
       if(plannedCount) html+='<span>待上: '+plannedCount+'节</span>';
       html+='</div>';
+      /* ===== 学员课时模块 ===== */
+      const hTotal=(s.totalHours!=null && !isNaN(s.totalHours))?Number(s.totalHours):null;
+      const hGift=Number(s.giftHours)||0;
+      const hSum=(hTotal!=null)?(hTotal+hGift):null;
+      const hRemain=(hSum!=null)?Math.max(0,hSum-doneCount):null;
+      const hLow=(hRemain!=null && hRemain<=3);
+      if(hTotal!=null){
+        html+='<div class="stu-hours">'
+          +'<div class="hh"><span>总课时</span><b>'+hSum+(hGift>0?'<span class="gift">（赠'+hGift+'）</span>':'')+'</b></div>'
+          +'<div class="hh"><span>已上</span><b>'+doneCount+'</b></div>'
+          +'<div class="hh remain'+(hLow?' low':'')+'"><span>剩余</span><b>'+hRemain+'</b></div>'
+          +'</div>';
+      }else{
+        html+='<div class="stu-hours"><div class="hh unset"><span>总课时未设置 · 点「编辑」填写</span></div></div>';
+      }
       html+='</div>'
         +'<div class="ops"><button data-stu-edit="'+s.id+'">编辑</button><button class="danger" data-stu-del="'+s.id+'">删除</button></div></div>';
     });
@@ -1486,6 +1522,10 @@ function openStudentModal(id){
     document.getElementById('sName').value=s.name;
     document.getElementById('sLevel').value=s.level||'其他';
     document.getElementById('sNote').value=s.note||'';
+    document.getElementById('sTotal').value=(s.totalHours!=null)?s.totalHours:'';
+    const g0=Number(s.giftHours)||0;
+    document.getElementById('sGift').value=g0>0?g0:'';
+    const gn=document.getElementById('sGiftNone'); gn.checked=(g0===0); document.getElementById('sGift').disabled=gn.checked;
     document.getElementById('studentDelete').style.display='';
   }else{
     editingStudentId=null;
@@ -1493,6 +1533,9 @@ function openStudentModal(id){
     document.getElementById('sName').value='';
     document.getElementById('sLevel').value='入门弹唱';
     document.getElementById('sNote').value='';
+    document.getElementById('sTotal').value='';
+    document.getElementById('sGift').value='';
+    const gn2=document.getElementById('sGiftNone'); gn2.checked=true; document.getElementById('sGift').disabled=true;
     document.getElementById('studentDelete').style.display='none';
   }
   m.hidden=false;
@@ -1577,7 +1620,11 @@ function generateRepeat(){
 function saveStudent(){
   const name=document.getElementById('sName').value.trim();
   if(!name){ alert('请填写学员姓名'); return; }
-  const data={ name, level:document.getElementById('sLevel').value, note:document.getElementById('sNote').value.trim() };
+  const gn=document.getElementById('sGiftNone');
+  const gift = gn.checked?0:(Number(document.getElementById('sGift').value)||0);
+  const tv=document.getElementById('sTotal').value;
+  const total = (tv==='')?null:(Number(tv)||0);
+  const data={ name, level:document.getElementById('sLevel').value, note:document.getElementById('sNote').value.trim(), totalHours:total, giftHours:gift };
   if(editingStudentId){
     const s=students.find(x=>x.id===editingStudentId); Object.assign(s,data);
   }else{
@@ -2246,7 +2293,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-08-17-v1';
+const APP_VERSION = '2026-08-20-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
