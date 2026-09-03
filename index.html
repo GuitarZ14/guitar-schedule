@@ -438,7 +438,31 @@
   .extra-income-form button:hover{opacity:.85;}
   .extra-income-sum{text-align:center;padding:var(--s2) var(--s4);margin-top:var(--s2);font-size:13px;color:var(--muted);}
   .extra-income-sum b{color:var(--green);font-size:16px;}
+  .salary-month-row{display:flex; align-items:center; gap:var(--s4); flex-wrap:wrap; margin-bottom:var(--s3);}
+  .salary-month-row label{font-size:15px; color:var(--text-2); font-weight:500; white-space:nowrap;}
+  .salary-month-row input[type=month]{width:160px; font-size:16px; padding:10px 12px; border:1px solid var(--line); border-radius:var(--r-sm); background:rgba(255,255,255,0.7); color:var(--text); font-family:var(--font-body);}
+  .salary-month-row .month-count{font-size:15px; color:var(--muted);}
+  .salary-month-row .month-count b{color:var(--primary); font-family:var(--font-display); font-size:20px; margin:0 4px;}
+  .salary-history{background:var(--glass); border:1px solid var(--glass-border); border-radius:var(--r-lg); padding:var(--s5) var(--s6); box-shadow:var(--sh-1);}
+  .salary-history h4{margin:0 0 var(--s3); font-size:15px; color:var(--text); font-weight:600;}
+  .salary-history-list{display:flex; flex-direction:column; gap:8px;}
+  .salary-history-item{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; background:rgba(255,255,255,0.5); border:1px solid var(--line); border-radius:var(--r-sm); cursor:pointer; transition:background var(--t), border-color var(--t), transform var(--t);}
+  .salary-history-item:hover{background:rgba(255,255,255,0.85); border-color:var(--primary); transform:translateX(4px);}
+  .salary-history-item.active{background:var(--primary-soft); border-color:var(--primary);}
+  .shm-main{display:flex; flex-direction:column; gap:2px;}
+  .shm-main b{font-size:15px; color:var(--text); font-weight:600;}
+  .shm-main span{font-size:12px; color:var(--muted);}
+  .shm-money{text-align:right;}
+  .shm-total{display:block; font-size:20px; font-weight:700; font-family:var(--font-display); color:var(--primary);}
+  .shm-detail{font-size:11px; color:var(--muted-2); white-space:nowrap;}
   @media(max-width:860px){
+    .salary-result .amount{font-size:36px;}
+    .salary-input-row input[type=number]{width:110px;font-size:18px;}
+    .salary-breakdown{gap:var(--s3);}
+    .salary-breakdown-item{min-width:100px;padding:var(--s2) var(--s3);}
+    .salary-history-item{padding:10px 12px;}
+    .shm-total{font-size:18px;}
+  }
     .salary-result .amount{font-size:36px;}
     .salary-input-row input[type=number]{width:110px;font-size:18px;}
     .salary-breakdown{gap:var(--s3);}
@@ -858,6 +882,7 @@ let weekStart='';
 let dayCursor='';          // 日视图当前日期
 let currentMonth='';
 let filterStudent='';      // 顶部筛选：''=全部
+let salaryMonth='';        // 工资页当前选中的月份 YYYY-MM，空则默认本月
 
 /* ===== utils ===== */
 function pad(n){ return String(n).padStart(2,'0'); }
@@ -1243,9 +1268,19 @@ const SALARY_HOURS=66;        // 包含课时
 const SALARY_OVERTIME_RATE=90;// 超出单价(元/节)
 const EXTRA_INCOME_KEY = 'wb_guitar_extra_income';  // 额外收入 localStorage key
 
-function loadExtraIncome(){ try{ return JSON.parse(localStorage.getItem(EXTRA_INCOME_KEY)||'[]'); }catch(e){ return []; } }
+function loadExtraIncome(){
+  try{
+    let arr=JSON.parse(localStorage.getItem(EXTRA_INCOME_KEY)||'[]');
+    if(!Array.isArray(arr)) arr=[];
+    /* 旧数据无 month 字段时自动补为当前月份，确保按月份过滤/汇总正常 */
+    let changed=false;
+    const currentMonth=todayStr().slice(0,7);
+    arr.forEach(i=>{ if(!i.month){ i.month=currentMonth; changed=true; } });
+    if(changed) localStorage.setItem(EXTRA_INCOME_KEY, JSON.stringify(arr));
+    return arr;
+  }catch(e){ return []; }
+}
 function saveExtraIncome(arr){ localStorage.setItem(EXTRA_INCOME_KEY, JSON.stringify(arr)); }
-function sumExtraIncome(){ return loadExtraIncome().reduce((s,i)=>s+(Number(i.amount)||0),0); }
 
 function calcSalary(hours){
   hours=Math.max(0, Number(hours)||0);
@@ -1268,14 +1303,49 @@ function countMonthDoneToToday(){
   }).length;
 }
 
-function salaryUpdate(val, box){
+/* 统计指定月份已上课节数：历史月统计全月；当前月只统计到今天（避免未来日期课程被提前计入） */
+function countDoneInMonth(ym){
+  const today=todayStr();
+  const currentYm=today.slice(0,7);
+  return courses.filter(c=>{
+    if(c.status!=='done') return false;
+    if(c.date.indexOf(ym)!==0) return false;
+    if(ym===currentYm) return c.date<=today;
+    return true;
+  }).length;
+}
+
+/* 汇总额外收入；传入月份则只汇总该月，不传则汇总全部 */
+function sumExtraIncome(month){
+  let arr=loadExtraIncome();
+  if(month) arr=arr.filter(i=>i.month===month);
+  return arr.reduce((s,i)=>s+(Number(i.amount)||0),0);
+}
+
+/* 获取所有存在工资数据的月份，降序 */
+function getSalaryMonths(){
+  const set=new Set();
+  courses.filter(c=>c.status==='done').forEach(c=>set.add(c.date.slice(0,7)));
+  loadExtraIncome().forEach(i=>{ if(i.month) set.add(i.month); });
+  return Array.from(set).sort().reverse();
+}
+
+/* 获取某个月份的完整工资数据 */
+function getMonthSalary(ym){
+  const done=countDoneInMonth(ym);
+  const s=calcSalary(done);
+  const extra=sumExtraIncome(ym);
+  return { ym, done, base:s.base, overtime:s.overtime, overtimeHours:s.overtimeHours, extra, total:s.total+extra };
+}
+
+function salaryUpdate(val, box, month){
   val=(val==null?'':String(val).trim());
   if(val===''||isNaN(Number(val))){
-    box.innerHTML='<div class="label" style="color:var(--muted);padding:var(--s5) 0;">↑ 暂无已完成课时记录</div>';
+    box.innerHTML='<div class="label" style="color:var(--muted);padding:var(--s5) 0;">↑ 该月暂无已完成课时记录</div>';
     return;
   }
   const r=calcSalary(val);
-  const extra=sumExtraIncome();
+  const extra=sumExtraIncome(month);
   const grandTotal=r.total+extra;
   box.innerHTML='<div class="label">应得工资</div>'
     +'<div class="amount">¥<span id="salaryTotal">'+grandTotal.toFixed(0)+'</span></div>'
@@ -1288,29 +1358,45 @@ function salaryUpdate(val, box){
 }
 
 function renderSalary(){
-  const auto=countMonthDoneToToday();
   const today=todayStr();
-  const ym=today.slice(0,7);
-  /* 与统计页对齐：用相同逻辑算出月度总已完成数（含未来日期的，用于对照） */
+  salaryMonth = salaryMonth || today.slice(0,7);
+  const ym=salaryMonth;
+  const auto=countDoneInMonth(ym);
+  const currentYm=today.slice(0,7);
+  const isCurrent=(ym===currentYm);
+  /* 与统计页对齐：该月总已完成数（含未来日期的，用于对照） */
   const monthTotalDone=courses.filter(c=>c.status==='done'&&c.date.indexOf(ym)===0).length;
+  /* 统计范围截止日：历史月到月底，当前月到今天 */
+  const [y,m]=ym.split('-').map(Number);
+  const lastDay=ym+'-'+String(new Date(y,m,0).getDate()).padStart(2,'0');
+  const endDay=isCurrent?today:lastDay;
+  const ymLabel=ym.split('-')[0]+'年'+Number(ym.split('-')[1])+'月';
+  const countLabel=isCurrent?'到今天为止已上课':'该月已上课';
+
   let html='<div class="salary-calc">';
-  /* 输入卡片：本月1日~今日「已上」课时，自动填入，可手动微调 */
-  html+='<div class="salary-card"><div class="salary-input-row">'
-    +'<label for="salaryInput">到今天为止已上课</label>'
+  /* 月份选择 + 课时输入卡片 */
+  html+='<div class="salary-card">'
+    +'<div class="salary-month-row">'
+    +'<label for="salaryMonth">选择月份</label>'
+    +'<input type="month" id="salaryMonth" value="'+ym+'">'
+    +'<span class="month-count">'+countLabel+' <b>'+auto+'</b> 节</span>'
+    +'</div>'
+    +'<div class="salary-input-row">'
+    +'<label for="salaryInput">手动调整课时</label>'
     +'<input type="number" id="salaryInput" min="0" max="999" step="1" value="'+auto+'">'
     +'<label>节</label>'
     +'</div>'
-    +'<div class="salary-note">统计范围：<b>'+ym+'-01 ~ '+today+'</b>｜状态=「已上」｜结果 <b>'+auto+'</b> 节（本月「已上」总计 '+monthTotalDone+' 节，与统计页一致）</div></div>';
+    +'<div class="salary-note">统计范围：<b>'+ym+'-01 ~ '+endDay+'</b>｜状态=「已上」｜结果 <b>'+auto+'</b> 节（该月「已上」总计 '+monthTotalDone+' 节，与统计页一致）</div></div>';
   /* 结果卡片 */
   html+='<div class="salary-card salary-result" id="salaryResultBox"></div>';
-  /* 额外收入备注 */
-  const ei=loadExtraIncome();
+  /* 额外收入备注（按所选月份过滤） */
+  const ei=loadExtraIncome().filter(i=>i.month===ym);
   const eiTotal=ei.reduce((s,i)=>s+(Number(i.amount)||0),0);
   html+='<div class="extra-income">'
-    +'<h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>额外收入备注</h4>'
+    +'<h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'+ymLabel+' 额外收入备注</h4>'
     +'<div class="extra-income-list" id="extraIncomeList">';
   if(ei.length===0){
-    html+='<div style="font-size:13px;color:var(--muted);padding:8px 0;">暂无额外收入记录，可在下方添加（如琴弦更换、维修费、售琴等）</div>';
+    html+='<div style="font-size:13px;color:var(--muted);padding:8px 0;">该月暂无额外收入记录，可在下方添加（如琴弦更换、维修费、售琴等）</div>';
   }else{
     ei.forEach(item=>{
       html+='<div class="extra-income-item" data-eid="'+item.id+'">'
@@ -1327,12 +1413,32 @@ function renderSalary(){
     });
   }
   html+='</div>'
-    +'<div class="extra-income-sum">额外收入小计：<b>¥'+eiTotal.toFixed(0)+'</b></div>'
+    +'<div class="extra-income-sum">'+ymLabel+' 额外收入小计：<b>¥'+eiTotal.toFixed(0)+'</b></div>'
     +'<div class="extra-income-form">'
     +'<input type="text" id="eiDesc" placeholder="项目名称（如：换琴弦）" maxlength="30">'
     +'<input type="number" id="eiAmt" placeholder="金额" min="0" step="1">'
     +'<button id="eiAdd">添加</button>'
     +'</div></div>';
+  /* 历史月份列表 */
+  const months=getSalaryMonths();
+  html+='<div class="salary-history">'
+    +'<h4>历史月份</h4>'
+    +'<div class="salary-history-list">';
+  if(months.length===0){
+    html+='<div style="font-size:13px;color:var(--muted);padding:8px 0;">暂无工资记录</div>';
+  }else{
+    months.forEach(m=>{
+      const ms=getMonthSalary(m);
+      const activeClass=(m===ym?' active':'');
+      const [yy,mm]=m.split('-');
+      const monthLabel=yy+'年'+Number(mm)+'月';
+      html+='<div class="salary-history-item'+activeClass+'" data-month="'+m+'">'
+        +'<div class="shm-main"><b>'+monthLabel+'</b><span>已上 '+ms.done+' 节</span></div>'
+        +'<div class="shm-money"><span class="shm-total">¥'+ms.total.toFixed(0)+'</span><span class="shm-detail">基'+ms.base+' + 超'+ms.overtime+' + 额'+ms.extra+'</span></div>'
+        +'</div>';
+    });
+  }
+  html+='</div></div>';
   /* 规则说明 */
   html+='<div class="salary-rules">'
     +'<b style="color:var(--text)">计算规则</b><br>'
@@ -1346,16 +1452,31 @@ function renderSalary(){
 
   const input=document.getElementById('salaryInput');
   const box=document.getElementById('salaryResultBox');
-  salaryUpdate(auto, box);                 // 自动填入后即时计算
-  input.oninput=()=>salaryUpdate(input.value, box);  // 手动微调仍实时响应
-  /* 额外收入：添加 */
+  salaryUpdate(auto, box, ym);                 // 自动填入后即时计算
+  input.oninput=()=>salaryUpdate(input.value, box, ym);  // 手动微调仍实时响应
+
+  /* 月份选择器切换 */
+  document.getElementById('salaryMonth').onchange=()=>{
+    salaryMonth=document.getElementById('salaryMonth').value;
+    renderSalary();
+  };
+
+  /* 历史月份点击切换 */
+  v.querySelectorAll('.salary-history-item').forEach(el=>{
+    el.onclick=()=>{
+      salaryMonth=el.dataset.month;
+      renderSalary();
+    };
+  });
+
+  /* 额外收入：添加（自动归入当前所选月份） */
   document.getElementById('eiAdd').onclick=()=>{
     const desc=document.getElementById('eiDesc').value.trim();
     const amt=parseFloat(document.getElementById('eiAmt').value);
     if(!desc){ alert('请填写项目名称'); return; }
     if(isNaN(amt)||amt<=0){ alert('请填写有效金额'); return; }
     const arr=loadExtraIncome();
-    arr.push({id:uid(), desc, amount:amt});
+    arr.push({id:uid(), desc, amount:amt, month: ym});
     saveExtraIncome(arr);
     renderSalary();  // 重新渲染整个工资页（含刷新总额）
   };
@@ -2293,7 +2414,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-08-20-v1';
+const APP_VERSION = '2026-09-03-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
