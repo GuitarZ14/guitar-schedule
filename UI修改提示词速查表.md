@@ -193,6 +193,29 @@ body background:#F3EDE1;  theme-color:#BD855C;
 
 ---
 
+## ⑩ 时间 / 月份归属（按业务发生日期分组）✅ 已踩坑
+
+**上下文**：任何需要"按月/按天分组统计"的数据（额外收入、课时、工资）。
+
+**坑（2026-09-03）**：老记录没有日期字段，迁移时用**"读取时的当前月份"**去补（`i.month = todayStr().slice(0,7)`）→ 用户在 8 月新增的收入，9 月打开时被迁到 9 月，月度统计错归。本质是**分组依据字段错了**：用的是"系统读到它的时间"，不是"业务发生的时间"。
+
+**约束**：
+1. **分组唯一依据是业务发生日期 `date`（YYYY-MM-DD）**，月份一律 `date.slice(0,7)` 派生，禁止存冗余 `month` 字段当依据（易与 date 不一致）
+2. **禁止静默"补当前月"**：老数据无法回溯时，只补占位并**标记 `needDate:true`**，UI 上显示提示条，由用户点「编辑」改正
+3. **禁用 `toISOString()` 取日期/月份**（UTC）：UTC+8 凌晨会被算成前一天（如本地 9/1 07:00 → UTC 8/31 23:00）。一律用本地 `getFullYear()/getMonth()/getDate()`（本项目 `ymd()` / `todayStr()`）
+4. 新增/编辑表单**必须提供日期输入**，默认今天，允许补录过去日期（用户常事后记账）
+5. 边界不涉及 `00:00:00/23:59:59`：本项目比较的是 `YYYY-MM-DD` 字符串，天然含当天两端；跨天时长另用 `dur()`
+
+**正解**：
+```javascript
+function monthOf(item){ return /^\d{4}-\d{2}/.test(item.date||'') ? item.date.slice(0,7) : (item.month||''); }
+// 迁移：已有 date 不动；只有 month → date=month+'-01'；都没有 → date=今天；两种情况都标 needDate
+```
+
+**回归测试**：`TZ=Asia/Shanghai node tests/extra-income-month.test.js`（直接从 `index.html` 抽真实函数运行，覆盖月末/月初/跨年/UTC+8 凌晨/迁移三类）
+
+---
+
 ## 提交 / 部署检查清单（每次改完必做）
 
 1. 改 CSS/JS → **升级 `service-worker.js` 的 `CACHE` 版本号**（如 `guitar-wb-v3` → `v4`）+ **同步 `index.html` 的 `APP_VERSION` 哨兵**
@@ -211,6 +234,7 @@ body background:#F3EDE1;  theme-color:#BD855C;
 
 | 日期 | 场景 | 坑 | 正解 |
 |------|------|----|------|
+| 2026-09-03 | 8月额外收入被计入9月 | 老记录无 date 字段，迁移时"补当前月"，用的是读取时间而非业务发生时间 | 按业务发生日期 `date` 分组；迁移只补占位+标 `needDate` 让用户核对；禁用 `toISOString`（UTC）；补 23 项边界测试 |
 | 2026-08-15 | 编辑按钮看不到 | 纯灰图标按钮在浅底不可见，误判为 SW 缓存死循环，多轮排查 | 改带文字+边框+主色的可见药丸按钮；验证分三层（部署/渲染/可见） |
 | 2026-08-15 | CloudStudio 强制刷新无新功能 | 旧沙箱早期 SW 陷入 `cacheFirst` 死循环，同沙箱重部署无效 | `unpublish` 旧沙箱 + 全新 `deploy` 换 URL |
 | 2026-08-14 | tooltip 横向排列 | `flex-wrap` + 独立 span 仍竖堆（td 压窄浮层） | `width:max-content` 突破 td 约束 |
