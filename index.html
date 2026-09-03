@@ -413,9 +413,14 @@
   .extra-income h4{margin:0 0 var(--s3);font-size:15px;color:var(--text);font-weight:600;display:flex;align-items:center;gap:6px;}
   .extra-income h4 svg{width:16px;height:16px;color:var(--green);flex-shrink:0;}
   .extra-income-list{display:flex;flex-direction:column;gap:6px;margin-bottom:var(--s3);}
-  .extra-income-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(255,255,255,0.5);border-radius:var(--r-sm);border:1px solid var(--line);}
+  .extra-income-item{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;background:rgba(255,255,255,0.5);border-radius:var(--r-sm);border:1px solid var(--line);}
   .extra-income-item .ei-desc{flex:1;font-size:14px;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .extra-income-item .ei-amt{font-size:14px;font-weight:600;color:var(--green);white-space:nowrap;}
+  /* 业务发生日期徽标：让归属月份一眼可见，避免跨月错归 */
+  .extra-income-item .ei-date{font-size:12px;font-weight:600;color:var(--text-2);background:rgba(189,133,92,0.12);border:1px solid rgba(189,133,92,0.35);border-radius:var(--r-sm);padding:2px 7px;white-space:nowrap;flex-shrink:0;font-family:var(--font-display);}
+  /* 迁移补齐日期的提示条（旧数据无法回溯真实日期，需用户核对） */
+  .extra-income-item .ei-needdate{flex-basis:100%;display:flex;align-items:center;gap:5px;font-size:12px;color:#A8561F;background:rgba(233,150,76,0.12);border:1px solid rgba(233,150,76,0.35);border-radius:var(--r-sm);padding:5px 8px;line-height:1.4;}
+  .extra-income-item .ei-needdate svg{flex-shrink:0;}
   .extra-income-item .ei-del{width:26px;height:26px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:color var(--t),background var(--t);flex-shrink:0;}
   .extra-income-item .ei-del:hover{color:#e74c3c;background:rgba(231,76,60,0.1);}
   .extra-income-item .ei-edit{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border:1px solid var(--line);border-radius:var(--r-sm);background:rgba(255,255,255,0.6);color:var(--primary);cursor:pointer;font-size:12px;font-family:var(--font-body);font-weight:500;transition:background var(--t),border-color var(--t);flex-shrink:0;white-space:nowrap;}
@@ -429,9 +434,12 @@
   .extra-income-item:not(.editing) .ei-inline-form{display:none;}
   .extra-income-item .ei-inline-form input[type=text]{flex:1;min-width:0;font-size:13px;padding:6px 9px;border:1px solid var(--line);border-radius:var(--r-sm);background:#fff;font-family:var(--font-body);color:var(--text);}
   .extra-income-item .ei-inline-form input[type=number]{width:80px;min-width:60px;font-size:13px;padding:6px 9px;border:1px solid var(--line);border-radius:var(--r-sm);background:#fff;font-family:var(--font-display);font-weight:600;color:var(--green);text-align:center;}
+  .extra-income-item .ei-inline-form input[type=date]{width:132px;min-width:118px;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:#fff;font-family:var(--font-body);color:var(--text);}
   .extra-income-item .ei-inline-form .ei-save{padding:5px 10px;border:none;background:var(--primary);color:#fff;border-radius:var(--r-sm);font-size:12px;cursor:pointer;white-space:nowrap;}
   .extra-income-item .ei-inline-form .ei-cancel{padding:5px 10px;border:none;background:var(--glass);color:var(--text-2);border:1px solid var(--line);border-radius:var(--r-sm);font-size:12px;cursor:pointer;}
-  .extra-income-form{display:flex;gap:8px;align-items:flex-end;}
+  .extra-income-form{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;}
+  .extra-income-form input[type=date]{width:150px;min-width:130px;font-size:16px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:rgba(255,255,255,0.7);font-family:var(--font-body);color:var(--text);}
+  .ei-date-hint{flex-basis:100%;font-size:12px;color:var(--muted);margin-top:-2px;}
   .extra-income-form input[type=text]{flex:1;min-width:0;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:rgba(255,255,255,0.7);font-family:var(--font-body);color:var(--text);}
   .extra-income-form input[type=number]{width:90px;min-width:70px;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:rgba(255,255,255,0.7);font-family:var(--font-display);font-weight:600;color:var(--green);text-align:center;}
   .extra-income-form button{padding:9px 14px;border:none;background:var(--primary);color:#fff;border-radius:var(--r-sm);font-size:13px;font-family:var(--font-body);cursor:pointer;white-space:nowrap;transition:opacity var(--t);}
@@ -1268,14 +1276,36 @@ const SALARY_HOURS=66;        // 包含课时
 const SALARY_OVERTIME_RATE=90;// 超出单价(元/节)
 const EXTRA_INCOME_KEY = 'wb_guitar_extra_income';  // 额外收入 localStorage key
 
+/* 月份归属唯一依据：业务发生日期 date(YYYY-MM-DD) 的前 7 位。
+   不再使用「读取时的当前月份」猜测，避免跨月记录被错误归组。 */
+function monthOf(item){
+  if(item.date && /^\d{4}-\d{2}/.test(item.date)) return item.date.slice(0,7);
+  if(item.month) return item.month;           // 兼容极早期仅有 month 的记录
+  return '';
+}
 function loadExtraIncome(){
   try{
     let arr=JSON.parse(localStorage.getItem(EXTRA_INCOME_KEY)||'[]');
     if(!Array.isArray(arr)) arr=[];
-    /* 旧数据无 month 字段时自动补为当前月份，确保按月份过滤/汇总正常 */
+    /* 旧数据迁移：为每条记录补真实业务发生日期 date（YYYY-MM-DD）。
+       - 已有 date：不动（业务发生日期是唯一归属依据）；
+       - 无 date 但有 month：date=该月1日，并标记 needDate 提醒用户核对更正
+         （历史上该 month 是被旧版"补当前月"逻辑猜测写入的，可能不准）；
+       - 无 date 无 month：date=今天，并标记 needDate（无法回溯，由用户更正）。
+       注意：一律用本地时间 todayStr()（getFullYear/getMonth/getDate），
+       禁用 toISOString()（UTC），避免 UTC+8 凌晨记录被归到前一天。 */
     let changed=false;
-    const currentMonth=todayStr().slice(0,7);
-    arr.forEach(i=>{ if(!i.month){ i.month=currentMonth; changed=true; } });
+    const today=todayStr();
+    arr.forEach(i=>{
+      if(i.date && /^\d{4}-\d{2}-\d{2}$/.test(i.date)) return;   // 已有真实日期，不动
+      if(i.month && /^\d{4}-\d{2}$/.test(i.month)){
+        i.date=i.month+'-01';                                     // 保留原分组，但标记待核对
+      }else{
+        i.date=today;                                             // 无法回溯才默认今天
+      }
+      i.needDate=true;   // 任何被迁移补齐的日期都需要用户核对（旧版曾按"读取月"猜测，可能不准）
+      changed=true;
+    });
     if(changed) localStorage.setItem(EXTRA_INCOME_KEY, JSON.stringify(arr));
     return arr;
   }catch(e){ return []; }
@@ -1315,10 +1345,10 @@ function countDoneInMonth(ym){
   }).length;
 }
 
-/* 汇总额外收入；传入月份则只汇总该月，不传则汇总全部 */
+/* 汇总额外收入；传入月份则只汇总该月（按业务发生日期归属），不传则汇总全部 */
 function sumExtraIncome(month){
   let arr=loadExtraIncome();
-  if(month) arr=arr.filter(i=>i.month===month);
+  if(month) arr=arr.filter(i=>monthOf(i)===month);
   return arr.reduce((s,i)=>s+(Number(i.amount)||0),0);
 }
 
@@ -1326,7 +1356,7 @@ function sumExtraIncome(month){
 function getSalaryMonths(){
   const set=new Set();
   courses.filter(c=>c.status==='done').forEach(c=>set.add(c.date.slice(0,7)));
-  loadExtraIncome().forEach(i=>{ if(i.month) set.add(i.month); });
+  loadExtraIncome().forEach(i=>{ const m=monthOf(i); if(m) set.add(m); });
   return Array.from(set).sort().reverse();
 }
 
@@ -1389,8 +1419,8 @@ function renderSalary(){
     +'<div class="salary-note">统计范围：<b>'+ym+'-01 ~ '+endDay+'</b>｜状态=「已上」｜结果 <b>'+auto+'</b> 节（该月「已上」总计 '+monthTotalDone+' 节，与统计页一致）</div></div>';
   /* 结果卡片 */
   html+='<div class="salary-card salary-result" id="salaryResultBox"></div>';
-  /* 额外收入备注（按所选月份过滤） */
-  const ei=loadExtraIncome().filter(i=>i.month===ym);
+  /* 额外收入备注（按所选月份过滤，归属依据=业务发生日期） */
+  const ei=loadExtraIncome().filter(i=>monthOf(i)===ym).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   const eiTotal=ei.reduce((s,i)=>s+(Number(i.amount)||0),0);
   html+='<div class="extra-income">'
     +'<h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>'+ymLabel+' 额外收入备注</h4>'
@@ -1399,10 +1429,14 @@ function renderSalary(){
     html+='<div style="font-size:13px;color:var(--muted);padding:8px 0;">该月暂无额外收入记录，可在下方添加（如琴弦更换、维修费、售琴等）</div>';
   }else{
     ei.forEach(item=>{
+      const dateLabel=(item.date||'').slice(5).replace('-','/')||'—';   // MM/DD
       html+='<div class="extra-income-item" data-eid="'+item.id+'">'
+        +(item.needDate?'<div class="ei-needdate"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>该记录日期由旧版迁移补齐，请点「编辑」核对发生日期</div>':'')
+        +'<span class="ei-date">'+dateLabel+'</span>'
         +'<span class="ei-desc">'+esc(item.desc)+'</span>'
         +'<span class="ei-amt">¥'+Number(item.amount).toFixed(0)+'</span>'
         +'<div class="ei-inline-form">'
+        +'<input type="date" class="ei-edit-date" value="'+(item.date||'')+'" title="发生日期（决定归属月份）">'
         +'<input type="text" class="ei-edit-desc" value="'+esc(item.desc)+'" placeholder="项目名称" maxlength="30">'
         +'<input type="number" class="ei-edit-amt" value="'+Number(item.amount).toFixed(0)+'" min="0" step="1">'
         +'<button class="ei-save">保存</button><button class="ei-cancel">取消</button>'
@@ -1417,7 +1451,9 @@ function renderSalary(){
     +'<div class="extra-income-form">'
     +'<input type="text" id="eiDesc" placeholder="项目名称（如：换琴弦）" maxlength="30">'
     +'<input type="number" id="eiAmt" placeholder="金额" min="0" step="1">'
+    +'<input type="date" id="eiDate" value="'+(isCurrent?today:ym+'-01')+'" title="发生日期（决定归属月份，可补录过去日期）">'
     +'<button id="eiAdd">添加</button>'
+    +'<div class="ei-date-hint">按「发生日期」归属月份，可补录过去的收入（默认今天）</div>'
     +'</div></div>';
   /* 历史月份列表 */
   const months=getSalaryMonths();
@@ -1469,15 +1505,18 @@ function renderSalary(){
     };
   });
 
-  /* 额外收入：添加（自动归入当前所选月份） */
+  /* 额外收入：添加（按表单里的「发生日期」归属月份，支持补录过去日期） */
   document.getElementById('eiAdd').onclick=()=>{
     const desc=document.getElementById('eiDesc').value.trim();
     const amt=parseFloat(document.getElementById('eiAmt').value);
+    const date=document.getElementById('eiDate').value;
     if(!desc){ alert('请填写项目名称'); return; }
     if(isNaN(amt)||amt<=0){ alert('请填写有效金额'); return; }
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){ alert('请选择有效的发生日期'); return; }
     const arr=loadExtraIncome();
-    arr.push({id:uid(), desc, amount:amt, month: ym});
+    arr.push({id:uid(), desc, amount:amt, date});
     saveExtraIncome(arr);
+    salaryMonth=date.slice(0,7);   // 添加后跳到该笔收入实际归属的月份视图
     renderSalary();  // 重新渲染整个工资页（含刷新总额）
   };
   /* 额外收入：编辑 / 删除（事件委托） */
@@ -1497,11 +1536,13 @@ function renderSalary(){
       const eid=item.dataset.eid;
       const newDesc=item.querySelector('.ei-edit-desc').value.trim();
       const newAmt=parseFloat(item.querySelector('.ei-edit-amt').value);
+      const newDate=item.querySelector('.ei-edit-date').value;
       if(!newDesc){ alert('请填写项目名称'); return; }
       if(isNaN(newAmt)||newAmt<=0){ alert('请填写有效金额'); return; }
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(newDate)){ alert('请选择有效的发生日期'); return; }
       const arr=loadExtraIncome();
       const idx=arr.findIndex(x=>x.id===eid);
-      if(idx>=0){ arr[idx].desc=newDesc; arr[idx].amount=newAmt; saveExtraIncome(arr); }
+      if(idx>=0){ arr[idx].desc=newDesc; arr[idx].amount=newAmt; arr[idx].date=newDate; delete arr[idx].needDate; saveExtraIncome(arr); }
       renderSalary();
       return;
     }
@@ -2414,7 +2455,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-09-03-v1';
+const APP_VERSION = '2026-09-03-v2';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
