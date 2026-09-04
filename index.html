@@ -1018,12 +1018,14 @@ function saveCourses(){ localStorage.setItem(STORE.courses, JSON.stringify(cours
 
 /* ===== today bar ===== */
 function renderToday(){
+  const el=document.getElementById('todayBar');
+  /* 「今天要处理」区块仅在课表页展示；其余页面保持为空，不渲染该块 */
+  if(currentTab!=='week'){ el.innerHTML=''; return; }
   const today=todayStr();
   const overdue = courses.filter(c=>c.status!=='done'&&c.status!=='absent'&&c.status!=='cancelled'&&c.date<today)
                          .sort((a,b)=>a.date.localeCompare(b.date));
   const todayItems = courses.filter(c=>c.date===today&&c.status!=='done'&&c.status!=='absent'&&c.status!=='cancelled')
                             .sort((a,b)=>a.start.localeCompare(b.start));
-  const el=document.getElementById('todayBar');
   let headText;
   if(todayItems.length && overdue.length){
     headText = `今天还需要上${todayItems.length}课 · ${overdue.length}节逾期`;
@@ -1042,12 +1044,11 @@ function renderToday(){
   const renderItem=(c,over)=>{
     const d=parseYMD(c.date);
     const when = over ? (d.getMonth()+1)+'月'+d.getDate()+'日' : '今天 '+c.start;
-    /* 上课状态角标（逾期/待上）仅在课表页展示；其他页面隐藏显示，但数据与操作（请假/完成）不受影响 */
-    const showTag=(currentTab==='week');
+    /* 上课状态角标：逾期/待上（本块仅课表页渲染） */
     return `<div class="titem ${over?'over':''}">
       <div class="when">${esc(when)}</div>
       <div class="who"><b>${esc(studentName(c.studentId))}</b><span>${esc(c.start+'~'+c.end)}</span></div>
-      ${showTag?`<div class="tag">${over?'逾期':'待上'}</div>`:''}
+      <div class="tag">${over?'逾期':'待上'}</div>
       <div class="acts">
         <button class="btn-absent" data-absent="${c.id}">请假</button>
         <button class="primary" data-done="${c.id}">完成</button>
@@ -2656,7 +2657,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-09-04-v2';
+const APP_VERSION = '2026-09-04-v3';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
