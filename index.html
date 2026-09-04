@@ -1042,10 +1042,12 @@ function renderToday(){
   const renderItem=(c,over)=>{
     const d=parseYMD(c.date);
     const when = over ? (d.getMonth()+1)+'月'+d.getDate()+'日' : '今天 '+c.start;
+    /* 上课状态角标（逾期/待上）仅在课表页展示；其他页面隐藏显示，但数据与操作（请假/完成）不受影响 */
+    const showTag=(currentTab==='week');
     return `<div class="titem ${over?'over':''}">
       <div class="when">${esc(when)}</div>
       <div class="who"><b>${esc(studentName(c.studentId))}</b><span>${esc(c.start+'~'+c.end)}</span></div>
-      <div class="tag">${over?'逾期':'待上'}</div>
+      ${showTag?`<div class="tag">${over?'逾期':'待上'}</div>`:''}
       <div class="acts">
         <button class="btn-absent" data-absent="${c.id}">请假</button>
         <button class="primary" data-done="${c.id}">完成</button>
@@ -1428,19 +1430,20 @@ function renderStats(){
   let totalCount=0,totalMin=0,totalAbsent=0;
   ids.forEach(id=>{ totalCount+=map[id].count; totalMin+=map[id].min; totalAbsent+=(map[id].absent||0); });
   const studentCount=ids.length;
+  /* totalAbsent 仍按底层口径算出（monthMap 的 absent 统计逻辑保留），
+     但按需求不再作为 KPI 展示——上课状态仅在课表页展示 */
   let html='<div class="weeknav"><span class="range">选择月份</span>'
     +'<input type="month" id="monthPick" value="'+esc(ym)+'" style="max-width:180px">'
     +'<span class="spacer" style="margin-left:auto"></span>'
     +'<button id="expCsv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>导出CSV</button></div>';
   html+='<div class="kpis">'
     +'<div class="kpi"><b>'+totalCount+'</b><span>已上课时(节)</span></div>'
-    +'<div class="kpi"><b>'+totalAbsent+'</b><span>请假(节)</span></div>'
     +'<div class="kpi"><b>'+studentCount+'</b><span>上课学员</span></div></div>';
   html+='<div class="panel"><h3 style="margin:0 0 10px;color:var(--text);font-size:16px">学员时长分布</h3>'+svgBars(map)+'</div>';
   html+='<div class="panel"><h3 style="margin:0 0 10px;color:var(--text);font-size:16px">明细报表</h3>';
   if(!ids.length) html+='<p class="empty">本月暂无课程记录。</p>';
   else{
-    html+='<table><thead><tr><th>学员</th><th class="num">节数</th><th class="num">请假</th><th class="num">总时长</th><th class="num">占比</th></tr></thead><tbody>';
+    html+='<table><thead><tr><th>学员</th><th class="num">节数</th><th class="num">总时长</th><th class="num">占比</th></tr></thead><tbody>';
     ids.sort((a,b)=>map[b].min-map[a].min).forEach(id=>{
       const pct=totalMin? Math.round(map[id].min/totalMin*100):0;
       /* 收集该学员本月已上课日期，格式化为"X月X号"，每个日期独立 <span> 以支持横向流式排列 */
@@ -1450,7 +1453,7 @@ function renderStats(){
       const tipHtml = doneDates.length
         ? '<span class="stat-tip">'+map[id].count+'<span class="stat-tip-box">'+doneDates.map(d=>'<span>'+esc(d)+'</span>').join('')+'</span></span>'
         : map[id].count;
-      html+='<tr><td>'+esc(studentName(id))+'</td><td class="num">'+tipHtml+'</td><td class="num">'+(map[id].absent||0)+'</td><td class="num">'+fmtMin(map[id].min)+'</td><td class="num">'+pct+'%</td></tr>';
+      html+='<tr><td>'+esc(studentName(id))+'</td><td class="num">'+tipHtml+'</td><td class="num">'+fmtMin(map[id].min)+'</td><td class="num">'+pct+'%</td></tr>';
     });
     html+='</tbody></table>';
   }
@@ -1606,7 +1609,7 @@ function renderSalary(){
     +'<input type="number" id="salaryInput" min="0" max="999" step="1" value="'+auto+'">'
     +'<label>节</label>'
     +'</div>'
-    +'<div class="salary-note">统计范围：<b>'+ym+'-01 ~ '+endDay+'</b>｜状态=「已上」｜结果 <b>'+auto+'</b> 节（该月「已上」总计 '+monthTotalDone+' 节，与统计页一致）</div></div>';
+    +'<div class="salary-note">统计范围：<b>'+ym+'-01 ~ '+endDay+'</b>｜仅计「已完成」课时｜结果 <b>'+auto+'</b> 节（该月已完成总计 '+monthTotalDone+' 节，与统计页一致）</div></div>';
   /* 结果卡片 */
   html+='<div class="salary-card salary-result" id="salaryResultBox"></div>';
   /* 额外收入备注（按所选月份过滤，归属依据=业务发生日期） */
@@ -2025,12 +2028,12 @@ function exportJson(){
   download('吉他教学工作台备份.json', JSON.stringify(data,null,2), 'application/json');
 }
 function exportCsv(ym,map,totalCount,totalMin){
-  let totalAbsent=0; Object.keys(map).forEach(id=>{ totalAbsent+=(map[id].absent||0); });
-  let rows=[['月份',ym],['总课时(节)',totalCount],['请假(节)',totalAbsent],['总时长',fmtMin(totalMin)],[]];
-  rows.push(['学员','节数','请假','总时长(分钟)','总时长','占比']);
+  /* monthMap 仍含 absent 口径，但按需求「上课状态仅课表页展示」，CSV 导出不列入请假列 */
+  let rows=[['月份',ym],['总课时(节)',totalCount],['总时长',fmtMin(totalMin)],[]];
+  rows.push(['学员','节数','总时长(分钟)','总时长','占比']);
   Object.keys(map).sort((a,b)=>map[b].min-map[a].min).forEach(id=>{
     const pct=totalMin? Math.round(map[id].min/totalMin*100):0;
-    rows.push([studentName(id),map[id].count,(map[id].absent||0),map[id].min,fmtMin(map[id].min),pct+'%']);
+    rows.push([studentName(id),map[id].count,map[id].min,fmtMin(map[id].min),pct+'%']);
   });
   const csv='\ufeff'+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');
   download(ym+'课时统计.csv', csv, 'text/csv');
@@ -2653,7 +2656,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-09-04-v1';
+const APP_VERSION = '2026-09-04-v2';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
