@@ -282,6 +282,55 @@
   .stu-hours .hh.remain.low{background:var(--red-soft); border-color:transparent; color:var(--red);}
   .stu-hours .hh.remain.low b{color:var(--red);}
   .stu-hours .hh.unset{background:transparent; border-style:dashed; color:var(--muted-2);}
+  /* ===== 学员管理表格视图 ===== */
+  .stu-toolbar{display:flex; gap:10px; flex-wrap:wrap; margin:0 0 12px;}
+  .stu-toolbar input[type=search]{flex:1; min-width:180px; font-size:16px; padding:9px 12px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--glass); color:var(--text); font-family:var(--font-body);}
+  .stu-toolbar select{font-size:14px; padding:9px 10px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--glass); color:var(--text); font-family:var(--font-body);}
+  .stu-table-wrap{background:var(--glass); border:1px solid var(--glass-border); border-radius:var(--r-md); box-shadow:var(--sh-1);}
+  .stu-table{width:100%; min-width:980px; border-collapse:collapse; font-size:13px; color:var(--text-2);}
+  .stu-table th,.stu-table td{padding:10px 12px; text-align:left; white-space:nowrap; border-bottom:1px solid var(--line);}
+  .stu-table tbody tr:last-child td{border-bottom:none;}
+  .stu-table thead th{position:sticky; top:0; z-index:2; background:var(--glass); font-size:12px; font-weight:600; color:var(--muted); border-bottom:1px solid var(--glass-border);}
+  .stu-table th.sortable{cursor:pointer; user-select:none;}
+  .stu-table th.sortable:hover{color:var(--primary);}
+  .sort-ic{width:12px; height:12px; vertical-align:-1px; stroke:var(--muted); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; opacity:.4;}
+  .sort-ic.on{stroke:var(--primary); opacity:1;}
+  .stu-table .num{text-align:right; font-variant-numeric:tabular-nums;}
+  .stu-table .num .sep{margin:0 4px; color:var(--muted-2);}
+  .stu-name{cursor:pointer; font-weight:600; color:var(--text);}
+  .stu-name:hover{color:var(--primary);}
+  .stu-name .swatch{margin-right:8px;}
+  .dtags{display:flex; gap:4px; align-items:center; flex-wrap:nowrap;}
+  .dtag{font-size:11px; font-weight:600; padding:2px 6px; border-radius:var(--r-sm); background:rgba(189,133,92,.12); border:1px solid rgba(189,133,92,.3); color:var(--text-2); font-family:var(--font-display);}
+  .dtag.soon{background:var(--primary); border-color:var(--primary); color:#fff;}
+  .dtag.more{background:transparent; border-style:dashed; color:var(--muted); cursor:help;}
+  .dtag-none{color:var(--muted-2); font-size:12px;}
+  .stu-table b{font-variant-numeric:tabular-nums; font-family:var(--font-display);}
+  .h-ok{color:var(--text-2);}
+  .h-low{color:var(--red);}
+  .h-tip{display:inline-block; margin-left:6px; font-size:10px; padding:1px 6px; border-radius:999px; background:var(--red-soft); color:var(--red); font-weight:600;}
+  .stu-tag{display:inline-block; font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px;}
+  .st-active{color:#3E8E5A; background:rgba(62,142,90,.12);}
+  .st-leave{color:#B0741F; background:rgba(232,150,76,.16);}
+  .st-paused{color:#C0483E; background:rgba(217,83,79,.12);}
+  .st-finished{color:var(--muted); background:rgba(0,0,0,.06);}
+  .tbtn{padding:5px 10px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--glass); color:var(--primary); font-size:12px; cursor:pointer; white-space:nowrap; font-family:var(--font-body); transition:background var(--t),border-color var(--t);}
+  .tbtn:hover{background:var(--primary-soft); border-color:var(--primary);}
+  .tbtn:disabled{opacity:.4; cursor:default;}
+  .ops-cell{white-space:nowrap;}
+  .ops-cell .tbtn{margin-right:6px;}
+  .stu-expand td{background:rgba(189,133,92,.05);}
+  .ex-grid{display:flex; gap:10px 26px; flex-wrap:wrap; padding:2px 4px;}
+  .ex-grid span{display:block; font-size:11px; color:var(--muted); margin-bottom:3px;}
+  .ex-grid b{font-size:13px; color:var(--text); font-weight:600;}
+  .stu-pager{display:flex; align-items:center; gap:12px; margin-top:12px; font-size:12px; color:var(--muted);}
+  .stu-pager .spacer{flex:1;}
+  .stu-nomatch{text-align:center; color:var(--muted); padding:26px 12px;}
+  .stu-nomatch .tbtn{margin-left:12px;}
+  .stu-table .phone{font-variant-numeric:tabular-nums; color:var(--muted);}
+  /* 窄屏才允许横向滚动（桌面保持表头吸顶，overflow 会破坏 sticky） */
+  @media(max-width:1260px){ .stu-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;} }
+  @media(max-width:860px){ .stu-table th,.stu-table td{padding:8px 10px;} }
   .inline-field{display:flex; align-items:center; gap:10px;}
   .inline-field input[type=number]{flex:1; min-width:0;}
   .chk{display:inline-flex; align-items:center; gap:6px; font-size:14px; color:var(--text-2); margin:0; background:var(--glass); border:1px solid var(--glass-border); border-radius:var(--r-sm); padding:9px 13px; min-height:44px; cursor:pointer; white-space:nowrap; flex-shrink:0;}
@@ -673,6 +722,16 @@
         <option>其他</option>
       </select>
     </label>
+    <label><span class="lab">联系电话</span><input id="sPhone" type="tel" inputmode="tel" placeholder="11 位手机号（列表中脱敏显示）" maxlength="15"></label>
+    <label><span class="lab">负责老师</span><input id="sTeacher" placeholder="如：张老师" maxlength="12"></label>
+    <label><span class="lab">在读状态</span>
+      <select id="sStuStatus">
+        <option value="active">在读</option>
+        <option value="leave">请假</option>
+        <option value="paused">停课</option>
+        <option value="finished">结课</option>
+      </select>
+    </label>
     <label><span class="lab">备注</span><textarea id="sNote" placeholder="如：左手按弦偏弱"></textarea></label>
     <label><span class="lab">报名课时（总课时）</span><input type="number" id="sTotal" min="0" inputmode="numeric" placeholder="如：40"></label>
     <label><span class="lab">赠送课时</span>
@@ -868,10 +927,10 @@ function findDuplicateCourse(studentId, date, start, end, excludeId){
 }
 
 const SEED_STUDENTS = [
-  {id:'s1', name:'小明', level:'入门弹唱', note:'左手按弦偏弱', totalHours:40, giftHours:4},
-  {id:'s2', name:'乐乐', level:'电吉他Solo', note:'节奏感好', totalHours:24, giftHours:0},
-  {id:'s3', name:'张同学', level:'进阶弹唱', note:'', totalHours:12, giftHours:2},
-  {id:'s4', name:'王芳', level:'入门弹唱', note:'', totalHours:3, giftHours:0},
+  {id:'s1', name:'小明', level:'入门弹唱', note:'左手按弦偏弱', totalHours:40, giftHours:4, phone:'13812345678', teacher:'张老师', stuStatus:'active'},
+  {id:'s2', name:'乐乐', level:'电吉他Solo', note:'节奏感好', totalHours:24, giftHours:0, phone:'15987654321', teacher:'张老师', stuStatus:'active'},
+  {id:'s3', name:'张同学', level:'进阶弹唱', note:'', totalHours:12, giftHours:2, phone:'18600001234', teacher:'李老师', stuStatus:'leave'},
+  {id:'s4', name:'王芳', level:'入门弹唱', note:'', totalHours:3, giftHours:0, phone:'13512349876', teacher:'张老师', stuStatus:'paused'},
 ];
 const SEED_COURSES = [
   {id:'c1', studentId:'s1', date:'2026-08-06', start:'18:00', end:'19:00', song:'童年', focus:'C-G-Am-F 转换', note:'注意扫弦节奏', status:'planned'},
@@ -891,6 +950,44 @@ let dayCursor='';          // 日视图当前日期
 let currentMonth='';
 let filterStudent='';      // 顶部筛选：''=全部
 let salaryMonth='';        // 工资页当前选中的月份 YYYY-MM，空则默认本月
+/* ===== 学员管理表格视图状态 ===== */
+let stuSearch='';          // 搜索词（匹配姓名/手机号）
+let stuTypeFilter='';      // 课程类型筛选（level），''=全部
+let stuStatusFilter='';    // 在读状态筛选，''=全部
+let stuSortKey='name';     // 排序键：name | remain | monthDone
+let stuSortDir=1;          // 1=升序 -1=降序
+let stuPage=1;             // 当前页码（每页 STU_PAGE_SIZE 条）
+let stuExpanded='';        // 当前展开「查看」详情行的学员 id，''=无
+const STU_PAGE_SIZE=20;
+const STU_STATUS={
+  active:  {txt:'在读', cls:'st-active'},
+  leave:   {txt:'请假', cls:'st-leave'},
+  paused:  {txt:'停课', cls:'st-paused'},
+  finished:{txt:'结课', cls:'st-finished'}
+};
+/* 联系电话脱敏：138****5678；位数不足按首3尾2遮中段 */
+function maskPhone(p){
+  const d=String(p||'').replace(/\s/g,'');
+  if(!d) return '';
+  if(d.length===11) return d.slice(0,3)+'****'+d.slice(7);
+  if(d.length>=7) return d.slice(0,3)+'****'+d.slice(-2);
+  return d;
+}
+/* 日期紧凑标签：升序展示 MM-DD，超 3 个折叠为 +N（title 含余下日期）；3 天内待上高亮 */
+function dateTags(dates, today){
+  if(!dates.length) return '<span class="dtag-none">—</span>';
+  const sorted=dates.slice().sort();
+  const d3=parseYMD(today); d3.setDate(d3.getDate()+3);
+  const limitYmd=ymd(d3);
+  let html=sorted.slice(0,3).map(dt=>{
+    const soon=(dt>=today && dt<=limitYmd);
+    return '<span class="dtag'+(soon?' soon':'')+'">'+dt.slice(5).replace('-','/')+'</span>';
+  }).join('');
+  if(sorted.length>3){
+    html+='<span class="dtag more" title="'+sorted.slice(3).map(x=>x.slice(5).replace('-','/')).join('、')+'">+'+(sorted.length-3)+'</span>';
+  }
+  return html;
+}
 
 /* ===== utils ===== */
 function pad(n){ return String(n).padStart(2,'0'); }
@@ -1124,70 +1221,163 @@ function renderDay(){
 }
 
 /* ===== student management view ===== */
+/* 排序表头的小箭头（内联 SVG，非活动态半透明） */
+function sortArrow(key){
+  if(stuSortKey!==key) return '<svg class="sort-ic" viewBox="0 0 24 24"><path d="M7 15l5 5 5-5M7 9l5-5 5 5"/></svg>';
+  return stuSortDir===1
+    ? '<svg class="sort-ic on" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></svg>'
+    : '<svg class="sort-ic on" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg>';
+}
 function renderEdit(){
   const today=todayStr();
-  const ym=today.slice(0,7);  // current month YYYY-MM
+  const ym=today.slice(0,7);  // 统计口径：自然月
+  const levels=[...new Set(students.map(s=>s.level||'其他'))];
+
   let html='<div class="sec-head"><h3>学员管理</h3><span class="spacer"></span>'
     +'<button class="primary" id="addStudent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>新增学员</button></div>';
-  if(!students.length) html+='<div class="empty">还没有学员，点上方按钮添加。</div>';
-  else{
-    html+='<div class="card-list">';
-    students.forEach(s=>{
-      // 统计该学员数据
-      const myCourses=courses.filter(c=>c.studentId===s.id);
-      const doneCount=myCourses.filter(c=>c.status==='done').length;
-      const absentCount=myCourses.filter(c=>c.status==='absent').length;
-      const plannedCount=myCourses.filter(c=>c.status==='planned'&&c.date>=today).length;
-      const monthDone=myCourses.filter(c=>c.status==='done'&&c.date.indexOf(ym)===0);
-      const monthMin=monthDone.reduce((sum,c)=>sum+dur(c),0);
-      // 最近一节课
-      const pastCourses=myCourses.filter(c=>c.date<=today&&c.status!=='cancelled').sort((a,b)=>b.date.localeCompare(a.date));
-      const lastCourse=pastCourses[0];
-      // 下一节课
-      const nextCourses=myCourses.filter(c=>c.date>=today&&c.status==='planned').sort((a,b)=>a.date.localeCompare(b.date));
-      const nextCourse=nextCourses[0];
 
-      html+='<div class="row-card"><div class="main">'
-        +'<b><span class="swatch" style="background:'+s.color+'"></span>'+esc(s.name)+'</b>'
-        +'<div class="sub"><span class="pill">'+esc(s.level||'其他')+'</span> '+(s.note?esc(s.note):'')+'</div>';
-      // 学员详情行
-      html+='<div class="stu-detail">';
-      if(lastCourse){ const d=parseYMD(lastCourse.date); html+='<span>最近课: '+(d.getMonth()+1)+'/'+d.getDate()+' '+esc(lastCourse.start)+'</span>'; }
-      if(nextCourse){ const d=parseYMD(nextCourse.date); html+='<span>下节课: '+(d.getMonth()+1)+'/'+d.getDate()+' '+esc(nextCourse.start)+'</span>'; }
-      html+='<span>本月已上: '+doneCount+'节 '+fmtMin(monthMin)+'</span>';
-      if(absentCount) html+='<span style="color:#5B9BD5">请假: '+absentCount+'节</span>';
-      if(plannedCount) html+='<span>待上: '+plannedCount+'节</span>';
-      html+='</div>';
-      /* ===== 学员课时模块 ===== */
-      const hTotal=(s.totalHours!=null && !isNaN(s.totalHours))?Number(s.totalHours):null;
-      const hGift=Number(s.giftHours)||0;
-      const hSum=(hTotal!=null)?(hTotal+hGift):null;
-      const hRemain=(hSum!=null)?Math.max(0,hSum-doneCount):null;
-      const hLow=(hRemain!=null && hRemain<=3);
-      if(hTotal!=null){
-        html+='<div class="stu-hours">'
-          +'<div class="hh"><span>总课时</span><b>'+hSum+(hGift>0?'<span class="gift">（赠'+hGift+'）</span>':'')+'</b></div>'
-          +'<div class="hh"><span>已上</span><b>'+doneCount+'</b></div>'
-          +'<div class="hh remain'+(hLow?' low':'')+'"><span>剩余</span><b>'+hRemain+'</b></div>'
-          +'</div>';
-      }else{
-        html+='<div class="stu-hours"><div class="hh unset"><span>总课时未设置 · 点「编辑」填写</span></div></div>';
-      }
-      html+='</div>'
-        +'<div class="ops"><button data-stu-edit="'+s.id+'">编辑</button><button class="danger" data-stu-del="'+s.id+'">删除</button></div></div>';
-    });
-    html+='</div>';
+  /* 空数据状态（无任何学员） */
+  if(!students.length){
+    html+='<div class="empty">还没有学员，点上方「新增学员」添加。</div>';
+    const v=document.getElementById('view-edit'); v.innerHTML=html;
+    document.getElementById('addStudent').onclick=()=>openStudentModal(null);
+    return;
   }
-  const v=document.getElementById('view-edit'); v.innerHTML=html;
-  document.getElementById('addStudent').onclick=()=>openStudentModal(null);
-  v.querySelectorAll('[data-stu-edit]').forEach(b=>b.onclick=()=>openStudentModal(b.dataset.stuEdit));
-  v.querySelectorAll('[data-stu-del]').forEach(b=>b.onclick=()=>{
-    const id=b.dataset.stuDel; const cnt=courses.filter(c=>c.studentId===id).length;
-    confirmDialog('删除学员「'+studentName(id)+'」'+(cnt?'？其 '+cnt+' 条课程也会一并删除。':'？'), ()=>{
-      students=students.filter(s=>s.id!==id); courses=courses.filter(c=>c.studentId===id);
-      saveStudents(); saveCourses(); render();
-    });
+
+  /* 工具栏：搜索 + 类型筛选 + 状态筛选 */
+  html+='<div class="stu-toolbar">'
+    +'<input id="stuSearch" type="search" placeholder="搜索姓名 / 手机号" value="'+esc(stuSearch)+'">'
+    +'<select id="stuTypeFilter"><option value="">全部类型</option>'
+    +levels.map(l=>'<option value="'+esc(l)+'"'+(l===stuTypeFilter?' selected':'')+'>'+esc(l)+'</option>').join('')
+    +'</select>'
+    +'<select id="stuStatusFilter"><option value="">全部状态</option>'
+    +Object.keys(STU_STATUS).map(k=>'<option value="'+k+'"'+(k===stuStatusFilter?' selected':'')+'>'+STU_STATUS[k].txt+'</option>').join('')
+    +'</select></div>';
+
+  /* 计算层：每名学员一行的展示数据（不改数据源） */
+  const kw=stuSearch.trim().toLowerCase();
+  let rows=students.map(s=>{
+    const my=courses.filter(c=>c.studentId===s.id);
+    const doneAll=my.filter(c=>c.status==='done');                 // 请假/取消不计已上
+    const monthDone=my.filter(c=>c.status==='done'&&c.date.indexOf(ym)===0);
+    const monthPlan=my.filter(c=>c.status==='planned'&&c.date.indexOf(ym)===0);
+    const hTotal=(s.totalHours!=null&&!isNaN(s.totalHours))?Number(s.totalHours):null;
+    const hGift=Number(s.giftHours)||0;
+    const remain=hTotal!=null?Math.max(0,hTotal+hGift-doneAll.length):null;
+    const past=my.filter(c=>c.date<=today&&c.status!=='cancelled').sort((a,b)=>b.date.localeCompare(a.date))[0];
+    const next=my.filter(c=>c.date>=today&&c.status==='planned').sort((a,b)=>a.date.localeCompare(b.date))[0];
+    return {s, doneDates:monthDone.map(c=>c.date), planDates:monthPlan.map(c=>c.date),
+      monthDone:monthDone.length, monthPlan:monthPlan.length, remain, past, next};
+  }).filter(r=>{
+    if(kw && !(r.s.name.toLowerCase().indexOf(kw)>=0 || String(r.s.phone||'').indexOf(kw)>=0)) return false;
+    if(stuTypeFilter && (r.s.level||'其他')!==stuTypeFilter) return false;
+    if(stuStatusFilter && (r.s.stuStatus||'active')!==stuStatusFilter) return false;
+    return true;
   });
+  rows.sort((a,b)=>{
+    let d=0;
+    if(stuSortKey==='name') d=a.s.name.localeCompare(b.s.name,'zh');
+    else if(stuSortKey==='remain'){ const av=a.remain,bv=b.remain; d=(av==null&&bv==null)?0:(av==null?1:(bv==null?-1:av-bv)); }
+    else if(stuSortKey==='monthDone') d=a.monthDone-b.monthDone;
+    return d*stuSortDir;
+  });
+
+  /* 分页（每页 20 条） */
+  const totalPages=Math.max(1,Math.ceil(rows.length/STU_PAGE_SIZE));
+  if(stuPage>totalPages) stuPage=totalPages;   // 筛选后页码越界保护
+  const pageRows=rows.slice((stuPage-1)*STU_PAGE_SIZE, stuPage*STU_PAGE_SIZE);
+
+  /* 表格 */
+  html+='<div class="stu-table-wrap"><table class="stu-table"><thead><tr>'
+    +'<th class="sortable" data-sort="name">学员 '+sortArrow('name')+'</th>'
+    +'<th>本月已上日期</th>'
+    +'<th>本月待上日期</th>'
+    +'<th class="num sortable" data-sort="monthDone">本月已上/计划 '+sortArrow('monthDone')+'</th>'
+    +'<th class="num sortable" data-sort="remain">剩余课时 '+sortArrow('remain')+'</th>'
+    +'<th>课程类型</th>'
+    +'<th>联系电话</th>'
+    +'<th>老师</th>'
+    +'<th>状态</th>'
+    +'<th>操作</th>'
+    +'</tr></thead><tbody>';
+
+  if(!rows.length){
+    html+='<tr><td colspan="10" class="stu-nomatch">没有匹配的学员<button id="stuClearFilter" class="tbtn">清除搜索与筛选</button></td></tr>';
+  }else{
+    pageRows.forEach(r=>{
+      const st=STU_STATUS[r.s.stuStatus]||STU_STATUS.active;
+      const low=(r.remain!=null&&r.remain<=2);
+      html+='<tr class="stu-row">'
+        +'<td class="stu-name" data-stu-view="'+r.s.id+'"><span class="swatch" style="background:'+r.s.color+'"></span>'+esc(r.s.name)+'</td>'
+        +'<td><div class="dtags">'+dateTags(r.doneDates,today)+'</div></td>'
+        +'<td><div class="dtags">'+(r.planDates.length?dateTags(r.planDates,today):'<span class="dtag-none">本月无待上</span>')+'</div></td>'
+        +'<td class="num"><b>'+r.monthDone+'</b><span class="sep">/</span>'+r.monthPlan+'</td>'
+        +'<td class="num">'+(r.remain!=null
+            ?'<b class="'+(low?'h-low':'h-ok')+'">'+r.remain+'</b>'+(low?'<span class="h-tip">建议续费</span>':'')
+            :'<span class="dtag-none">未设置</span>')+'</td>'
+        +'<td>'+esc(r.s.level||'其他')+'</td>'
+        +'<td class="phone">'+(r.s.phone?esc(maskPhone(r.s.phone)):'—')+'</td>'
+        +'<td>'+(r.s.teacher?esc(r.s.teacher):'—')+'</td>'
+        +'<td><span class="stu-tag '+st.cls+'">'+st.txt+'</span></td>'
+        +'<td class="ops-cell">'
+        +'<button class="tbtn" data-stu-view="'+r.s.id+'">查看</button>'
+        +'<button class="tbtn" data-stu-edit="'+r.s.id+'">编辑</button>'
+        +'<button class="tbtn" data-stu-book="'+r.s.id+'">排课</button>'
+        +'</td></tr>';
+      /* 「查看」展开的详情行 */
+      if(stuExpanded===r.s.id){
+        const s=r.s;
+        html+='<tr class="stu-expand"><td colspan="10"><div class="ex-grid">'
+          +'<div><span>备注</span><b>'+(s.note?esc(s.note):'—')+'</b></div>'
+          +'<div><span>完整电话</span><b>'+(s.phone?esc(String(s.phone)):'—')+'</b></div>'
+          +'<div><span>总课时</span><b>'+(s.totalHours!=null?Number(s.totalHours)+(Number(s.giftHours)>0?'（赠'+Number(s.giftHours)+'）':''):'未设置')+'</b></div>'
+          +'<div><span>最近课</span><b>'+(r.past?r.past.date.slice(5).replace('-','/')+' '+esc(r.past.start):'—')+'</b></div>'
+          +'<div><span>下节课</span><b>'+(r.next?r.next.date.slice(5).replace('-','/')+' '+esc(r.next.start):'—')+'</b></div>'
+          +'</div></td></tr>';
+      }
+    });
+  }
+  html+='</tbody></table></div>';
+
+  /* 分页条 */
+  html+='<div class="stu-pager"><span>共 '+rows.length+' 人 · 每页 '+STU_PAGE_SIZE+' 条</span><span class="spacer"></span>'
+    +'<button class="tbtn" id="stuPrev"'+(stuPage<=1?' disabled':'')+'>上一页</button>'
+    +'<span>第 '+stuPage+' / '+totalPages+' 页</span>'
+    +'<button class="tbtn" id="stuNext"'+(stuPage>=totalPages?' disabled':'')+'>下一页</button></div>';
+
+  const v=document.getElementById('view-edit'); v.innerHTML=html;
+
+  /* 事件绑定（改状态 → 重渲染，渲染函数之间零互调） */
+  document.getElementById('addStudent').onclick=()=>openStudentModal(null);
+  const searchBox=document.getElementById('stuSearch');
+  searchBox.oninput=e=>{
+    stuSearch=e.target.value; stuPage=1; renderEdit();
+    const nb=document.getElementById('stuSearch'); nb.focus();   // 重渲染后找回焦点，避免打字中断
+    nb.setSelectionRange(nb.value.length,nb.value.length);
+  };
+  document.getElementById('stuTypeFilter').onchange=e=>{ stuTypeFilter=e.target.value; stuPage=1; renderEdit(); };
+  document.getElementById('stuStatusFilter').onchange=e=>{ stuStatusFilter=e.target.value; stuPage=1; renderEdit(); };
+  v.querySelectorAll('th.sortable').forEach(th=>th.onclick=()=>{
+    const k=th.dataset.sort;
+    if(stuSortKey===k) stuSortDir*=-1; else { stuSortKey=k; stuSortDir=1; }
+    renderEdit();
+  });
+  v.querySelectorAll('[data-stu-edit]').forEach(b=>b.onclick=()=>openStudentModal(b.dataset.stuEdit));
+  v.querySelectorAll('[data-stu-book]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.stuBook;
+    openCourseModal(null);                          // 排课 = 新增课程并预选该学员
+    document.getElementById('fStudent').value=id;
+  });
+  v.querySelectorAll('[data-stu-view]').forEach(el=>el.onclick=()=>{
+    const id=el.dataset.stuView;
+    stuExpanded=(stuExpanded===id?'':id);           // 查看 = 展开/收起详情行
+    renderEdit();
+  });
+  const clearBtn=document.getElementById('stuClearFilter');
+  if(clearBtn) clearBtn.onclick=()=>{ stuSearch=''; stuTypeFilter=''; stuStatusFilter=''; stuPage=1; renderEdit(); };
+  const prev=document.getElementById('stuPrev'), next=document.getElementById('stuNext');
+  if(prev) prev.onclick=()=>{ if(stuPage>1){ stuPage--; renderEdit(); } };
+  if(next) next.onclick=()=>{ stuPage++; renderEdit(); };
 }
 
 /* ===== stats view ===== */
@@ -1684,6 +1874,9 @@ function openStudentModal(id){
     document.getElementById('sName').value=s.name;
     document.getElementById('sLevel').value=s.level||'其他';
     document.getElementById('sNote').value=s.note||'';
+    document.getElementById('sPhone').value=s.phone||'';
+    document.getElementById('sTeacher').value=s.teacher||'';
+    document.getElementById('sStuStatus').value=s.stuStatus||'active';
     document.getElementById('sTotal').value=(s.totalHours!=null)?s.totalHours:'';
     const g0=Number(s.giftHours)||0;
     document.getElementById('sGift').value=g0>0?g0:'';
@@ -1695,6 +1888,9 @@ function openStudentModal(id){
     document.getElementById('sName').value='';
     document.getElementById('sLevel').value='入门弹唱';
     document.getElementById('sNote').value='';
+    document.getElementById('sPhone').value='';
+    document.getElementById('sTeacher').value='';
+    document.getElementById('sStuStatus').value='active';
     document.getElementById('sTotal').value='';
     document.getElementById('sGift').value='';
     const gn2=document.getElementById('sGiftNone'); gn2.checked=true; document.getElementById('sGift').disabled=true;
@@ -1786,7 +1982,9 @@ function saveStudent(){
   const gift = gn.checked?0:(Number(document.getElementById('sGift').value)||0);
   const tv=document.getElementById('sTotal').value;
   const total = (tv==='')?null:(Number(tv)||0);
-  const data={ name, level:document.getElementById('sLevel').value, note:document.getElementById('sNote').value.trim(), totalHours:total, giftHours:gift };
+  const data={ name, level:document.getElementById('sLevel').value, note:document.getElementById('sNote').value.trim(),
+    phone:document.getElementById('sPhone').value.trim(), teacher:document.getElementById('sTeacher').value.trim(),
+    stuStatus:document.getElementById('sStuStatus').value||'active', totalHours:total, giftHours:gift };
   if(editingStudentId){
     const s=students.find(x=>x.id===editingStudentId); Object.assign(s,data);
   }else{
@@ -2455,7 +2653,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-09-03-v2';
+const APP_VERSION = '2026-09-04-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
