@@ -84,9 +84,14 @@ t('乱序输入自动升序', () => {
 });
 
 console.log('\n=== 3. 页面静态检查 ===');
-t('renderEdit 使用表格 + 全部必需列', () => {
-  ['本月已上日期','本月待上日期','剩余课时','课程类型','联系电话','老师','状态','排课','data-stu-book','stuClearFilter','stuPrev','stuNext'].forEach(k=>{
+t('renderEdit 使用表格 + 全部必需列（表头为动态月份文案）', () => {
+  ["mLabel+'已上日期","mLabel+'待上日期","mLabel+'已上/计划 ",'剩余课时','课程类型','联系电话','老师','状态','排课','data-stu-book','stuClearFilter','stuPrev','stuNext'].forEach(k=>{
     ok(HTML.indexOf(k) >= 0, 'index.html 缺少关键字：' + k);
+  });
+});
+t('月份切换：状态变量 + 选择器 + 回本月 + 空占位文案', () => {
+  ["let stuMonth=","id=\"stuMonthPick\"","id=\"stuMonthBack\"","stuMonth||today.slice(0,7)",'该月无待上'].forEach(k=>{
+    ok(HTML.indexOf(k) >= 0, 'index.html 缺少月份切换关键字：' + k);
   });
 });
 t('弹窗含新增字段（电话/老师/在读状态）', () => {

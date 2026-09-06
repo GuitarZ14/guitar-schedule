@@ -327,6 +327,10 @@
   .stu-pager .spacer{flex:1;}
   .stu-nomatch{text-align:center; color:var(--muted); padding:26px 12px;}
   .stu-nomatch .tbtn{margin-left:12px;}
+  /* 月份行：与月度统计页同款「选择月份」交互（月份输入 ≥16px 防 iOS 聚焦缩放） */
+  .stu-monthbar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 10px;}
+  .stu-monthbar .range{font-size:13px; color:var(--muted); font-weight:600;}
+  .stu-monthbar input[type=month]{font-size:16px; padding:7px 10px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--glass); color:var(--text); font-family:var(--font-body);}
   .stu-table .phone{font-variant-numeric:tabular-nums; color:var(--muted);}
   /* 窄屏才允许横向滚动（桌面保持表头吸顶，overflow 会破坏 sticky） */
   @media(max-width:1260px){ .stu-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;} }
@@ -958,6 +962,7 @@ let stuSortKey='name';     // 排序键：name | remain | monthDone
 let stuSortDir=1;          // 1=升序 -1=降序
 let stuPage=1;             // 当前页码（每页 STU_PAGE_SIZE 条）
 let stuExpanded='';        // 当前展开「查看」详情行的学员 id，''=无
+let stuMonth='';           // 学员管理页选中的月份 YYYY-MM，''=本月（可查任一历史/未来月份）
 const STU_PAGE_SIZE=20;
 const STU_STATUS={
   active:  {txt:'在读', cls:'st-active'},
@@ -1233,7 +1238,8 @@ function sortArrow(key){
 }
 function renderEdit(){
   const today=todayStr();
-  const ym=today.slice(0,7);  // 统计口径：自然月
+  const ym=stuMonth||today.slice(0,7);  // 统计口径：所选月份的自然月（默认本月，可切换任意月份）
+  const mLabel=parseInt(ym.slice(5),10)+'月';  // 表头动态文案：本月/9月/8月…
   const levels=[...new Set(students.map(s=>s.level||'其他'))];
 
   let html='<div class="sec-head"><h3>学员管理</h3><span class="spacer"></span>'
@@ -1246,6 +1252,13 @@ function renderEdit(){
     document.getElementById('addStudent').onclick=()=>openStudentModal(null);
     return;
   }
+
+  /* 月份行：与月度统计页同款交互；选中历史/未来月份时出现「回本月」 */
+  const isCurMonth=(ym===today.slice(0,7));
+  html+='<div class="weeknav stu-monthbar"><span class="range">选择月份</span>'
+    +'<input type="month" id="stuMonthPick" value="'+esc(ym)+'" style="max-width:180px">'
+    +(isCurMonth?'':'<button class="tbtn" id="stuMonthBack">回本月</button>')
+    +'</div>';
 
   /* 工具栏：搜索 + 类型筛选 + 状态筛选 */
   html+='<div class="stu-toolbar">'
@@ -1293,9 +1306,9 @@ function renderEdit(){
   /* 表格 */
   html+='<div class="stu-table-wrap"><table class="stu-table"><thead><tr>'
     +'<th class="sortable" data-sort="name">学员 '+sortArrow('name')+'</th>'
-    +'<th>本月已上日期</th>'
-    +'<th>本月待上日期</th>'
-    +'<th class="num sortable" data-sort="monthDone">本月已上/计划 '+sortArrow('monthDone')+'</th>'
+    +'<th>'+mLabel+'已上日期</th>'
+    +'<th>'+mLabel+'待上日期</th>'
+    +'<th class="num sortable" data-sort="monthDone">'+mLabel+'已上/计划 '+sortArrow('monthDone')+'</th>'
     +'<th class="num sortable" data-sort="remain">剩余课时 '+sortArrow('remain')+'</th>'
     +'<th>课程类型</th>'
     +'<th>联系电话</th>'
@@ -1313,7 +1326,7 @@ function renderEdit(){
       html+='<tr class="stu-row">'
         +'<td class="stu-name" data-stu-view="'+r.s.id+'"><span class="swatch" style="background:'+r.s.color+'"></span>'+esc(r.s.name)+'</td>'
         +'<td><div class="dtags">'+dateTags(r.doneDates,today)+'</div></td>'
-        +'<td><div class="dtags">'+(r.planDates.length?dateTags(r.planDates,today):'<span class="dtag-none">本月无待上</span>')+'</div></td>'
+        +'<td><div class="dtags">'+(r.planDates.length?dateTags(r.planDates,today):'<span class="dtag-none">该月无待上</span>')+'</div></td>'
         +'<td class="num"><b>'+r.monthDone+'</b><span class="sep">/</span>'+r.monthPlan+'</td>'
         +'<td class="num">'+(r.remain!=null
             ?'<b class="'+(low?'h-low':'h-ok')+'">'+r.remain+'</b>'+(low?'<span class="h-tip">建议续费</span>':'')
@@ -1360,6 +1373,10 @@ function renderEdit(){
   };
   document.getElementById('stuTypeFilter').onchange=e=>{ stuTypeFilter=e.target.value; stuPage=1; renderEdit(); };
   document.getElementById('stuStatusFilter').onchange=e=>{ stuStatusFilter=e.target.value; stuPage=1; renderEdit(); };
+  /* 月份切换：清空输入 = 回到本月 */
+  document.getElementById('stuMonthPick').onchange=e=>{ stuMonth=e.target.value||''; stuPage=1; renderEdit(); };
+  const monthBack=document.getElementById('stuMonthBack');
+  if(monthBack) monthBack.onclick=()=>{ stuMonth=''; stuPage=1; renderEdit(); };
   v.querySelectorAll('th.sortable').forEach(th=>th.onclick=()=>{
     const k=th.dataset.sort;
     if(stuSortKey===k) stuSortDir*=-1; else { stuSortKey=k; stuSortDir=1; }
@@ -2657,7 +2674,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-09-04-v3';
+const APP_VERSION = '2026-09-06-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
