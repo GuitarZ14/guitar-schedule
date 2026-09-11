@@ -166,6 +166,41 @@ t('该月无记录 → 空数组（触发「暂无上课记录」提示）', () 
   ok(buildRecs(STU, CRS)('2026-07').length === 0);
 });
 
+console.log('\n=== 5. 按学员分组聚合 shortDate / groupByStudent ===');
+const buildGroup = new Function(
+  extractFn('shortDate') + '\n' + extractFn('groupByStudent') + '\nreturn { shortDate, groupByStudent };'
+);
+const { shortDate, groupByStudent } = buildGroup();
+t('shortDate：2026-09-03 → 9.3（月.日、去前导零）', () => {
+  ok(shortDate('2026-09-03') === '9.3', '实际 ' + shortDate('2026-09-03'));
+  ok(shortDate('2026-10-15') === '10.15', '实际 ' + shortDate('2026-10-15'));
+});
+t('groupByStudent：同人合并一行、日期升序、中文逗号分隔', () => {
+  const g = groupByStudent([
+    {name:'学生A', date:'2026-09-02'},
+    {name:'学生A', date:'2026-09-01'},
+    {name:'学生A', date:'2026-09-03'},
+    {name:'学生B', date:'2026-09-05'}
+  ]);
+  ok(g.length === 2, '应为 2 行（每生一行），实际 ' + g.length);
+  ok(g[0][0] === '学生A' && g[0][1] === '9.1，9.2，9.3', '学生A 应为 9.1，9.2，9.3，实际 ' + g[0][1]);
+  ok(g[1][0] === '学生B' && g[1][1] === '9.5', '学生B 应为 9.5，实际 ' + g[1][1]);
+});
+t('groupByStudent：同日重复只保留一次', () => {
+  const g = groupByStudent([
+    {name:'学生A', date:'2026-09-03'},
+    {name:'学生A', date:'2026-09-03'}
+  ]);
+  ok(g.length === 1 && g[0][1] === '9.3', '同日应去重为 9.3，实际 ' + g[0][1]);
+});
+t('groupByStudent：保留传入的学员顺序', () => {
+  const g = groupByStudent([
+    {name:'乐乐', date:'2026-09-02'},
+    {name:'小明', date:'2026-09-03'}
+  ]);
+  ok(g.map(r => r[0]).join(',') === '乐乐,小明', '实际 ' + g.map(r => r[0]).join(','));
+});
+
 console.log('\n' + '─'.repeat(52));
 console.log(fail === 0 ? `全部通过：${pass} 项 ✓` : `通过 ${pass} 项，失败 ${fail} 项 ✗`);
 process.exit(fail === 0 ? 0 : 1);

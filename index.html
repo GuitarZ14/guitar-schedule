@@ -2066,16 +2066,36 @@ function stuMonthRecords(ym){
     });
   return recs;
 }
-/* 导出所选月份「学员上课详情」CSV（仅两列：学员名字 / 已上日期）。
+/* '2026-09-03' → '9.3'：导出文件按月切分，日期用「月.日」紧凑写法（去前导零） */
+function shortDate(date){
+  const p=String(date||'').split('-');
+  return p.length>=3 ? (Number(p[1])+'.'+Number(p[2])) : String(date||'');
+}
+/* 按学员分组聚合：输入「每堂课一条」的 recs，输出「每人一行」——
+   [学员名, 日期合并串]，日期升序去重、中文逗号分隔（如 "9.3，9.4，9.6"）。
+   保留 recs 的学员顺序（stuMonthRecords 已按姓名升序）。 */
+function groupByStudent(recs){
+  const map=new Map();
+  recs.forEach(r=>{
+    if(!map.has(r.name)) map.set(r.name, []);
+    map.get(r.name).push(String(r.date));
+  });
+  return Array.from(map.entries()).map(e=>[
+    e[0],
+    Array.from(new Set(e[1])).sort().map(shortDate).join('，')
+  ]);
+}
+/* 导出所选月份「学员上课详情」CSV（每人一行：学员名字 / 已上日期合并）。
    触发方式 = 点击即导出（只读操作，不做二次确认）；本月无记录时不产出空文件，改提示。 */
 function exportStuMonth(ym){
   const label=parseInt(ym.slice(5),10)+'月';
   const recs=stuMonthRecords(ym);
   if(!recs.length){ showToast(label+'暂无上课记录'); return; }
-  const rows=[['学员名字','已上日期']].concat(recs.map(r=>[r.name, r.date]));
+  const rows=[['学员名字','已上日期']].concat(groupByStudent(recs));
+  const stuCount=rows.length-1;
   const csv='\ufeff'+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');
   download(ym+'-学员上课详情.csv', csv, 'text/csv');
-  showToast('已导出 '+recs.length+' 条「'+label+'」上课记录 ✓');
+  showToast('已导出 '+stuCount+' 名学员（'+recs.length+' 堂课）✓');
 }
 function importJson(file){
   const r=new FileReader();
@@ -2695,7 +2715,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-09-11-v3';
+const APP_VERSION = '2026-09-11-v4';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
