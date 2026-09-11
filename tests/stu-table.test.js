@@ -1,7 +1,8 @@
 /**
  * 学员管理表格视图 — 工具函数回归测试
  * ------------------------------------------------------------------
- * 覆盖：电话脱敏 maskPhone / 日期紧凑标签 dateTags（折叠 +N、3 天内高亮）。
+ * 覆盖：电话脱敏 maskPhone / 日期标签 dateTags（全展开、只显日号、3 天内高亮）/
+ *       本月上课详情 stuMonthRecords（导出数据源）。
  * 与 extra-income-month.test.js 相同思路：直接从 index.html 抽取真实函数运行。
  *
  * 运行：TZ=Asia/Shanghai node tests/stu-table.test.js
@@ -89,8 +90,25 @@ t('乱序输入自动升序', () => {
 
 console.log('\n=== 3. 页面静态检查 ===');
 t('renderEdit 使用表格 + 全部必需列（表头为动态月份文案）', () => {
-  ["mLabel+'已上日期","mLabel+'待上日期","mLabel+'已上/计划 ",'剩余课时','课程类型','联系电话','老师','状态','排课','data-stu-book','stuClearFilter','stuPrev','stuNext'].forEach(k=>{
+  ["mLabel+'已上日期","mLabel+'待上日期","mLabel+'已上/计划 ",'剩余课时','课程类型','状态','排课','data-stu-book','stuClearFilter','stuPrev','stuNext'].forEach(k=>{
     ok(HTML.indexOf(k) >= 0, 'index.html 缺少关键字：' + k);
+  });
+});
+t('列表与搜索已移除电话/老师（弹窗录入字段保留）', () => {
+  ['<th>联系电话</th>','<th>老师</th>','class="phone"','搜索姓名 / 手机号',
+   "String(r.s.phone||'').indexOf(kw)",'完整电话'].forEach(k=>{
+    ok(HTML.indexOf(k) < 0, '应已移除：' + k);
+  });
+  ok(HTML.indexOf('id="sPhone"') >= 0, '弹窗录入字段应保留（避免存量数据丢失）');
+});
+t('表格 8 列且 colspan 一致（无空列/错位）', () => {
+  ok(HTML.indexOf('colspan="8"') >= 0, '空态行与详情行 colspan 应为 8');
+  ok(HTML.indexOf('colspan="10"') < 0, '不应残留 colspan="10"');
+});
+t('导出入口：按钮 + 两列 CSV + 空数据提示', () => {
+  ['id="expStuMonth"','stuMonthRecords','exportStuMonth',
+   "['学员名字','已上日期']",'暂无上课记录','-学员上课详情.csv'].forEach(k=>{
+    ok(HTML.indexOf(k) >= 0, 'index.html 缺少导出关键字：' + k);
   });
 });
 t('月份切换：状态变量 + 选择器 + 回本月 + 空占位文案', () => {
@@ -111,6 +129,41 @@ t('弹窗含新增字段（电话/老师/在读状态）', () => {
 });
 t('旧卡片视图的删除按钮已收进弹窗，表格操作列无删除', () => {
   ok(HTML.indexOf('data-stu-del') < 0, 'data-stu-del 应已移除（删除入口在编辑弹窗内）');
+});
+
+console.log('\n=== 4. 本月上课详情 stuMonthRecords（导出数据源）===');
+const buildRecs = new Function('students', 'courses',
+  extractFn('stuMonthRecords') + '\nreturn stuMonthRecords;');
+const STU = [
+  {id:'s1', name:'小明'},
+  {id:'s2', name:'乐乐'},
+  {id:'s3', name:'张同学'}
+];
+const CRS = [
+  {studentId:'s1', date:'2026-09-03', status:'done'},
+  {studentId:'s1', date:'2026-09-10', status:'done'},
+  {studentId:'s1', date:'2026-09-20', status:'planned'},   // 待上：不计
+  {studentId:'s1', date:'2026-09-05', status:'absent'},    // 请假：不计
+  {studentId:'s1', date:'2026-08-31', status:'done'},      // 上月：不计
+  {studentId:'s2', date:'2026-09-02', status:'done'},
+  {studentId:'s3', date:'2026-09-09', status:'cancelled'}, // 取消：不计
+];
+const recs = buildRecs(STU, CRS)('2026-09');
+t('只取 done 且限定所选自然月', () => {
+  ok(recs.length === 3, '应为 3 条（待上/请假/上月/取消均排除），实际 ' + recs.length);
+  ok(recs.every(r => String(r.date).indexOf('2026-09') === 0), '日期应都在 2026-09');
+});
+t('同一学员多次上课按日期分行且升序', () => {
+  const m = recs.filter(r => r.name === '小明').map(r => r.date);
+  ok(m.join(',') === '2026-09-03,2026-09-10', '小明应为 09-03、09-10，实际 ' + m.join(','));
+});
+t('学员按姓名升序；每条仅含 name/date 两字段', () => {
+  const order = [...new Set(recs.map(r => r.name))].join(',');
+  ok(order === '乐乐,小明', '学员顺序应为 乐乐、小明，实际 ' + order);
+  ok(Object.keys(recs[0]).sort().join(',') === 'date,name', '仅应有 name/date 两字段');
+});
+t('该月无记录 → 空数组（触发「暂无上课记录」提示）', () => {
+  ok(buildRecs(STU, CRS)('2026-07').length === 0);
 });
 
 console.log('\n' + '─'.repeat(52));

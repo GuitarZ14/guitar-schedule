@@ -332,7 +332,6 @@
   .stu-monthbar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 10px;}
   .stu-monthbar .range{font-size:13px; color:var(--muted); font-weight:600;}
   .stu-monthbar input[type=month]{font-size:16px; padding:7px 10px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--glass); color:var(--text); font-family:var(--font-body);}
-  .stu-table .phone{font-variant-numeric:tabular-nums; color:var(--muted);}
   /* 窄屏才允许横向滚动（桌面保持表头吸顶，overflow 会破坏 sticky） */
   @media(max-width:1260px){ .stu-table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;} }
   @media(max-width:860px){ .stu-table th,.stu-table td{padding:8px 10px;} }
@@ -956,7 +955,7 @@ let currentMonth='';
 let filterStudent='';      // 顶部筛选：''=全部
 let salaryMonth='';        // 工资页当前选中的月份 YYYY-MM，空则默认本月
 /* ===== 学员管理表格视图状态 ===== */
-let stuSearch='';          // 搜索词（匹配姓名/手机号）
+let stuSearch='';          // 搜索词（仅匹配姓名）
 let stuTypeFilter='';      // 课程类型筛选（level），''=全部
 let stuStatusFilter='';    // 在读状态筛选，''=全部
 let stuSortKey='name';     // 排序键：name | remain | monthDone
@@ -1242,6 +1241,7 @@ function renderEdit(){
   const levels=[...new Set(students.map(s=>s.level||'其他'))];
 
   let html='<div class="sec-head"><h3>学员管理</h3><span class="spacer"></span>'
+    +'<button class="tbtn" id="expStuMonth" title="导出'+mLabel+'全部学员的已上日期（每堂课一行）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>导出'+mLabel+'上课详情</button>'
     +'<button class="primary" id="addStudent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>新增学员</button></div>';
 
   /* 空数据状态（无任何学员） */
@@ -1249,6 +1249,7 @@ function renderEdit(){
     html+='<div class="empty">还没有学员，点上方「新增学员」添加。</div>';
     const v=document.getElementById('view-edit'); v.innerHTML=html;
     document.getElementById('addStudent').onclick=()=>openStudentModal(null);
+    document.getElementById('expStuMonth').onclick=()=>exportStuMonth(ym);
     return;
   }
 
@@ -1261,7 +1262,7 @@ function renderEdit(){
 
   /* 工具栏：搜索 + 类型筛选 + 状态筛选 */
   html+='<div class="stu-toolbar">'
-    +'<input id="stuSearch" type="search" placeholder="搜索姓名 / 手机号" value="'+esc(stuSearch)+'">'
+    +'<input id="stuSearch" type="search" placeholder="搜索姓名" value="'+esc(stuSearch)+'">'
     +'<select id="stuTypeFilter"><option value="">全部类型</option>'
     +levels.map(l=>'<option value="'+esc(l)+'"'+(l===stuTypeFilter?' selected':'')+'>'+esc(l)+'</option>').join('')
     +'</select>'
@@ -1284,7 +1285,7 @@ function renderEdit(){
     return {s, doneDates:monthDone.map(c=>c.date), planDates:monthPlan.map(c=>c.date),
       monthDone:monthDone.length, monthPlan:monthPlan.length, remain, past, next};
   }).filter(r=>{
-    if(kw && !(r.s.name.toLowerCase().indexOf(kw)>=0 || String(r.s.phone||'').indexOf(kw)>=0)) return false;
+    if(kw && r.s.name.toLowerCase().indexOf(kw)<0) return false;
     if(stuTypeFilter && (r.s.level||'其他')!==stuTypeFilter) return false;
     if(stuStatusFilter && (r.s.stuStatus||'active')!==stuStatusFilter) return false;
     return true;
@@ -1310,14 +1311,12 @@ function renderEdit(){
     +'<th class="num sortable" data-sort="monthDone">'+mLabel+'已上/计划 '+sortArrow('monthDone')+'</th>'
     +'<th class="num sortable" data-sort="remain">剩余课时 '+sortArrow('remain')+'</th>'
     +'<th>课程类型</th>'
-    +'<th>联系电话</th>'
-    +'<th>老师</th>'
     +'<th>状态</th>'
     +'<th>操作</th>'
     +'</tr></thead><tbody>';
 
   if(!rows.length){
-    html+='<tr><td colspan="10" class="stu-nomatch">没有匹配的学员<button id="stuClearFilter" class="tbtn">清除搜索与筛选</button></td></tr>';
+    html+='<tr><td colspan="8" class="stu-nomatch">没有匹配的学员<button id="stuClearFilter" class="tbtn">清除搜索与筛选</button></td></tr>';
   }else{
     pageRows.forEach(r=>{
       const st=STU_STATUS[r.s.stuStatus]||STU_STATUS.active;
@@ -1331,8 +1330,6 @@ function renderEdit(){
             ?'<b class="'+(low?'h-low':'h-ok')+'">'+r.remain+'</b>'+(low?'<span class="h-tip">建议续费</span>':'')
             :'<span class="dtag-none">未设置</span>')+'</td>'
         +'<td>'+esc(r.s.level||'其他')+'</td>'
-        +'<td class="phone">'+(r.s.phone?esc(maskPhone(r.s.phone)):'—')+'</td>'
-        +'<td>'+(r.s.teacher?esc(r.s.teacher):'—')+'</td>'
         +'<td><span class="stu-tag '+st.cls+'">'+st.txt+'</span></td>'
         +'<td class="ops-cell">'
         +'<button class="tbtn" data-stu-view="'+r.s.id+'">查看</button>'
@@ -1342,9 +1339,8 @@ function renderEdit(){
       /* 「查看」展开的详情行 */
       if(stuExpanded===r.s.id){
         const s=r.s;
-        html+='<tr class="stu-expand"><td colspan="10"><div class="ex-grid">'
+        html+='<tr class="stu-expand"><td colspan="8"><div class="ex-grid">'
           +'<div><span>备注</span><b>'+(s.note?esc(s.note):'—')+'</b></div>'
-          +'<div><span>完整电话</span><b>'+(s.phone?esc(String(s.phone)):'—')+'</b></div>'
           +'<div><span>总课时</span><b>'+(s.totalHours!=null?Number(s.totalHours)+(Number(s.giftHours)>0?'（赠'+Number(s.giftHours)+'）':''):'未设置')+'</b></div>'
           +'<div><span>最近课</span><b>'+(r.past?r.past.date.slice(5).replace('-','/')+' '+esc(r.past.start):'—')+'</b></div>'
           +'<div><span>下节课</span><b>'+(r.next?r.next.date.slice(5).replace('-','/')+' '+esc(r.next.start):'—')+'</b></div>'
@@ -1364,6 +1360,7 @@ function renderEdit(){
 
   /* 事件绑定（改状态 → 重渲染，渲染函数之间零互调） */
   document.getElementById('addStudent').onclick=()=>openStudentModal(null);
+  document.getElementById('expStuMonth').onclick=()=>exportStuMonth(ym);
   const searchBox=document.getElementById('stuSearch');
   searchBox.oninput=e=>{
     stuSearch=e.target.value; stuPage=1; renderEdit();
@@ -2055,6 +2052,31 @@ function exportCsv(ym,map,totalCount,totalMin){
   const csv='\ufeff'+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');
   download(ym+'课时统计.csv', csv, 'text/csv');
 }
+/* 学员管理 · 汇总某月「已上」记录：每名学员每堂课一条（同一学员多次上课按日期分行）。
+   数据范围 = 所选自然月（YYYY-MM 前缀匹配）；只取 status==='done'（已上），
+   请假/取消/待上均不计入。学员按姓名升序、同一学员按日期升序，输出稳定可读。 */
+function stuMonthRecords(ym){
+  const recs=[];
+  students.slice()
+    .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'zh'))
+    .forEach(s=>{
+      courses.filter(c=>c.studentId===s.id && c.status==='done' && String(c.date||'').indexOf(ym)===0)
+        .sort((a,b)=>String(a.date).localeCompare(String(b.date)))
+        .forEach(c=>recs.push({name:s.name, date:c.date}));
+    });
+  return recs;
+}
+/* 导出所选月份「学员上课详情」CSV（仅两列：学员名字 / 已上日期）。
+   触发方式 = 点击即导出（只读操作，不做二次确认）；本月无记录时不产出空文件，改提示。 */
+function exportStuMonth(ym){
+  const label=parseInt(ym.slice(5),10)+'月';
+  const recs=stuMonthRecords(ym);
+  if(!recs.length){ showToast(label+'暂无上课记录'); return; }
+  const rows=[['学员名字','已上日期']].concat(recs.map(r=>[r.name, r.date]));
+  const csv='\ufeff'+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');
+  download(ym+'-学员上课详情.csv', csv, 'text/csv');
+  showToast('已导出 '+recs.length+' 条「'+label+'」上课记录 ✓');
+}
 function importJson(file){
   const r=new FileReader();
   r.onload=()=>{
@@ -2673,7 +2695,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-09-11-v1';
+const APP_VERSION = '2026-09-11-v2';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
