@@ -49,18 +49,22 @@ t('带空格先清洗', () => ok(maskPhone('138 1234 5678') === '138****5678'));
 t('非 11 位但有 7 位以上 → 首3尾2掩码', () => ok(maskPhone('021655588') === '021****88'));
 t('过短号码原样返回', () => ok(maskPhone('12345') === '12345'));
 
-console.log('\n=== 2. 日期紧凑标签 dateTags ===');
+console.log('\n=== 2. 日期标签 dateTags（全展开 · 只显日号）===');
 t('空数组 → 占位符 —', () => ok(dateTags([], TODAY).indexOf('dtag-none') >= 0));
-t('不超过 3 个全部展示，MM-DD 格式', () => {
+t('只显示日号，不再带 MM/ 前缀（月份由表头承载）', () => {
   const h = dateTags(['2026-09-01', '2026-09-03'], TODAY);
-  ok(h.indexOf('09/01') >= 0 && h.indexOf('09/03') >= 0);
-  ok(h.indexOf('+') < 0, '不应出现 +N');
+  ok(h.indexOf('>1<') >= 0 && h.indexOf('>3<') >= 0, '应显示日号 1 / 3');
+  ok(h.indexOf('09/') < 0, '不应再出现 MM/ 前缀');
 });
-t('超过 3 个 → 前 3 个 + "+N"，且 N 正确', () => {
+t('超过 3 个全部展开，不折叠 +N，也不依赖悬停 title', () => {
   const h = dateTags(['2026-09-01','2026-09-02','2026-09-05','2026-09-08','2026-09-20'], TODAY);
-  ok(h.indexOf('+2') >= 0, '应有 +2');
-  ok(h.indexOf('<span class="dtag">09/08') < 0 && h.indexOf('<span class="dtag">09/20') < 0, '第 4 个起不作为可见标签展示');
-  ok(h.indexOf('title="09/08、09/20"') >= 0, '剩余日期放进 +N 的 title 提示里');
+  ['>1<','>2<','>5<','>8<','>20<'].forEach(k=>ok(h.indexOf(k) >= 0, '应可见日号 ' + k));
+  ok(h.indexOf('+') < 0, '不应出现 +N 折叠');
+  ok(h.indexOf('title=') < 0, '不应再依赖 title 悬停提示');
+});
+t('7 个日期渲染 7 个标签（不再截断到前 3 个）', () => {
+  const h = dateTags(['2026-09-03','2026-09-04','2026-09-06','2026-09-07','2026-09-08','2026-09-09','2026-09-10'], TODAY);
+  ok((h.match(/class="dtag/g)||[]).length === 7, '应渲染 7 个标签');
 });
 t('3 天内（今天 2026-09-04 → 截止 09-07）待上日期高亮 soon', () => {
   const h = dateTags(['2026-09-06'], TODAY);
@@ -80,7 +84,7 @@ t('边界：第 3 天（09-07）高亮，第 4 天（09-08）不高亮', () => {
 });
 t('乱序输入自动升序', () => {
   const h = dateTags(['2026-09-08','2026-09-01','2026-09-03','2026-09-05','2026-09-02'], TODAY);
-  ok(h.indexOf('09/01') < h.indexOf('09/02') && h.indexOf('09/02') < h.indexOf('09/03'));
+  ok(h.indexOf('>1<') < h.indexOf('>2<') && h.indexOf('>2<') < h.indexOf('>3<'));
 });
 
 console.log('\n=== 3. 页面静态检查 ===');
@@ -93,6 +97,12 @@ t('月份切换：状态变量 + 选择器 + 回本月 + 空占位文案', () =>
   ["let stuMonth=","id=\"stuMonthPick\"","id=\"stuMonthBack\"","stuMonth||today.slice(0,7)",'该月无待上'].forEach(k=>{
     ok(HTML.indexOf(k) >= 0, 'index.html 缺少月份切换关键字：' + k);
   });
+});
+t('日期全展开样式：可换行 + 宽度上限 + 字号提升 + 旧折叠样式移除', () => {
+  ok(HTML.indexOf('.dtags{display:flex; gap:4px; align-items:center; flex-wrap:wrap; max-width:210px;}') >= 0, '.dtags 应可换行且有宽度上限');
+  ok(HTML.indexOf('font-size:13px; font-weight:600; padding:2px 7px') >= 0, '.dtag 字号应提升到 13px');
+  ok(HTML.indexOf('.dtag.more') < 0, '旧 +N 折叠样式应已移除');
+  ok(HTML.indexOf("class=\"dtag more\"") < 0, '旧 +N 折叠渲染逻辑应已移除');
 });
 t('弹窗含新增字段（电话/老师/在读状态）', () => {
   ['id="sPhone"','id="sTeacher"','id="sStuStatus"'].forEach(k=>{

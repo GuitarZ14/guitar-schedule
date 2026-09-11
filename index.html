@@ -300,10 +300,11 @@
   .stu-name{cursor:pointer; font-weight:600; color:var(--text);}
   .stu-name:hover{color:var(--primary);}
   .stu-name .swatch{margin-right:8px;}
-  .dtags{display:flex; gap:4px; align-items:center; flex-wrap:nowrap;}
-  .dtag{font-size:11px; font-weight:600; padding:2px 6px; border-radius:var(--r-sm); background:rgba(189,133,92,.12); border:1px solid rgba(189,133,92,.3); color:var(--text-2); font-family:var(--font-display);}
+  /* 日期标签：全部展开 + 自动换行。max-width 迫使长日期列表折行，突破 td 的 nowrap */
+  .stu-table td.dt-col{white-space:normal;}   /* 显式解除单元格 nowrap，保证 flex 容器能折行（双保险） */
+  .dtags{display:flex; gap:4px; align-items:center; flex-wrap:wrap; max-width:210px;}
+  .dtag{font-size:13px; font-weight:600; padding:2px 7px; border-radius:var(--r-sm); background:rgba(189,133,92,.12); border:1px solid rgba(189,133,92,.3); color:var(--text-2); font-family:var(--font-display); white-space:nowrap;}
   .dtag.soon{background:var(--primary); border-color:var(--primary); color:#fff;}
-  .dtag.more{background:transparent; border-style:dashed; color:var(--muted); cursor:help;}
   .dtag-none{color:var(--muted-2); font-size:12px;}
   .stu-table b{font-variant-numeric:tabular-nums; font-family:var(--font-display);}
   .h-ok{color:var(--text-2);}
@@ -978,20 +979,18 @@ function maskPhone(p){
   if(d.length>=7) return d.slice(0,3)+'****'+d.slice(-2);
   return d;
 }
-/* 日期紧凑标签：升序展示 MM-DD，超 3 个折叠为 +N（title 含余下日期）；3 天内待上高亮 */
+/* 日期标签：全部展开（不折叠、无悬停依赖），表头已标明月份故只显示日号；
+   3 天内待上高亮 soon。容器 .dtags 设 max-width + flex-wrap 自动换行承接长列表 */
 function dateTags(dates, today){
   if(!dates.length) return '<span class="dtag-none">—</span>';
   const sorted=dates.slice().sort();
   const d3=parseYMD(today); d3.setDate(d3.getDate()+3);
   const limitYmd=ymd(d3);
-  let html=sorted.slice(0,3).map(dt=>{
+  return sorted.map(dt=>{
+    const day=dt.length>=10?parseInt(dt.slice(8),10):dt;   // 月份由表头承载，标签只留日号
     const soon=(dt>=today && dt<=limitYmd);
-    return '<span class="dtag'+(soon?' soon':'')+'">'+dt.slice(5).replace('-','/')+'</span>';
+    return '<span class="dtag'+(soon?' soon':'')+'">'+day+'</span>';
   }).join('');
-  if(sorted.length>3){
-    html+='<span class="dtag more" title="'+sorted.slice(3).map(x=>x.slice(5).replace('-','/')).join('、')+'">+'+(sorted.length-3)+'</span>';
-  }
-  return html;
 }
 
 /* ===== utils ===== */
@@ -1325,8 +1324,8 @@ function renderEdit(){
       const low=(r.remain!=null&&r.remain<=2);
       html+='<tr class="stu-row">'
         +'<td class="stu-name" data-stu-view="'+r.s.id+'"><span class="swatch" style="background:'+r.s.color+'"></span>'+esc(r.s.name)+'</td>'
-        +'<td><div class="dtags">'+dateTags(r.doneDates,today)+'</div></td>'
-        +'<td><div class="dtags">'+(r.planDates.length?dateTags(r.planDates,today):'<span class="dtag-none">该月无待上</span>')+'</div></td>'
+        +'<td class="dt-col"><div class="dtags">'+dateTags(r.doneDates,today)+'</div></td>'
+        +'<td class="dt-col"><div class="dtags">'+(r.planDates.length?dateTags(r.planDates,today):'<span class="dtag-none">该月无待上</span>')+'</div></td>'
         +'<td class="num"><b>'+r.monthDone+'</b><span class="sep">/</span>'+r.monthPlan+'</td>'
         +'<td class="num">'+(r.remain!=null
             ?'<b class="'+(low?'h-low':'h-ok')+'">'+r.remain+'</b>'+(low?'<span class="h-tip">建议续费</span>':'')
@@ -2674,7 +2673,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-09-06-v1';
+const APP_VERSION = '2026-09-11-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
