@@ -285,7 +285,7 @@
   /* ===== 学员管理表格视图 ===== */
   .stu-toolbar{display:flex; gap:10px; flex-wrap:wrap; margin:0 0 12px;}
   .stu-toolbar input[type=search]{flex:1; min-width:180px; font-size:16px; padding:9px 12px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--glass); color:var(--text); font-family:var(--font-body);}
-  .stu-toolbar select{font-size:14px; padding:9px 10px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--glass); color:var(--text); font-family:var(--font-body);}
+  .stu-toolbar select{width:auto; flex:0 1 auto; font-size:14px; padding:9px 10px; border:1px solid var(--line); border-radius:var(--r-sm); background:var(--glass); color:var(--text); font-family:var(--font-body);}
   .stu-table-wrap{background:var(--glass); border:1px solid var(--glass-border); border-radius:var(--r-md); box-shadow:var(--sh-1);}
   .stu-table{width:100%; min-width:980px; border-collapse:collapse; font-size:13px; color:var(--text-2);}
   .stu-table th,.stu-table td{padding:10px 12px; text-align:left; white-space:nowrap; border-bottom:1px solid var(--line);}
@@ -2695,7 +2695,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-09-11-v2';
+const APP_VERSION = '2026-09-11-v3';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
