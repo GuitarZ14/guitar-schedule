@@ -192,7 +192,10 @@
   .seg-btn:hover{color:var(--primary);}
   .seg-btn.on{background:var(--primary); color:#fff; font-weight:600;}
   /* 体验课徽标：列表 / 课表 / 时间轴上的「体验」小标签 */
-  .tribadge{display:inline-block; margin-left:5px; padding:0 6px; border-radius:6px; border:1px solid var(--glass-border); background:var(--primary-soft); color:var(--primary-d); font-size:11px; font-weight:500; line-height:17px; vertical-align:middle;}
+  .tribadge{display:inline-block; flex:0 0 auto; white-space:nowrap; margin-left:5px; padding:0 6px; border-radius:6px; border:1px solid var(--glass-border); background:var(--primary-soft); color:var(--primary-d); font-size:11px; font-weight:500; line-height:17px; vertical-align:middle;}
+  /* 「今天还需要上 N 课」的 .titem .who span 是 display:block（特异性 0,3,1），
+     会把同为 span 的体验徽标撑满整行 —— 必须用同特异性选择器拉回行内 */
+  .titem .who span.tribadge{display:inline-block; width:auto; overflow:visible; text-overflow:clip; font-size:11px; color:var(--primary-d);}
 
   .hint{background:var(--warn-soft); border:1px solid rgba(245,166,35,0.3); color:var(--text-2); border-radius:var(--r-md); padding:10px 14px; font-size:13px; margin-bottom:14px;}
 
@@ -377,6 +380,9 @@
   .modal-x{position:absolute; top:12px; right:12px; width:34px; height:34px; min-height:34px; border-radius:50%; border:none; background:rgba(255,255,255,0.6); color:var(--text-2); font-size:20px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:var(--sh-1);}
   .modal-x:hover{background:rgba(255,255,255,0.9);}
   label{display:block; font-size:13px; color:var(--text-2); margin-bottom:14px;}
+  /* 作者样式的 label{display:block} 会压过浏览器默认的 [hidden]{display:none}，
+     导致 hidden 属性失效（如课程表单里按类型切换 学员/学员姓名 两行）——必须显式覆盖 */
+  label[hidden]{display:none !important;}
   label .lab{display:block; margin-bottom:6px; font-weight:600;}
   input,select,textarea{
     width:100%; font-family:var(--font-body); font-size:16px; color:var(--text);
@@ -1093,7 +1099,7 @@ function renderToday(){
     /* 上课状态角标：逾期/待上（本块仅课表页渲染） */
     return `<div class="titem ${over?'over':''}">
       <div class="when">${esc(when)}</div>
-      <div class="who"><b>${esc(courseWho(c))}</b>${trialBadge(c)}<span>${esc(c.start+'~'+c.end)}</span></div>
+      <div class="who"><b>${esc(courseWho(c))}${trialBadge(c)}</b><span>${esc(c.start+'~'+c.end)}</span></div>
       <div class="tag">${over?'逾期':'待上'}</div>
       <div class="acts">
         <button class="btn-absent" data-absent="${c.id}">请假</button>
@@ -1188,7 +1194,7 @@ function renderWeek(){
     clist.forEach(c=>{
       const d=parseYMD(c.date);
       const color=courseColor(c);
-      bodyHtml+='<div class="row-card"><div class="main"><b><span class="swatch" style="background:'+color+'"></span>'+esc(courseWho(c))+'</b>'+trialBadge(c)
+      bodyHtml+='<div class="row-card"><div class="main"><b><span class="swatch" style="background:'+color+'"></span>'+esc(courseWho(c))+trialBadge(c)+'</b>'
         +'<div class="sub">'+(d.getMonth()+1)+'月'+d.getDate()+'日 '+esc(c.start+'~'+c.end)+' · '+esc(c.focus||'')+'</div></div>'
         +'<span class="badge '+c.status+'">'+STATUS_TXT[c.status]+'</span>'
         +'<div class="ops"><button data-c-edit="'+c.id+'">编辑</button><button class="danger" data-c-del="'+c.id+'">删除</button></div></div>';
@@ -1254,7 +1260,7 @@ function renderDay(){
       const statTxt = c.status==='planned'?'':STATUS_TXT[c.status];
       html+='<div class="tl-item"><div class="tl-card" style="--c:'+color+'" data-edit="'+c.id+'">'
         +'<div class="tl-top"><span class="tl-time">'+esc(c.start+'~'+c.end)+'</span>'
-        +'<span class="tl-name"><span class="tl-dot"></span>'+esc(courseWho(c))+'</span>'+trialBadge(c)
+        +'<span class="tl-name"><span class="tl-dot"></span>'+esc(courseWho(c))+trialBadge(c)+'</span>'
         +(statTxt?'<span class="badge '+c.status+'" style="margin-left:auto">'+statTxt+'</span>':'')+'</div>'
         +'<div class="tl-meta">'
         +(c.song?'<span>曲目：'+esc(c.song)+'</span>':'')
@@ -2814,7 +2820,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-09-30-v1';
+const APP_VERSION = '2026-09-30-v2';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */

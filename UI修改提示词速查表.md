@@ -283,6 +283,32 @@ function monthOf(item){ return /^\d{4}-\d{2}/.test(item.date||'') ? item.date.sl
 
 ---
 
+## ⑬ 往老容器里插新元素：`hidden` 失效 + 被容器规则同化 ✅ 已踩坑
+
+**上下文**：给既有容器（`<label>`、`.who`、`.cn`、`.tl-top`）插入一个新元素（分段控件、徽标、状态小标签）。
+
+**坑 A（2026-09-30）—— `hidden` 属性静默失效**
+用 `el.hidden=true` 控制显隐，元素却仍在页面上。根因：**作者样式的 `label{display:block}` 会压过浏览器默认的 `[hidden]{display:none}`**（UA 样式表优先级低于作者样式，与选择器特异性无关）。
+- 症状：课程表单切到「体验课」后，「学员」下拉行没有隐藏，两行同时出现。
+- 正解：`label[hidden]{display:none !important;}`（项目里 `.modal[hidden]` 当初就是这么绕过的，属同类）。
+- **通用结论**：任何给元素设了 `display` 的自定义规则，都会让该元素的 `hidden` 属性失效，必须显式补 `[hidden]{display:none !important}`。
+
+**坑 B（2026-09-30）—— 新 `<span>` 被容器规则同化**
+把徽标作为 `<span class="tribadge">` 插进 `.titem .who`，结果徽标被撑成 `display:block`、宽 255px（占满整行）。根因：容器里已有一条 `.titem .who span{display:block; overflow:hidden; text-overflow:ellipsis}`（特异性 0,3,1），把**所有后代 span** 一并改写，`.tribadge`（0,1,0）根本压不住。
+- 正解：用**同特异性、放在更后面**的作用域选择器覆盖：`.titem .who span.tribadge{display:inline-block; width:auto; overflow:visible; text-overflow:clip;}`
+- 顺序补充：`.tribadge` 的基类里加 `flex:0 0 auto; white-space:nowrap;`，防止在 `display:flex` 的容器（`.cn`）里被压缩或换行。
+- **通用结论**：插新元素前先 `grep` 该容器有没有「后代 type 选择器」规则（如 `.who span` / `.card p`），有就先想好特异性怎么压。
+
+**提示词模板**：
+```
+在 [容器] 内新增 [元素]：
+① 用 hidden 控制显隐时，确认该元素所在标签有 display 规则 → 补 [hidden]{display:none !important}
+② 若容器已有 ".X span{...}" 这类后代规则，新 span 会被同化 → 用同特异性作用域选择器覆盖
+③ 不引外部库，只改 CSS + 对应渲染函数
+```
+
+---
+
 ## 提交 / 部署检查清单（每次改完必做）
 
 1. 改 CSS/JS → **升级 `service-worker.js` 的 `CACHE` 版本号**（如 `guitar-wb-v3` → `v4`）+ **同步 `index.html` 的 `APP_VERSION` 哨兵**
@@ -301,6 +327,8 @@ function monthOf(item){ return /^\d{4}-\d{2}/.test(item.date||'') ? item.date.sl
 
 | 日期 | 场景 | 坑 | 正解 |
 |------|------|----|------|
+| 2026-09-30 | 表单里用 `hidden` 切换两行 | 作者样式 `label{display:block}` 压过 UA 的 `[hidden]{display:none}` → 切了没反应，两行同现 | 见 ⑬坑 A：补 `label[hidden]{display:none !important}` |
+| 2026-09-30 | 往 `.who` 里插体验徽标 `<span>` | 容器已有 `.titem .who span{display:block}`（0,3,1）把徽标同化成整行 255px 宽 | 见 ⑬坑 B：同特异性作用域覆盖 `.titem .who span.tribadge{...}` |
 | 2026-09-30 | 新增「体验课」（学员可不在名单） | 表面是"加个选项+放宽校验"，实为**主键语义变更**：全站以 `studentId` 为键，漏改即静默出错（显示「已删学员」/统计并桶/工资被自动计入/导出整条丢失） | 见 ⑫：只加 `isTrial`+`trialName`；收敛 `courseWho/courseColor/courseKey` 三口径 + `keyWho/keyColor` 反查；`grep studentId` 审计 13 处；工资口径先问用户 |
 | 2026-09-11 | 删学员表「联系电话/老师」两列 | 删列易漏 `colspan`，表格会错位；且"字段是否算残留"要看数据层 | 按 ⑦ 的六项配套清单逐项清；数据模型与录入弹窗保留（防存量数据丢失），`maskPhone` 随之保留并说明 |
 | 2026-09-11 | 学员日期列只能看 3 个、要悬停 | 硬编码 `slice(0,3)` 折叠为 `+N`，余下塞 `title=` —— 触屏无 hover 等于数据丢失；且标签重复写 `09/03` 浪费一半宽度 | ①去月份冗余只留日号 ②`.dtags` 加 `max-width`+`flex-wrap:wrap` ③`td` 显式 `white-space:normal` ④字号 11→13px ⑤彻底删掉 `+N`/`title` |
