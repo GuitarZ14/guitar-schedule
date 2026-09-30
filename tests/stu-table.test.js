@@ -132,7 +132,8 @@ t('旧卡片视图的删除按钮已收进弹窗，表格操作列无删除', ()
 });
 
 console.log('\n=== 4. 本月上课详情 stuMonthRecords（导出数据源）===');
-const buildRecs = new Function('students', 'courses',
+const isTrial = c => !!(c && c.isTrial);
+const buildRecs = new Function('students', 'courses', 'isTrialCourse',
   extractFn('stuMonthRecords') + '\nreturn stuMonthRecords;');
 const STU = [
   {id:'s1', name:'小明'},
@@ -148,7 +149,7 @@ const CRS = [
   {studentId:'s2', date:'2026-09-02', status:'done'},
   {studentId:'s3', date:'2026-09-09', status:'cancelled'}, // 取消：不计
 ];
-const recs = buildRecs(STU, CRS)('2026-09');
+const recs = buildRecs(STU, CRS, isTrial)('2026-09');
 t('只取 done 且限定所选自然月', () => {
   ok(recs.length === 3, '应为 3 条（待上/请假/上月/取消均排除），实际 ' + recs.length);
   ok(recs.every(r => String(r.date).indexOf('2026-09') === 0), '日期应都在 2026-09');
@@ -163,7 +164,20 @@ t('学员按姓名升序；每条仅含 name/date 两字段', () => {
   ok(Object.keys(recs[0]).sort().join(',') === 'date,name', '仅应有 name/date 两字段');
 });
 t('该月无记录 → 空数组（触发「暂无上课记录」提示）', () => {
-  ok(buildRecs(STU, CRS)('2026-07').length === 0);
+  ok(buildRecs(STU, CRS, isTrial)('2026-07').length === 0);
+});
+t('体验课：学员不在名单也单独成行，姓名后标「（体验）」', () => {
+  const withTrial = CRS.concat([
+    {isTrial:true, trialName:'小美', date:'2026-09-04', status:'done'},
+    {isTrial:true, trialName:'小美', date:'2026-09-11', status:'done'},
+    {isTrial:true, trialName:'小刚', date:'2026-09-06', status:'planned'}, // 待上不计
+  ]);
+  const r = buildRecs(STU, withTrial, isTrial)('2026-09');
+  const names = [...new Set(r.map(x => x.name))];
+  ok(names.indexOf('小美（体验）') >= 0, '体验课应成行并带（体验）标记，实际 ' + names.join(','));
+  ok(names.indexOf('小刚（体验）') < 0, '待上的体验课不应计入');
+  const days = r.filter(x => x.name === '小美（体验）').map(x => x.date);
+  ok(days.join(',') === '2026-09-04,2026-09-11', '两次体验课都应保留，实际 ' + days.join(','));
 });
 
 console.log('\n=== 5. 按学员分组聚合 shortDate / groupByStudent ===');
@@ -199,6 +213,117 @@ t('groupByStudent：保留传入的学员顺序', () => {
     {name:'小明', date:'2026-09-03'}
   ]);
   ok(g.map(r => r[0]).join(',') === '乐乐,小明', '实际 ' + g.map(r => r[0]).join(','));
+});
+
+console.log('\n=== 6. 体验课：课程键 / 取名 / 分色 / 重复校验 / 工资口径 ===');
+/* 常量从 index.html 原样抽取，避免测试自己写死一份而与实现脱节 */
+const trialConsts = (HTML.match(/const TRIAL_COLOR='[^']*';/) || [''])[0] + '\n'
+                  + (HTML.match(/const TRIAL_KEY_PREFIX='[^']*';/) || [''])[0];
+const buildTrial = new Function('students', 'courses', trialConsts
+  + '\n' + extractFn('studentName')
+  + '\n' + extractFn('studentColor')
+  + '\n' + extractFn('isTrialCourse')
+  + '\n' + extractFn('courseWho')
+  + '\n' + extractFn('courseColor')
+  + '\n' + extractFn('courseKey')
+  + '\n' + extractFn('keyWho')
+  + '\n' + extractFn('keyColor')
+  + '\n' + extractFn('findDuplicateCourse')
+  + '\nreturn { isTrialCourse, courseWho, courseColor, courseKey, keyWho, keyColor, findDuplicateCourse };');
+
+const TRIAL_CRS = [
+  {id:'c1', studentId:'s1', date:'2026-09-03', start:'16:00', end:'17:00'},
+  {id:'c2', isTrial:true, trialName:'小美', date:'2026-09-04', start:'18:00', end:'19:00'},
+  {id:'c3', isTrial:true, trialName:'小明', date:'2026-09-05', start:'18:00', end:'19:00'},
+];
+const T = buildTrial(STU, TRIAL_CRS);
+
+t('isTrialCourse：体验课按 isTrial 判定，常规课不受影响', () => {
+  ok(T.isTrialCourse({isTrial:true}) === true, 'isTrial 应判为体验课');
+  ok(T.isTrialCourse({studentId:'s1'}) === false, '常规课不应判为体验课');
+  ok(T.isTrialCourse(null) === false, '空值不应报错');
+});
+t('courseWho：体验课取课程上的姓名，常规课查在读名单', () => {
+  ok(T.courseWho({isTrial:true, trialName:'小美'}) === '小美', '体验课应取 trialName');
+  ok(T.courseWho({studentId:'s1'}) === '小明', '常规课应查在读名单');
+});
+t('courseKey：体验课用 T| 前缀与学员 id 空间隔离', () => {
+  ok(T.courseKey({isTrial:true, trialName:'小美'}) === 'T|小美', '体验课键应为 T|姓名');
+  ok(T.courseKey({studentId:'s1'}) === 's1', '常规课键应为学员 id');
+});
+t('keyWho：体验课回查带（体验）标记，不与同名在读学员混淆', () => {
+  ok(T.keyWho('T|小美') === '小美（体验）', '实际 ' + T.keyWho('T|小美'));
+  ok(T.keyWho('s1') === '小明', '实际 ' + T.keyWho('s1'));
+});
+t('courseColor / keyColor：体验课固定木棕，常规课走学员分色', () => {
+  ok(T.courseColor({isTrial:true}) === '#B07A3F', '体验课应为木棕');
+  ok(T.keyColor('T|小美') === '#B07A3F', '体验课统计键应为木棕');
+  ok(T.keyColor('s1') !== '#B07A3F', '常规课不应使用体验课色');
+});
+t('重复校验：体验课按「姓名 + 日期 + 起止」比对', () => {
+  const dup = T.findDuplicateCourse('', '2026-09-04', '18:00', '19:00', null, '小美');
+  ok(dup && dup.id === 'c2', '应命中已有体验课 c2');
+  ok(!T.findDuplicateCourse('', '2026-09-04', '18:00', '19:00', null, '小刚'), '不同姓名不应判重');
+  ok(!T.findDuplicateCourse('', '2026-09-04', '18:00', '19:00', 'c2', '小美'), 'excludeId 应生效');
+});
+t('体验课与在读学员同名时互不判重（决策：体验课独立记录）', () => {
+  ok(!T.findDuplicateCourse('s1', '2026-09-05', '18:00', '19:00', null, ''),
+     '常规课校验不应被同名体验课拦截');
+  const dup = T.findDuplicateCourse('', '2026-09-05', '18:00', '19:00', null, '小明');
+  ok(dup && dup.id === 'c3', '体验课自身的同名应能判重');
+});
+
+const CRS_SALARY = [
+  {studentId:'s1', date:'2026-09-03', status:'done'},
+  {studentId:'s1', date:'2026-09-10', status:'done'},
+  {isTrial:true, trialName:'小美', date:'2026-09-04', status:'done'},
+  {studentId:'s2', date:'2026-09-05', status:'planned'},
+];
+const TRIAL_ONLY = [{isTrial:true, trialName:'小美', date:'2026-09-04', status:'done'}];
+const countDone = new Function('courses', 'todayStr', 'isTrialCourse',
+  extractFn('countDoneInMonth') + '\nreturn countDoneInMonth;')(
+  CRS_SALARY, () => '2026-09-30', isTrial);
+const countToToday = new Function('courses', 'todayStr', 'isTrialCourse',
+  extractFn('countMonthDoneToToday') + '\nreturn countMonthDoneToToday;')(
+  CRS_SALARY, () => '2026-09-30', isTrial);
+const salaryMonths = new Function('courses', 'loadExtraIncome', 'isTrialCourse',
+  extractFn('getSalaryMonths') + '\nreturn getSalaryMonths;')(CRS_SALARY, () => [], isTrial);
+
+t('工资口径：体验课不计入课时（decision 2026-09-29）', () => {
+  ok(countDone('2026-09') === 2, '应为 2 节常规课，实际 ' + countDone('2026-09'));
+  ok(countToToday() === 2, '当月口径同样应为 2，实际 ' + countToToday());
+  ok(countDone('2026-06') === 0, '无关月份应为 0');
+});
+t('工资口径：只有体验课的月份不产生工资课时，也不进工资月份列表', () => {
+  const onlyTrial = new Function('courses', 'todayStr', 'isTrialCourse',
+    extractFn('countDoneInMonth') + '\nreturn countDoneInMonth;')(TRIAL_ONLY, () => '2026-09-30', isTrial);
+  ok(onlyTrial('2026-09') === 0, '体验课不应计入课时');
+  const months = new Function('courses', 'loadExtraIncome', 'isTrialCourse',
+    extractFn('getSalaryMonths') + '\nreturn getSalaryMonths;')(TRIAL_ONLY, () => [], isTrial);
+  ok(months().length === 0, '体验课不应产生工资月份，实际 ' + months().join(','));
+  ok(salaryMonths().indexOf('2026-09') >= 0, '有常规课的月份应保留');
+});
+
+console.log('\n=== 7. 体验课：表单与校验契约 ===');
+t('表单含课程类型分段控件，默认选中「常规课」', () => {
+  ok(HTML.indexOf('id="fCourseType"') >= 0, '缺少课程类型分段控件');
+  ok(HTML.indexOf('data-type="trial"') >= 0, '缺少体验课选项');
+  ok(HTML.indexOf('class="seg-btn on" data-type="regular"') >= 0, '默认应选中常规课');
+});
+t('体验课模式下为自由文本输入框（非下拉）', () => {
+  ok(HTML.indexOf('id="fTrialName"') >= 0, '缺少体验课姓名输入框');
+  ok(extractFn('setCourseType').indexOf("fTrialRow") >= 0, '应能切换到体验课姓名行');
+});
+t('常规课校验未被放宽：仍要求必须选择在读学员', () => {
+  const body = extractFn('saveCourse');
+  ok(body.indexOf("alert('请先选择或新建学员')") >= 0, '常规课「必须选择学员」校验不应被移除');
+  ok(body.indexOf("document.getElementById('fStudent').value") >= 0, '常规课仍应读取学员下拉');
+});
+t('体验课校验：仅要求姓名非空，不做名单校验', () => {
+  const body = extractFn('saveCourse');
+  ok(body.indexOf("alert('请输入体验课学员姓名')") >= 0, '体验课应校验姓名非空');
+  ok(body.indexOf('students.find') < 0 && body.indexOf('students.some') < 0,
+     '体验课分支不应出现在读名单校验');
 });
 
 console.log('\n' + '─'.repeat(52));

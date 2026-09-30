@@ -185,6 +185,14 @@
   .status-radios label:has(input[value="done"]:checked){border-color:var(--green); background:var(--green-soft); color:var(--green);}
   .status-radios label:has(input[value="absent"]:checked){border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
   .status-radios label:has(input[value="cancelled"]:checked){border-color:var(--gray); background:var(--gray-soft); color:var(--gray);}
+  /* 课程类型分段控件（新增/编辑课程表单）：常规课 / 体验课，默认常规课 */
+  .seg{display:flex; border:1px solid var(--line); border-radius:var(--r-sm); overflow:hidden; background:rgba(255,255,255,0.7);}
+  .seg-btn{flex:1; padding:9px 0; border:0; background:transparent; color:var(--text-2); font-family:inherit; font-size:14px; font-weight:500; cursor:pointer; transition:.2s ease;}
+  .seg-btn + .seg-btn{border-left:1px solid var(--line);}
+  .seg-btn:hover{color:var(--primary);}
+  .seg-btn.on{background:var(--primary); color:#fff; font-weight:600;}
+  /* 体验课徽标：列表 / 课表 / 时间轴上的「体验」小标签 */
+  .tribadge{display:inline-block; margin-left:5px; padding:0 6px; border-radius:6px; border:1px solid var(--glass-border); background:var(--primary-soft); color:var(--primary-d); font-size:11px; font-weight:500; line-height:17px; vertical-align:middle;}
 
   .hint{background:var(--warn-soft); border:1px solid rgba(245,166,35,0.3); color:var(--text-2); border-radius:var(--r-md); padding:10px 14px; font-size:13px; margin-bottom:14px;}
 
@@ -680,9 +688,18 @@
   <div class="sheet">
     <button type="button" class="modal-x" data-close="courseModal" aria-label="关闭">×</button>
     <h3 id="courseModalTitle">新增课程</h3>
-    <label><span class="lab">学员</span>
+    <label><span class="lab">课程类型</span>
+      <div class="seg" id="fCourseType">
+        <button type="button" class="seg-btn on" data-type="regular">常规课</button>
+        <button type="button" class="seg-btn" data-type="trial">体验课</button>
+      </div>
+    </label>
+    <label id="fStudentRow"><span class="lab">学员</span>
       <select id="fStudent"></select>
       <button type="button" class="inlinenew" id="newStudentQuick">+ 新建学员</button>
+    </label>
+    <label id="fTrialRow" hidden><span class="lab">学员姓名</span>
+      <input id="fTrialName" placeholder="输入体验课学员姓名（可不在在读名单）" maxlength="16" autocomplete="off">
     </label>
     <label><span class="lab">日期</span><input type="date" id="fDate"></label>
     <div class="twocol">
@@ -886,6 +903,27 @@ function assignStudentColors(){
 }
 function studentColor(id){ const s=students.find(x=>x.id===id); return (s&&s.color)?s.color:'#6C5CE7'; }
 
+/* ===== 体验课（2026-09-29）=====
+   体验课学员不在「在读学员名单」里，因此不建学员档案：
+   课程上只存 isTrial:true + trialName:'姓名'，不带 studentId。
+   全站以 courseKey() 作为分组/统计键（体验课用 'T|姓名' 前缀，与学员 id 空间隔离），
+   以 courseWho() / courseColor() 取显示名与颜色 —— 避免新增一处漏改就显示「已删学员」。
+   工资口径：countDoneInMonth / countMonthDoneToToday / getSalaryMonths 显式排除体验课
+   （不计入 66 节阈值），但课表与月度统计照常展示。 */
+const TRIAL_COLOR='#B07A3F';          // 体验课统一木棕，与学员 12 分色区分
+const TRIAL_KEY_PREFIX='T|';
+function isTrialCourse(c){ return !!(c && c.isTrial); }
+function courseWho(c){ return isTrialCourse(c) ? (c.trialName||'体验课学员') : studentName(c.studentId); }
+function courseColor(c){ return isTrialCourse(c) ? TRIAL_COLOR : studentColor(c.studentId); }
+function courseKey(c){ return isTrialCourse(c) ? TRIAL_KEY_PREFIX+(c.trialName||'体验课学员') : c.studentId; }
+/* 由统计分组键反查显示名 / 颜色；体验课名字后标「（体验）」，避免与同名在读学员混淆 */
+function keyWho(k){
+  k=String(k);
+  return k.indexOf(TRIAL_KEY_PREFIX)===0 ? k.slice(TRIAL_KEY_PREFIX.length)+'（体验）' : studentName(k);
+}
+function keyColor(k){ return String(k).indexOf(TRIAL_KEY_PREFIX)===0 ? TRIAL_COLOR : studentColor(k); }
+function trialBadge(c){ return isTrialCourse(c) ? '<span class="tribadge">体验</span>' : ''; }
+
 /* ===== 可配置参数 ===== */
 const DEFAULT_COURSE_DURATION = 50; // 默认课程时长（分钟），改这里即可全局调整
 
@@ -920,10 +958,15 @@ function getRadio(name){
 
 /* ===== 重复录入校验 ===== */
 // 查找「同名学生 + 同时间(日期+起止)」的课程；excludeId 用于编辑时排除自身
-function findDuplicateCourse(studentId, date, start, end, excludeId){
+function findDuplicateCourse(studentId, date, start, end, excludeId, trialName){
+  /* 体验课（studentId 为空 + 传了 trialName）只在「体验课」空间内按姓名比对；
+     常规课沿用 studentId 比对，两者互不干扰（体验课与在读学员同名也算两回事）。 */
+  const trial=!studentId && !!trialName;
   return courses.find(c =>
     c.id !== excludeId &&
-    c.studentId === studentId &&
+    (trial
+      ? (isTrialCourse(c) && String(c.trialName||'').trim() === String(trialName||'').trim())
+      : (c.studentId === studentId)) &&
     c.date === date &&
     c.start === start &&
     c.end === end
@@ -1050,7 +1093,7 @@ function renderToday(){
     /* 上课状态角标：逾期/待上（本块仅课表页渲染） */
     return `<div class="titem ${over?'over':''}">
       <div class="when">${esc(when)}</div>
-      <div class="who"><b>${esc(studentName(c.studentId))}</b><span>${esc(c.start+'~'+c.end)}</span></div>
+      <div class="who"><b>${esc(courseWho(c))}</b>${trialBadge(c)}<span>${esc(c.start+'~'+c.end)}</span></div>
       <div class="tag">${over?'逾期':'待上'}</div>
       <div class="acts">
         <button class="btn-absent" data-absent="${c.id}">请假</button>
@@ -1100,7 +1143,7 @@ function renderHint(){
 // 课程卡（按学员分色，--c 注入学员色；非待上状态显示状态徽标）
 function courseCardHTML(c){
   const st=c.status;
-  const color=studentColor(c.studentId);
+  const color=courseColor(c);
   const statCls = st==='done'?'done':st==='absent'?'absent':st==='cancelled'?'cancelled':'';
   let stat='';
   if(st!=='planned'){
@@ -1111,7 +1154,7 @@ function courseCardHTML(c){
   }
   return '<div class="ccard '+statCls+'" style="--c:'+color+'" data-edit="'+c.id+'">'
     +'<div class="ct">'+esc(c.start+'~'+c.end)+'</div>'
-    +'<div class="cn"><span class="cdot"></span>'+esc(studentName(c.studentId))+'</div>'
+    +'<div class="cn"><span class="cdot"></span>'+esc(courseWho(c))+trialBadge(c)+'</div>'
     +stat+'</div>';
 }
 function renderWeek(){
@@ -1144,8 +1187,8 @@ function renderWeek(){
     bodyHtml+='<div class="card-list">';
     clist.forEach(c=>{
       const d=parseYMD(c.date);
-      const color=studentColor(c.studentId);
-      bodyHtml+='<div class="row-card"><div class="main"><b><span class="swatch" style="background:'+color+'"></span>'+esc(studentName(c.studentId))+'</b>'
+      const color=courseColor(c);
+      bodyHtml+='<div class="row-card"><div class="main"><b><span class="swatch" style="background:'+color+'"></span>'+esc(courseWho(c))+'</b>'+trialBadge(c)
         +'<div class="sub">'+(d.getMonth()+1)+'月'+d.getDate()+'日 '+esc(c.start+'~'+c.end)+' · '+esc(c.focus||'')+'</div></div>'
         +'<span class="badge '+c.status+'">'+STATUS_TXT[c.status]+'</span>'
         +'<div class="ops"><button data-c-edit="'+c.id+'">编辑</button><button class="danger" data-c-del="'+c.id+'">删除</button></div></div>';
@@ -1207,11 +1250,11 @@ function renderDay(){
   }else{
     html+='<div class="timeline">';
     list.forEach(c=>{
-      const color=studentColor(c.studentId);
+      const color=courseColor(c);
       const statTxt = c.status==='planned'?'':STATUS_TXT[c.status];
       html+='<div class="tl-item"><div class="tl-card" style="--c:'+color+'" data-edit="'+c.id+'">'
         +'<div class="tl-top"><span class="tl-time">'+esc(c.start+'~'+c.end)+'</span>'
-        +'<span class="tl-name"><span class="tl-dot"></span>'+esc(studentName(c.studentId))+'</span>'
+        +'<span class="tl-name"><span class="tl-dot"></span>'+esc(courseWho(c))+'</span>'+trialBadge(c)
         +(statTxt?'<span class="badge '+c.status+'" style="margin-left:auto">'+statTxt+'</span>':'')+'</div>'
         +'<div class="tl-meta">'
         +(c.song?'<span>曲目：'+esc(c.song)+'</span>':'')
@@ -1400,21 +1443,24 @@ function renderEdit(){
 function monthMap(ym){
   const map={};
   const init=()=>({count:0,min:0,absent:0});
+  /* 分组键用 courseKey(c)：常规课=学员 id，体验课='T|姓名'（独立成项，不并入同名学员） */
   courses.filter(c=>c.status==='done'&&c.date.indexOf(ym)===0).forEach(c=>{
-    const e=map[c.studentId]||(map[c.studentId]=init());
+    const k=courseKey(c);
+    const e=map[k]||(map[k]=init());
     e.count++; e.min+=dur(c);
   });
   // 补上只有请假记录的学员
   courses.filter(c=>c.status==='absent'&&c.date.indexOf(ym)===0).forEach(c=>{
-    if(!map[c.studentId]) map[c.studentId]=init();
-    map[c.studentId].absent++;
+    const k=courseKey(c);
+    if(!map[k]) map[k]=init();
+    map[k].absent++;
   });
   return map;
 }
 function svgBars(map){
   const ids=Object.keys(map);
   if(!ids.length) return '<p class="empty">本月暂无课程记录。</p>';
-  const data=ids.map(id=>({id, name:studentName(id), min:map[id].min}));
+  const data=ids.map(id=>({id, name:keyWho(id), min:map[id].min}));
   const maxDone=Math.max(...data.map(d=>d.min),1);
   const max=maxDone;
   const bw=16, groupGap=24, h=150, base=h-26;
@@ -1428,7 +1474,7 @@ function svgBars(map){
     // 已上时长（实色，学员色主柱）
     const bh=Math.max(4,d.min/max*(base-14));
     const y=base-bh;
-    s+='<rect x="'+gx+'" y="'+y+'" width="'+bw+'" height="'+bh+'" rx="4" fill="'+studentColor(d.id)+'"/>';
+    s+='<rect x="'+gx+'" y="'+y+'" width="'+bw+'" height="'+bh+'" rx="4" fill="'+keyColor(d.id)+'"/>';
     s+='<text x="'+(gx+bw/2)+'" y="'+(y-4)+'" text-anchor="middle" class="barval">'+fmtMin(d.min)+'</text>';
     s+='<text x="'+(gx+bw/2)+'" y="'+(base+15)+'" text-anchor="middle" class="barname">'+esc(d.name)+'</text>';
   });
@@ -1461,13 +1507,13 @@ function renderStats(){
     ids.sort((a,b)=>map[b].min-map[a].min).forEach(id=>{
       const pct=totalMin? Math.round(map[id].min/totalMin*100):0;
       /* 收集该学员本月已上课日期，格式化为"X月X号"，每个日期独立 <span> 以支持横向流式排列 */
-      const doneDates = courses.filter(c=>c.studentId===id&&c.status==='done'&&c.date.indexOf(ym)===0)
+      const doneDates = courses.filter(c=>courseKey(c)===id&&c.status==='done'&&c.date.indexOf(ym)===0)
                                .sort((a,b)=>a.date.localeCompare(b.date))
                                .map(c=>{ const d=parseYMD(c.date); return (d.getMonth()+1)+'月'+d.getDate()+'号'; });
       const tipHtml = doneDates.length
         ? '<span class="stat-tip">'+map[id].count+'<span class="stat-tip-box">'+doneDates.map(d=>'<span>'+esc(d)+'</span>').join('')+'</span></span>'
         : map[id].count;
-      html+='<tr><td>'+esc(studentName(id))+'</td><td class="num">'+tipHtml+'</td><td class="num">'+fmtMin(map[id].min)+'</td><td class="num">'+pct+'%</td></tr>';
+      html+='<tr><td>'+esc(keyWho(id))+'</td><td class="num">'+tipHtml+'</td><td class="num">'+fmtMin(map[id].min)+'</td><td class="num">'+pct+'%</td></tr>';
     });
     html+='</tbody></table>';
   }
@@ -1530,22 +1576,26 @@ function calcSalary(hours){
 function countMonthDoneToToday(){
   // 与月度统计页 renderStats/monthMap 保持完全一致的筛选逻辑：
   // 只算 status==='done' 且日期以当前月份开头（如 "2026-08"）
+  // 例外：体验课不计入工资课时（见 isTrialCourse），但不影响课表/月度统计展示
   const ym=todayStr().slice(0,7);          // YYYY-MM
   const today=todayStr();
   return courses.filter(c=>{
     if(c.status!=='done') return false;
+    if(isTrialCourse(c)) return false;
     if(c.date.indexOf(ym)!==0) return false;
     // 再限今天及之前（避免统计未来日期的课程）
     return c.date<=today;
   }).length;
 }
 
-/* 统计指定月份已上课节数：历史月统计全月；当前月只统计到今天（避免未来日期课程被提前计入） */
+/* 统计指定月份已上课节数：历史月统计全月；当前月只统计到今天（避免未来日期课程被提前计入）。
+   体验课不计入工资课时（按用户 2026-09-29 决定），此处显式排除。 */
 function countDoneInMonth(ym){
   const today=todayStr();
   const currentYm=today.slice(0,7);
   return courses.filter(c=>{
     if(c.status!=='done') return false;
+    if(isTrialCourse(c)) return false;
     if(c.date.indexOf(ym)!==0) return false;
     if(ym===currentYm) return c.date<=today;
     return true;
@@ -1562,7 +1612,8 @@ function sumExtraIncome(month){
 /* 获取所有存在工资数据的月份，降序 */
 function getSalaryMonths(){
   const set=new Set();
-  courses.filter(c=>c.status==='done').forEach(c=>set.add(c.date.slice(0,7)));
+  /* 体验课不计入工资，因此不因其单独产生"有工资数据的月份" */
+  courses.filter(c=>c.status==='done' && !isTrialCourse(c)).forEach(c=>set.add(c.date.slice(0,7)));
   loadExtraIncome().forEach(i=>{ const m=monthOf(i); if(m) set.add(m); });
   return Array.from(set).sort().reverse();
 }
@@ -1786,6 +1837,19 @@ function fillStudentSelect(selId){
   sel.innerHTML=students.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('')
     || '<option value="">（请先新增学员）</option>';
 }
+/* ===== 课程类型：常规课（默认）| 体验课 =====
+   常规课 → 学员下拉，只能选在读名单，校验逻辑与原来完全一致（未做任何放宽）
+   体验课 → 切换为「学员姓名」文本框，允许输入不在名单中的名字，不做名单校验 */
+let courseFormType='regular';
+function setCourseType(t){
+  courseFormType = (t==='trial') ? 'trial' : 'regular';
+  const seg=document.getElementById('fCourseType');
+  if(seg) Array.from(seg.querySelectorAll('.seg-btn')).forEach(b=>b.classList.toggle('on', b.dataset.type===courseFormType));
+  const regRow=document.getElementById('fStudentRow');
+  const triRow=document.getElementById('fTrialRow');
+  if(regRow) regRow.hidden = courseFormType==='trial';
+  if(triRow) triRow.hidden = courseFormType!=='trial';
+}
 function openCourseModal(id){
   closeAllModals();  // 先关掉所有弹窗，避免叠层
   fillStudentSelect();
@@ -1802,6 +1866,8 @@ function openCourseModal(id){
     document.getElementById('fNote').value=c.note||'';
     setRadio('fStatus', c.status);
     document.getElementById('courseDelete').style.display='';
+    document.getElementById('fTrialName').value=c.trialName||'';
+    setCourseType(isTrialCourse(c)?'trial':'regular');
   }else{
     editingCourseId=null;
     document.getElementById('courseModalTitle').textContent='新增课程';
@@ -1814,6 +1880,8 @@ function openCourseModal(id){
     document.getElementById('fNote').value='';
     setRadio('fStatus', 'planned');
     document.getElementById('courseDelete').style.display='none';
+    document.getElementById('fTrialName').value='';
+    setCourseType('regular');   // 默认「常规课」，不改变原有使用习惯
   }
   updateCourseDurDisplay();
   m.hidden=false;
@@ -1835,6 +1903,8 @@ function openCourseModalAsCopy(sourceId){
   document.getElementById('fNote').value=src.note||'';
   setRadio('fStatus', src.status);
   document.getElementById('courseDelete').style.display='none';
+  document.getElementById('fTrialName').value=src.trialName||'';
+  setCourseType(isTrialCourse(src)?'trial':'regular');
   updateCourseDurDisplay();
   document.getElementById('courseModal').hidden=false;
 }
@@ -1845,8 +1915,12 @@ function copyDaySchedule(ds){
   const target=ymd(addDays(parseYMD(ds),7));
   let count=0, skipped=0;
   list.forEach(c=>{
-    if(findDuplicateCourse(c.studentId, target, c.start, c.end, null)){ skipped++; return; }
-    courses.push({id:uid(), studentId:c.studentId, date:target, start:c.start, end:c.end, song:c.song||'', focus:c.focus||'', note:c.note||'', status:c.status});
+    const trial=isTrialCourse(c);
+    if(findDuplicateCourse(c.studentId, target, c.start, c.end, null, trial?c.trialName:'') ){ skipped++; return; }
+    const copy={id:uid(), date:target, start:c.start, end:c.end, song:c.song||'', focus:c.focus||'', note:c.note||'', status:c.status};
+    if(trial){ copy.isTrial=true; copy.trialName=c.trialName; }   // 体验课：整日复制时保留类型与姓名
+    else{ copy.studentId=c.studentId; }
+    courses.push(copy);
     count++;
   });
   saveCourses(); render();
@@ -1856,8 +1930,18 @@ function copyDaySchedule(ds){
 }
 function closeCourseModal(){ closeModal('courseModal'); editingCourseId=null; pendingReturnToCourse=false; }
 function saveCourse(){
-  const studentId=document.getElementById('fStudent').value;
-  if(!studentId){ alert('请先选择或新建学员'); return; }
+  const isTrial = courseFormType==='trial';
+  let studentId='', trialName='';
+  if(isTrial){
+    /* 体验课：姓名自由输入，不做「必须来自在读名单」的校验；
+       只要求非空，避免存进一条没有姓名的记录。 */
+    trialName=document.getElementById('fTrialName').value.trim();
+    if(!trialName){ alert('请输入体验课学员姓名'); return; }
+  }else{
+    /* 常规课：保持原有校验不变 —— 学员必须来自在读名单 */
+    studentId=document.getElementById('fStudent').value;
+    if(!studentId){ alert('请先选择或新建学员'); return; }
+  }
   const data={
     studentId,
     date:document.getElementById('fDate').value,
@@ -1868,15 +1952,20 @@ function saveCourse(){
     note:document.getElementById('fNote').value.trim(),
     status:getRadio('fStatus'),
   };
+  if(isTrial){ data.isTrial=true; data.trialName=trialName; }
   if(dur(data)<=0){ alert('结束时间需晚于开始时间'); return; }
-  // 重复录入校验：同名学生 + 同时间(日期+起止) 不可重复
-  const dup=findDuplicateCourse(studentId, data.date, data.start, data.end, editingCourseId);
+  // 重复录入校验：同一个人（学员 / 体验课姓名）+ 同时间(日期+起止) 不可重复
+  const dup=findDuplicateCourse(studentId, data.date, data.start, data.end, editingCourseId, isTrial?trialName:'');
   if(dup){
-    alert('「'+studentName(studentId)+'」在 '+data.date+' '+data.start+'~'+data.end+' 已存在完全相同的课程记录，请勿重复录入。');
+    alert('「'+(isTrial?trialName:studentName(studentId))+'」在 '+data.date+' '+data.start+'~'+data.end+' 已存在完全相同的课程记录，请勿重复录入。');
     return;
   }
   if(editingCourseId){
-    const c=courses.find(x=>x.id===editingCourseId); Object.assign(c,data);
+    const c=courses.find(x=>x.id===editingCourseId);
+    Object.assign(c,data);
+    /* 类型可能被改过（常规 ↔ 体验），把另一套字段清干净，避免残留脏数据 */
+    if(isTrial) delete c.studentId;
+    else { delete c.isTrial; delete c.trialName; }
   }else{
     courses.push(Object.assign({id:uid()},data));
   }
@@ -2047,7 +2136,7 @@ function exportCsv(ym,map,totalCount,totalMin){
   rows.push(['学员','节数','总时长(分钟)','总时长','占比']);
   Object.keys(map).sort((a,b)=>map[b].min-map[a].min).forEach(id=>{
     const pct=totalMin? Math.round(map[id].min/totalMin*100):0;
-    rows.push([studentName(id),map[id].count,map[id].min,fmtMin(map[id].min),pct+'%']);
+    rows.push([keyWho(id),map[id].count,map[id].min,fmtMin(map[id].min),pct+'%']);
   });
   const csv='\ufeff'+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');
   download(ym+'课时统计.csv', csv, 'text/csv');
@@ -2060,10 +2149,16 @@ function stuMonthRecords(ym){
   students.slice()
     .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'zh'))
     .forEach(s=>{
-      courses.filter(c=>c.studentId===s.id && c.status==='done' && String(c.date||'').indexOf(ym)===0)
+      courses.filter(c=>!isTrialCourse(c) && c.studentId===s.id && c.status==='done' && String(c.date||'').indexOf(ym)===0)
         .sort((a,b)=>String(a.date).localeCompare(String(b.date)))
         .forEach(c=>recs.push({name:s.name, date:c.date}));
     });
+  /* 体验课学员不在在读名单里（不建档案），但本月确实上了课 → 单独成行，
+     姓名后标「（体验）」以免与同名在读学员混淆。 */
+  courses.filter(c=>isTrialCourse(c) && c.status==='done' && String(c.date||'').indexOf(ym)===0)
+    .forEach(c=>recs.push({name:(c.trialName||'体验课学员')+'（体验）', date:c.date}));
+  /* 统一按「姓名 → 日期」升序，让体验课也落在正确的排序位置上 */
+  recs.sort((a,b)=>String(a.name).localeCompare(String(b.name),'zh') || String(a.date).localeCompare(String(b.date)));
   return recs;
 }
 /* '2026-09-03' → '9.3'：导出文件按月切分，日期用「月.日」紧凑写法（去前导零） */
@@ -2528,8 +2623,7 @@ function buildReminderText(dateStr, isNextDay){
   const list = courses.filter(c=>c.date===dateStr && c.status!=='cancelled')
                         .sort((a,b)=>(a.start||'').localeCompare(b.start||''));
   if(!list.length) return null;
-  const nameOf = id => { const s=students.find(x=>x.id===id); return s?s.name:'学员'; };
-  const lines = list.map(c=>'• '+c.start+' '+nameOf(c.studentId)+(c.song?'《'+c.song+'》':''));
+  const lines = list.map(c=>'• '+c.start+' '+courseWho(c)+(c.song?'《'+c.song+'》':''));
   const title = (isNextDay?'明日(':'今日(')+dateStr.slice(5)+')课程安排';
   const body = (isNextDay?'明天共 ':'今天共 ')+list.length+' 节课：\n'+lines.join('\n');
   return { title, body };
@@ -2679,6 +2773,11 @@ function init(){
     pendingReturnToCourse=true;  // 标记：保存学员后要回弹课程弹窗
     openStudentModal(null);
   };
+  // 课程类型分段控件：常规课 / 体验课（仅新增/编辑课程弹窗）
+  document.getElementById('fCourseType').onclick=(e)=>{
+    const b=e.target.closest('.seg-btn');
+    if(b) setCourseType(b.dataset.type);
+  };
   // student modal events
   document.getElementById('studentSave').onclick=saveStudent;
   document.getElementById('studentCancel').onclick=()=>{
@@ -2715,7 +2814,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-09-11-v4';
+const APP_VERSION = '2026-09-30-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */

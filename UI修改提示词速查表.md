@@ -2,7 +2,7 @@
 
 > **用途**：任何 UI / 视觉 / 交互修改需求，先按本表写清提示词，再让模型落地，可大幅减少反复修改。
 > **维护规则**：每次完善新功能前先读此文件；发现新的易踩坑场景，追加到对应分类。
-> **最后更新**：2026-09-11
+> **最后更新**：2026-09-30
 
 ---
 
@@ -245,6 +245,44 @@ function monthOf(item){ return /^\d{4}-\d{2}/.test(item.date||'') ? item.date.sl
 
 ---
 
+## ⑫ 引入「名单外的人」：以 id 为键的全站审计 ✅ 已踩坑
+
+**上下文**：课程 `courses` 原以 `studentId` 关联 `students`（在读名单）；新增「体验课」后，学员可以是**名单外的自由文本姓名**，没有 id。
+
+**坑（2026-09-30）**：这类需求表面是「表单加个选项 + 放宽校验」，实际是**主键语义变更**。只要有一处以 `c.studentId` 取值/分组没改，就静默出错，且症状分散、不易定位：
+- `studentName(id)` 查不到 → 显示「已删学员」
+- `monthMap()` 按 `studentId` 分组 → 所有体验课挤成同一根柱子
+- 工资函数只按 `status`+`date` 过滤、**不看学员** → 体验课被自动计入课时
+- 遍历 `students` 的导出（如 `stuMonthRecords`）→ 名单外的人**整条丢失**
+
+**正解（四步）**：
+1. **只加两个字段**，不动既有结构：`isTrial:true` + `trialName:'姓名'`，体验课**不带** `studentId`（不建学员档案，名单保持干净）。
+2. **收敛出三个取值口**，全站只走它们，不再直接读 `c.studentId`：
+   ```javascript
+   function courseWho(c){ return isTrialCourse(c) ? (c.trialName||'体验课学员') : studentName(c.studentId); }
+   function courseColor(c){ return isTrialCourse(c) ? TRIAL_COLOR : studentColor(c.studentId); }
+   function courseKey(c){ return isTrialCourse(c) ? 'T|'+(c.trialName||'体验课学员') : c.studentId; }  // 分组/统计键
+   ```
+   `'T|'` 前缀的作用是**与学员 id 空间隔离**：体验课与同名在读学员**互不干扰**（重名不判重、统计不合并）。
+3. **`grep 'studentId'` 逐个审计**，凡「按人分组 / 取人名 / 取人色 / 判重 / 导出行」处一律换成上面三个函数。本次共 13 处。
+4. **键变了，反向解析也要配套**：`monthMap` 的 key 现在可能是 `'T|姓名'`，消费方（表格、柱状图、CSV）不能再用 `studentName(key)`，需加 `keyWho(key)` / `keyColor(key)`，体验课回显为 `姓名（体验）`。
+
+**口径类需求要先问清（本次问出的三条）**：新增一类数据往往会波及**统计与工资**，这些是产品决策不是技术决策，必须让用户拍板：
+- 体验课**是否计入工资课时**（影响 `¥5500 / 66 节` 阈值）→ 本次定：**不计入**（`countDoneInMonth` / `countMonthDoneToToday` / `getSalaryMonths` 三处显式排除），但**照常出现在课表与月度统计**。
+- 体验课学员**是否进学员管理名单** → 本次定：**不进**（不建档案）。
+- 与在读学员**重名时** → 本次定：**当作独立记录**，不自动关联。
+
+**提示词模板**：
+```
+新增「[名单外的人]」类型：只加 isTrial/trialName 两个字段，不建档案、不带 studentId。
+全站以 courseKey(courseWho/courseColor) 取值，grep studentId 审计所有分组/取名/取色/判重/导出处。
+同步给出 keyWho/keyColor 供统计侧反查。列明是否计入工资、是否进名单、重名如何处理，等我确认。
+```
+
+**回归测试**：`TZ=Asia/Shanghai node tests/stu-table.test.js` —— 第 6 组（课程键/取名/分色/重复校验/工资口径）+ 第 7 组（表单与校验契约）。
+
+---
+
 ## 提交 / 部署检查清单（每次改完必做）
 
 1. 改 CSS/JS → **升级 `service-worker.js` 的 `CACHE` 版本号**（如 `guitar-wb-v3` → `v4`）+ **同步 `index.html` 的 `APP_VERSION` 哨兵**
@@ -263,6 +301,7 @@ function monthOf(item){ return /^\d{4}-\d{2}/.test(item.date||'') ? item.date.sl
 
 | 日期 | 场景 | 坑 | 正解 |
 |------|------|----|------|
+| 2026-09-30 | 新增「体验课」（学员可不在名单） | 表面是"加个选项+放宽校验"，实为**主键语义变更**：全站以 `studentId` 为键，漏改即静默出错（显示「已删学员」/统计并桶/工资被自动计入/导出整条丢失） | 见 ⑫：只加 `isTrial`+`trialName`；收敛 `courseWho/courseColor/courseKey` 三口径 + `keyWho/keyColor` 反查；`grep studentId` 审计 13 处；工资口径先问用户 |
 | 2026-09-11 | 删学员表「联系电话/老师」两列 | 删列易漏 `colspan`，表格会错位；且"字段是否算残留"要看数据层 | 按 ⑦ 的六项配套清单逐项清；数据模型与录入弹窗保留（防存量数据丢失），`maskPhone` 随之保留并说明 |
 | 2026-09-11 | 学员日期列只能看 3 个、要悬停 | 硬编码 `slice(0,3)` 折叠为 `+N`，余下塞 `title=` —— 触屏无 hover 等于数据丢失；且标签重复写 `09/03` 浪费一半宽度 | ①去月份冗余只留日号 ②`.dtags` 加 `max-width`+`flex-wrap:wrap` ③`td` 显式 `white-space:normal` ④字号 11→13px ⑤彻底删掉 `+N`/`title` |
 | 2026-09-03 | 8月额外收入被计入9月 | 老记录无 date 字段，迁移时"补当前月"，用的是读取时间而非业务发生时间 | 按业务发生日期 `date` 分组；迁移只补占位+标 `needDate` 让用户核对；禁用 `toISOString`（UTC）；补 23 项边界测试 |
