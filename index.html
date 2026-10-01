@@ -185,12 +185,13 @@
   .status-radios label:has(input[value="done"]:checked){border-color:var(--green); background:var(--green-soft); color:var(--green);}
   .status-radios label:has(input[value="absent"]:checked){border-color:var(--blue); background:var(--blue-soft); color:var(--blue);}
   .status-radios label:has(input[value="cancelled"]:checked){border-color:var(--gray); background:var(--gray-soft); color:var(--gray);}
-  /* 课程类型分段控件（新增/编辑课程表单）：常规课 / 体验课，默认常规课 */
-  .seg{display:flex; border:1px solid var(--line); border-radius:var(--r-sm); overflow:hidden; background:rgba(255,255,255,0.7);}
-  .seg-btn{flex:1; padding:9px 0; border:0; background:transparent; color:var(--text-2); font-family:inherit; font-size:14px; font-weight:500; cursor:pointer; transition:.2s ease;}
-  .seg-btn + .seg-btn{border-left:1px solid var(--line);}
-  .seg-btn:hover{color:var(--primary);}
-  .seg-btn.on{background:var(--primary); color:#fff; font-weight:600;}
+  /* 课程类型（新增/编辑课程表单）：常规课 / 体验课，默认常规课。
+     视觉语言刻意与同表单的「状态」行(.status-radios)保持一致 —— 浅底 + 1.5px 细边胶囊，
+     选中项用「淡木底 + 木棕描边 + 木棕文字」，不再用大面积饱和实色填充。 */
+  .seg{display:flex; gap:8px; flex-wrap:wrap;}
+  .seg-btn{display:inline-flex; align-items:center; padding:8px 15px; min-height:auto; border:1.5px solid var(--glass-border); border-radius:10px; background:var(--glass); color:var(--text-2); font-family:inherit; font-size:14px; font-weight:400; line-height:1.5; cursor:pointer; transition:.2s ease; user-select:none;}
+  .seg-btn:hover{border-color:var(--primary);}
+  .seg-btn.on{border-color:var(--primary); background:var(--primary-soft); color:var(--primary); font-weight:600;}
   /* 体验课徽标：列表 / 课表 / 时间轴上的「体验」小标签 */
   .tribadge{display:inline-block; flex:0 0 auto; white-space:nowrap; margin-left:5px; padding:0 6px; border-radius:6px; border:1px solid var(--glass-border); background:var(--primary-soft); color:var(--primary-d); font-size:11px; font-weight:500; line-height:17px; vertical-align:middle;}
   /* 「今天还需要上 N 课」的 .titem .who span 是 display:block（特异性 0,3,1），
@@ -2820,7 +2821,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-09-30-v2';
+const APP_VERSION = '2026-10-01-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */

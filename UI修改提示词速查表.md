@@ -2,7 +2,7 @@
 
 > **用途**：任何 UI / 视觉 / 交互修改需求，先按本表写清提示词，再让模型落地，可大幅减少反复修改。
 > **维护规则**：每次完善新功能前先读此文件；发现新的易踩坑场景，追加到对应分类。
-> **最后更新**：2026-09-30
+> **最后更新**：2026-10-01
 
 ---
 
@@ -309,6 +309,37 @@ function monthOf(item){ return /^\d{4}-\d{2}/.test(item.date||'') ? item.date.sl
 
 ---
 
+## ⑭ 同一表单里的选择控件必须同一套语言 ✅ 已踩坑
+
+**上下文**：同一个 `.sheet` 表单里有多个"多选一"控件（如新增课程弹窗：`课程类型` 和 `状态`）。
+
+**坑（2026-10-01）**：`课程类型` 做成「实心木棕整块分段控件」，而三行之隔的 `状态` 行是「浅底 + 1.5px 细边胶囊」。用户直指"好丑"。根因不是配色，是**体量**：整块饱和实色填充 + 占满表单宽度，在奶油底细线条的克制界面里像一块大色块；两个同类控件一重一轻，不是一套语言。
+
+**正解**：
+1. **同类选择控件直接复用既有样式**。本项目 `状态` 行是现成范式，照抄它的令牌即可：
+   ```css
+   .seg-btn{display:inline-flex; align-items:center; padding:8px 15px; min-height:auto;
+     border:1.5px solid var(--glass-border); border-radius:10px;
+     background:var(--glass); color:var(--text-2);
+     font-family:inherit; font-size:14px; font-weight:400; line-height:1.5;
+     cursor:pointer; transition:.2s ease; user-select:none;}
+   .seg-btn:hover{border-color:var(--primary);}
+   .seg-btn.on{border-color:var(--primary); background:var(--primary-soft); color:var(--primary); font-weight:600;}
+   ```
+2. **选中态避免大面积饱和实色填充**，改成「`--primary-soft` 淡底 + `--primary` 描边 + `--primary` 文字」。浅色主题下这样既有区分度又不吵。
+3. **`<button>` 与 `<label>` 胶囊齐平要显式 `min-height:auto`** —— 全局有 `button{padding:10px 14px; min-height:44px}`（行 129-131），不覆盖就会比同款 `<label>` 胶囊高 4px。项目里 `.inlinenew` 早就这么破了。
+   - 实测：`min-height:auto` + `padding:8px 15px` + `line-height:1.5` → 39px，与 `状态` 行 40px 基本齐平（差 1px 来自 1.5px 边框舍入，可忽略）。
+
+**提示词模板**：
+```
+把 [控件] 改成与同表单的 [既有控件] 同一套视觉语言：
+复用其令牌（浅底 --glass / 细边 --glass-border / 选中 --primary-soft+--primary），
+选中态不要大面积实色填充；<button> 需显式 min-height:auto 才能与 <label> 胶囊齐平。
+只改 CSS，不动结构、JS 与 PWA。
+```
+
+---
+
 ## 提交 / 部署检查清单（每次改完必做）
 
 1. 改 CSS/JS → **升级 `service-worker.js` 的 `CACHE` 版本号**（如 `guitar-wb-v3` → `v4`）+ **同步 `index.html` 的 `APP_VERSION` 哨兵**
@@ -327,6 +358,7 @@ function monthOf(item){ return /^\d{4}-\d{2}/.test(item.date||'') ? item.date.sl
 
 | 日期 | 场景 | 坑 | 正解 |
 |------|------|----|------|
+| 2026-10-01 | 「课程类型」控件被指"好丑" | 做成实心木棕整块分段控件，与同表单「状态」行的浅底细边胶囊不是一套语言；根因是**体量**（大面积饱和实色填充）不是配色 | 见 ⑭：照抄 `状态` 行的令牌（`--glass` 底 / `--primary-soft`+`--primary` 选中态）；`<button>` 加 `min-height:auto` 才能与 `<label>` 胶囊齐平 |
 | 2026-09-30 | 表单里用 `hidden` 切换两行 | 作者样式 `label{display:block}` 压过 UA 的 `[hidden]{display:none}` → 切了没反应，两行同现 | 见 ⑬坑 A：补 `label[hidden]{display:none !important}` |
 | 2026-09-30 | 往 `.who` 里插体验徽标 `<span>` | 容器已有 `.titem .who span{display:block}`（0,3,1）把徽标同化成整行 255px 宽 | 见 ⑬坑 B：同特异性作用域覆盖 `.titem .who span.tribadge{...}` |
 | 2026-09-30 | 新增「体验课」（学员可不在名单） | 表面是"加个选项+放宽校验"，实为**主键语义变更**：全站以 `studentId` 为键，漏改即静默出错（显示「已删学员」/统计并桶/工资被自动计入/导出整条丢失） | 见 ⑫：只加 `isTrial`+`trialName`；收敛 `courseWho/courseColor/courseKey` 三口径 + `keyWho/keyColor` 反查；`grep studentId` 审计 13 处；工资口径先问用户 |
