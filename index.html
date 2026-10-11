@@ -952,6 +952,17 @@ function updateCourseDurDisplay(){
   const m=dur({start:s,end:e});
   el.textContent='课时 '+fmtMin(m);
 }
+/* 开始时间 → 自动推算结束时间（开始 + 默认时长）。
+   修复（2026-10-11）：旧版用 fEnd.dataset.manual 做「用户手动改过结束就不再自动覆盖」的标记，
+   但该标记任何地方都不重置，而 fEnd 这个 DOM 元素在同一页面会话里跨弹窗复用 ——
+   用户只要手动调过一次结束时间，之后所有新课程的自动计算都会失效（结束时间卡在上次的值）。
+   现按原注释「除非重新改开始时间」的语义实现：改开始 → 重算结束；只改结束 → 保留用户输入。
+   提到模块级是为了可被测试直接抽取做行为验证（见 tests/stu-table.test.js 第 8 组）。 */
+function syncEndFromStart(){
+  const s=document.getElementById('fStart').value;
+  if(s) document.getElementById('fEnd').value = addMinutes(s, DEFAULT_COURSE_DURATION);
+  updateCourseDurDisplay();
+}
 
 /* ===== 单选框工具 ===== */
 function setRadio(name, value){
@@ -2763,19 +2774,12 @@ function init(){
   document.getElementById('courseSave').onclick=saveCourse;
   document.getElementById('courseCancel').onclick=closeCourseModal;
   document.getElementById('courseDelete').onclick=()=>{ if(editingCourseId) confirmDialog('确定删除这条课程？',()=>{ courses=courses.filter(c=>c.id!==editingCourseId); saveCourses(); closeCourseModal(); render(); }); };
-  // 开始时间变动 → 自动推算结束时间（开始 + 默认时长）
-  document.getElementById('fStart').addEventListener('change', function(){
-    const endInput = document.getElementById('fEnd');
-    if(this.value && !endInput.dataset.manual){
-      endInput.value = addMinutes(this.value, DEFAULT_COURSE_DURATION);
-    }
-    updateCourseDurDisplay();
-  });
-  // 用户手动改过结束时间后，不再自动覆盖（除非重新改开始时间）
-  document.getElementById('fEnd').addEventListener('change', function(){
-    this.dataset.manual = '1';
-    updateCourseDurDisplay();
-  });
+  /* 开始时间变动 → 自动按默认时长推算结束时间；同时监听 input，
+     让在时间选择器里调数值时就实时跟着变，不必等失焦（详见 syncEndFromStart 注释）。 */
+  document.getElementById('fStart').addEventListener('change', syncEndFromStart);
+  document.getElementById('fStart').addEventListener('input', syncEndFromStart);
+  document.getElementById('fEnd').addEventListener('change', updateCourseDurDisplay);
+  document.getElementById('fEnd').addEventListener('input', updateCourseDurDisplay);
   document.getElementById('newStudentQuick').onclick=()=>{
     pendingReturnToCourse=true;  // 标记：保存学员后要回弹课程弹窗
     openStudentModal(null);
@@ -2821,7 +2825,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-10-01-v1';
+const APP_VERSION = '2026-10-11-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */

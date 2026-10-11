@@ -326,6 +326,68 @@ t('体验课校验：仅要求姓名非空，不做名单校验', () => {
      '体验课分支不应出现在读名单校验');
 });
 
+console.log('\n=== 8. 课程弹窗「开始 → 结束」自动时长 ===');
+const addMinutes = new Function(extractFn('addMinutes') + '\nreturn addMinutes;')();
+const buildSync = new Function('document', 'addMinutes', 'updateCourseDurDisplay', 'DEFAULT_COURSE_DURATION',
+  extractFn('syncEndFromStart') + '\nreturn syncEndFromStart;');
+function makeDom(start, end) {
+  const nodes = { fStart:{value:start}, fEnd:{value:end}, courseDurDisplay:{textContent:''} };
+  return { nodes, doc: { getElementById: id => nodes[id] || null } };
+}
+const mkSync = (nodes, doc) => buildSync(doc, addMinutes, () => {}, 50);
+
+t('addMinutes：开始 + 50 分钟', () => {
+  ok(addMinutes('20:00', 50) === '20:50', '实际 ' + addMinutes('20:00', 50));
+  ok(addMinutes('09:00', 50) === '09:50', '实际 ' + addMinutes('09:00', 50));
+  ok(addMinutes('16:00', 50) === '16:50', '实际 ' + addMinutes('16:00', 50));
+});
+t('addMinutes：跨零点回绕', () => {
+  ok(addMinutes('23:30', 50) === '00:20', '实际 ' + addMinutes('23:30', 50));
+});
+
+t('改开始 → 结束自动 = 开始 + 50 分钟', () => {
+  const { nodes, doc } = makeDom('20:00', '16:50');
+  mkSync(nodes, doc)();
+  ok(nodes.fEnd.value === '20:50', '结束应为 20:50，实际 ' + nodes.fEnd.value);
+  ok(nodes.courseDurDisplay.textContent === '', '本用例的时长显示为桩函数，不应有内容');
+});
+t('开始为空时不动结束时间', () => {
+  const { nodes, doc } = makeDom('', '16:50');
+  mkSync(nodes, doc)();
+  ok(nodes.fEnd.value === '16:50', '不应改动，实际 ' + nodes.fEnd.value);
+});
+t('回归（2026-10-11 报障）：手动改过结束时间后，再改开始仍应重算', () => {
+  /* 旧版这里会失败：fEnd.dataset.manual 一旦置 1 就永不重置，
+     且 fEnd 元素跨弹窗复用 → 用户手动调过一次结束时间，后续自动计算全部失效。 */
+  const { nodes, doc } = makeDom('20:00', '16:50');
+  const fn = mkSync(nodes, doc);
+  fn();                                     // 自动 → 20:50
+  nodes.fEnd.value = '21:30';               // 模拟用户手动改成 21:30
+  nodes.fStart.value = '09:00';             // 再改开始
+  fn();
+  ok(nodes.fEnd.value === '09:50', '应重算为 09:50，实际 ' + nodes.fEnd.value);
+  nodes.fStart.value = '23:30';
+  fn();
+  ok(nodes.fEnd.value === '00:20', '再次改动应继续生效（跨零点），实际 ' + nodes.fEnd.value);
+});
+t('回归：不得再出现「粘性手动标记」dataset.manual 的赋值', () => {
+  /* 锁死：该标记是本 bug 的根源，源码中不允许再出现对它的赋值（注释里提及旧字段名不算）。 */
+  ok(!/\S+\.dataset\.manual\s*=/.test(HTML), '不应再出现 dataset.manual 粘性标记的赋值');
+});
+t('开始时间同时监听 change 与 input（选择器里调时间即实时更新）', () => {
+  ok(HTML.indexOf("'fStart').addEventListener('change', syncEndFromStart") >= 0, '缺少 fStart change 监听');
+  ok(HTML.indexOf("'fStart').addEventListener('input', syncEndFromStart") >= 0, '缺少 fStart input 监听');
+});
+t('结束时间变动仍会刷新「课时」显示', () => {
+  ok(HTML.indexOf("'fEnd').addEventListener('change', updateCourseDurDisplay") >= 0, '缺少 fEnd change 监听');
+  ok(HTML.indexOf("'fEnd').addEventListener('input', updateCourseDurDisplay") >= 0, '缺少 fEnd input 监听');
+});
+t('新增课程的默认值：开始 16:00、结束 16:50', () => {
+  const body = extractFn('openCourseModal');
+  ok(body.indexOf("fStart').value='16:00'") >= 0, '默认开始应为 16:00');
+  ok(body.indexOf("addMinutes('16:00', DEFAULT_COURSE_DURATION)") >= 0, '默认结束应为 开始+默认时长');
+});
+
 console.log('\n' + '─'.repeat(52));
 console.log(fail === 0 ? `全部通过：${pass} 项 ✓` : `通过 ${pass} 项，失败 ${fail} 项 ✗`);
 process.exit(fail === 0 ? 0 : 1);

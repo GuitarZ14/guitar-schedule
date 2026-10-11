@@ -2,7 +2,7 @@
 
 > **用途**：任何 UI / 视觉 / 交互修改需求，先按本表写清提示词，再让模型落地，可大幅减少反复修改。
 > **维护规则**：每次完善新功能前先读此文件；发现新的易踩坑场景，追加到对应分类。
-> **最后更新**：2026-10-01
+> **最后更新**：2026-10-11
 
 ---
 
@@ -340,6 +340,40 @@ function monthOf(item){ return /^\d{4}-\d{2}/.test(item.date||'') ? item.date.sl
 
 ---
 
+## ⑮ 别在「跨弹窗复用的 DOM 元素」上挂粘性状态 ✅ 已踩坑
+
+**上下文**：新增课程弹窗里的 `#fStart` / `#fEnd`，弹窗关闭时**只是隐藏、不销毁**（不是每次 `open` 重建 DOM）。
+
+**坑（2026-10-11）**：用户报"不管设几点开始，结束时间永远默认 16:50"。根因：`#fEnd` 上挂了一个 `dataset.manual='1'` 标记，本意是"用户手改过结束时间后，就别再自动覆盖"，但**这个标记从头到尾没有任何地方重置**。而 `#fEnd` 是跨弹窗复用的同一个 DOM 节点 → 只要用户在本次页面会话里手改过一次结束时间，此后**每次打开弹窗、改开始时间，自动算 50 分钟都永久失效**。翻 `git log -S` 发现这个逻辑从**初始提交 `3bc18ee`** 就存在，不是近期回归——是潜伏了很久的默认行为。更糟的是代码注释写的是"除非重新改开始时间"，即**代码与自己的注释互相矛盾**（改开始时间本该重置标记，却没重置）。
+
+**正解**：
+1. **删掉粘性标记**，让结束时间**跟随开始时间实时联动**——这才是注释里承诺的语义，也是用户真正想要的：
+   ```js
+   function syncEndFromStart(){
+     const s = document.getElementById('fStart').value;
+     if (s) document.getElementById('fEnd').value = addMinutes(s, DEFAULT_COURSE_DURATION);
+     updateCourseDurDisplay();
+   }
+   document.getElementById('fStart').addEventListener('change', syncEndFromStart);
+   document.getElementById('fStart').addEventListener('input',  syncEndFromStart);  // 键盘/时间控件拖动实时生效
+   document.getElementById('fEnd').addEventListener('change', updateCourseDurDisplay);
+   document.getElementById('fEnd').addEventListener('input',  updateCourseDurDisplay);
+   ```
+2. **优先级铁律**：如果确实需要"手改结束时间优先"，也应在**每次打开弹窗时显式重置**标记（`open()` 里清），而不是依赖"用户会再动开始时间"。
+3. **可测性**：把处理逻辑提成**模块级具名函数**（`syncEndFromStart`），测试用 `new Function('document', ...)` 注入假 `document` 直接**行为验证**（改开始→看结束），而不是只做字符串断言。本次回归用例：`手动改过结束时间后，再改开始仍应重算`。
+
+**一句话根因**：DOM 元素**复用不重建**的弹窗里挂了**永不重置**的状态标记 → 状态跨"弹窗生命周期"泄漏成"页面会话级"开关 → 一次误操作永久关闭功能。凡是 `dataset/` 上的开关，必问一句"**谁、何时把它关掉**"。
+
+**提示词模板**：
+```
+弹窗里的 [字段B] 需随 [字段A] 实时联动重算。
+注意：该弹窗 DOM 跨多次打开复用，禁止在字段上挂永不复位的 dataset 粘性标记
+（否则一次手改会永久关闭自动计算）。逻辑提成模块级具名函数以便行为测试。
+改 JS + 补回归用例，不动结构/CSS/PWA。
+```
+
+---
+
 ## 提交 / 部署检查清单（每次改完必做）
 
 1. 改 CSS/JS → **升级 `service-worker.js` 的 `CACHE` 版本号**（如 `guitar-wb-v3` → `v4`）+ **同步 `index.html` 的 `APP_VERSION` 哨兵**
@@ -358,6 +392,7 @@ function monthOf(item){ return /^\d{4}-\d{2}/.test(item.date||'') ? item.date.sl
 
 | 日期 | 场景 | 坑 | 正解 |
 |------|------|----|------|
+| 2026-10-11 | 结束时间不随开始时间自动算（永远 16:50） | `#fEnd` 上挂了 `dataset.manual` 标记却**从不重置**，而该 DOM 跨弹窗复用 → 一次手改结束时间即**永久**关闭自动计算（从初始提交起潜伏）；代码注释与实现自相矛盾 | 见 ⑮：删粘性标记，`#fStart` 的 `change`+`input` 实时 `syncEndFromStart()`；逻辑提成具名函数做行为测试 |
 | 2026-10-01 | 「课程类型」控件被指"好丑" | 做成实心木棕整块分段控件，与同表单「状态」行的浅底细边胶囊不是一套语言；根因是**体量**（大面积饱和实色填充）不是配色 | 见 ⑭：照抄 `状态` 行的令牌（`--glass` 底 / `--primary-soft`+`--primary` 选中态）；`<button>` 加 `min-height:auto` 才能与 `<label>` 胶囊齐平 |
 | 2026-09-30 | 表单里用 `hidden` 切换两行 | 作者样式 `label{display:block}` 压过 UA 的 `[hidden]{display:none}` → 切了没反应，两行同现 | 见 ⑬坑 A：补 `label[hidden]{display:none !important}` |
 | 2026-09-30 | 往 `.who` 里插体验徽标 `<span>` | 容器已有 `.titem .who span{display:block}`（0,3,1）把徽标同化成整行 255px 宽 | 见 ⑬坑 B：同特异性作用域覆盖 `.titem .who span.tribadge{...}` |
