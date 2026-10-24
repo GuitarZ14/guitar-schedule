@@ -3,7 +3,7 @@
  *       JSONBin 备份接口始终走网络（不缓存，避免脏数据）。
  * 更新：改 CACHE 版本号即可让旧缓存失效。
  */
-const CACHE = 'guitar-wb-v40';
+const CACHE = 'guitar-wb-v41';
 
 // 应用外壳（缓存这些即可离线运行；任意文件缺失也不阻断安装）
 const SHELL = [
@@ -64,9 +64,9 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 同源资源：index.html 走网络优先（确保更新即时生效）；其余走缓存优先
+  // 同源资源：页面导航走网络优先（兼容 GitHub Pages 子目录首页）；其余走缓存优先
   if (url.origin === self.location.origin) {
-    if (url.pathname === '/' || url.pathname.endsWith('index.html')) {
+    if (req.mode === 'navigate' || url.pathname.endsWith('index.html')) {
       event.respondWith(networkFirstShell(req));
     } else {
       event.respondWith(cacheFirst(req));
