@@ -77,6 +77,8 @@ test('month view renders six weeks and expands every course with only the studen
   assert.equal((result.match(/class=\"month-cell/g) || []).length, 42);
   assert.match(result, /class="month-name">张<\/span>/);
   assert.match(result, /aria-label="编辑 张同学 09:00 已上"/);
+  assert.match(result, /class="month-courses"/);
+  assert.doesNotMatch(result, /class="month-time"/);
   assert.doesNotMatch(result, /class="month-name">张同学<\/span>/);
   assert.doesNotMatch(result, /data-edit="4"/);
   assert.match(result, /data-edit="6"/);

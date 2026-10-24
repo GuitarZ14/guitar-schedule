@@ -583,7 +583,7 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261024-8">
+<link rel="stylesheet" href="./workspace.css?v=20261024-9">
 </head>
 <body>
 <div id="toast"></div>
@@ -1262,13 +1262,14 @@ function renderMonth(){
     const outside=day.getMonth()!==first.getMonth();
     const list=courses.filter(c=>c.date===ds && c.status!=='cancelled' && (!filterStudent||c.studentId===filterStudent)).sort((a,b)=>a.start.localeCompare(b.start));
     html+='<div class="month-cell'+(outside?' outside':'')+(ds===today?' today':'')+'" data-date="'+ds+'">'
-      +'<button class="month-day-add" data-addday="'+ds+'" aria-label="'+ds+' 新增课程">'+day.getDate()+'</button>';
+      +'<button class="month-day-add" data-addday="'+ds+'" aria-label="'+ds+' 新增课程">'+day.getDate()+'</button>'
+      +'<div class="month-courses">';
     list.forEach(c=>{
       const state=c.status==='done'?' done':c.status==='absent'?' absent':'';
       html+='<button class="month-course'+state+'" data-edit="'+c.id+'" style="--c:'+courseColor(c)+'" aria-label="编辑 '+esc(courseWho(c)+' '+c.start+' '+(STATUS_TXT[c.status]||''))+'">'
-        +'<span class="month-time">'+esc(c.start)+'</span><span class="month-name">'+esc(courseSurname(c))+'</span></button>';
+        +'<span class="month-name">'+esc(courseSurname(c))+'</span></button>';
     });
-    html+='</div>';
+    html+='</div></div>';
   }
   html+='</div></div></div>';
   const v=document.getElementById('view-week'); v.innerHTML=html;
@@ -3030,7 +3031,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-10-24-teaching-sync-v4';
+const APP_VERSION = '2026-10-24-teaching-sync-v5';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
