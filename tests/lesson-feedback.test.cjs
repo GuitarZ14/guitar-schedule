@@ -121,6 +121,19 @@ test('selecting or copying textarea content cannot close the course modal throug
   `), true);
 });
 
+test('editable modals reject backdrop dismissal and text controls reject Escape dismissal', () => {
+  const { run } = workspace();
+  assert.equal(run(`modalAllowsBackdropClose({id:'courseModal'})`), false);
+  assert.equal(run(`modalAllowsBackdropClose({id:'lessonRecordModal'})`), false);
+  assert.equal(run(`modalAllowsBackdropClose({id:'studentModal'})`), false);
+  assert.equal(run(`modalAllowsBackdropClose({id:'repeatModal'})`), false);
+  assert.equal(run(`modalAllowsBackdropClose({id:'cloudConfigModal'})`), false);
+  assert.equal(run(`modalAllowsBackdropClose({id:'lessonShareModal'})`), true);
+  assert.equal(run(`shouldCloseModalOnEscape({key:'Escape',target:{tagName:'TEXTAREA'}})`), false);
+  assert.equal(run(`shouldCloseModalOnEscape({key:'Escape',target:{tagName:'INPUT'}})`), false);
+  assert.equal(run(`shouldCloseModalOnEscape({key:'Escape',target:{tagName:'DIV'},defaultPrevented:false,isComposing:false})`), true);
+});
+
 test('save-and-share persists current form changes before opening the correct course preview', () => {
   const { run, elements, storage } = workspace();
   run(`setRadio=()=>{}; getRadio=()=> 'done'; render=()=>{};

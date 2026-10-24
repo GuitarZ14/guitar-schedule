@@ -2000,6 +2000,14 @@ function bindBackdropClose(m){
     startedOnBackdrop=false;
   });
 }
+function modalAllowsBackdropClose(m){
+  return !['confirmModal','courseModal','lessonRecordModal','studentModal','repeatModal','cloudConfigModal'].includes(m.id);
+}
+function shouldCloseModalOnEscape(e){
+  const t=e.target, tag=t&&t.tagName;
+  const editing=tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(t&&t.isContentEditable);
+  return e.key==='Escape' && !e.defaultPrevented && !e.isComposing && !editing;
+}
 function fillStudentSelect(selId){
   const sel=document.getElementById(selId||'fStudent');
   sel.innerHTML=students.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('')
@@ -3021,13 +3029,13 @@ function init(){
   document.getElementById('studentDelete').onclick=()=>{ if(editingStudentId) confirmDialog('确定删除该学员？',()=>{ const id=editingStudentId; students=students.filter(s=>s.id!==id); courses=courses.filter(c=>c.studentId!==id); saveStudents(); saveCourses(); closeStudentModal(); render(); }); };
   // close modal on backdrop click (only for non-confirm modals)
   document.querySelectorAll('.modal').forEach(m=>{
-    if(m.id!=='confirmModal') bindBackdropClose(m);
+    if(modalAllowsBackdropClose(m)) bindBackdropClose(m);
   });
   // × 关闭按钮：点击任意弹窗的 × 关掉对应弹窗
   document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));
   // ESC 关闭最上层弹窗
   document.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){ const open=[...document.querySelectorAll('.modal')].filter(m=>!m.hidden); if(open.length) open[open.length-1].hidden=true; }
+    if(shouldCloseModalOnEscape(e)){ const open=[...document.querySelectorAll('.modal')].filter(m=>!m.hidden); if(open.length) open[open.length-1].hidden=true; }
   });
   render();
 }
@@ -3037,7 +3045,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-10-24-teaching-sync-v6';
+const APP_VERSION = '2026-10-24-teaching-sync-v7';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
