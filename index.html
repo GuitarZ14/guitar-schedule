@@ -583,7 +583,7 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261024-10">
+<link rel="stylesheet" href="./workspace.css?v=20261024-11">
 </head>
 <body>
 <div id="toast"></div>
@@ -851,6 +851,32 @@
       <span class="spacer"></span>
       <button type="button" id="repeatCancel" class="ghost">取消</button>
       <button type="button" id="repeatSave" class="primary">生成课程</button>
+    </div>
+  </div>
+</div>
+
+<!-- copy day schedule modal -->
+<div class="modal" id="copyDayModal" hidden>
+  <div class="sheet copy-day-sheet" role="dialog" aria-modal="true" aria-labelledby="copyDayTitle">
+    <button type="button" class="modal-x" data-close="copyDayModal" aria-label="关闭">×</button>
+    <h3 id="copyDayTitle">复制本日排课</h3>
+    <p class="copy-day-range" id="copyDayRange"></p>
+    <p class="copy-day-count" id="copyDayCount"></p>
+    <div class="copy-day-rules">
+      <section>
+        <h4><span aria-hidden="true">✓</span>保留</h4>
+        <ul><li>学员</li><li>上课时间</li></ul>
+      </section>
+      <section>
+        <h4><span aria-hidden="true">↻</span>重新开始</h4>
+        <ul><li>状态统一为「待上」</li><li>上课内容为空</li><li>作业重点为空</li><li>私人备注为空</li></ul>
+      </section>
+    </div>
+    <p class="copy-day-tip">下周课程可复制后逐节编辑</p>
+    <div class="sheet-actions">
+      <span class="spacer"></span>
+      <button type="button" id="copyDayCancel" class="ghost">取消</button>
+      <button type="button" id="copyDayConfirm" class="primary">复制到下周</button>
     </div>
   </div>
 </div>
@@ -1223,7 +1249,7 @@ function renderWeek(){
     const isToday=ds===today;
     const list=courses.filter(c=>c.date===ds && c.status!=='cancelled' && (!filterStudent||c.studentId===filterStudent)).sort((a,b)=>a.start.localeCompare(b.start));
     const dhAdd = '<button class="dhead-add" data-addday="'+ds+'" title="新增课程">+</button>';
-    const dhCopy = list.length ? '<button class="dhead-copy" data-copyday="'+ds+'" title="复制本日课表到下周">复制本日</button>' : '';
+    const dhCopy = list.length ? '<button class="dhead-copy" data-copyday="'+ds+'" title="只复制学员和上课时间到下周">复制排课</button>' : '';
     html+='<div class="daycol'+(isToday?' today':'')+'" data-date="'+ds+'"><div class="dh">'+dhAdd+'<div class="dh-date"><b>'+day.getDate()+'</b>周'+WEEKDAYS[i]+'</div>'+dhCopy+'</div>';
     if(!list.length){ html+='<div class="none">暂无课程</div>'; }
     list.forEach(c=>{ html+=courseCardHTML(c); });
@@ -1244,7 +1270,7 @@ function renderWeek(){
   });
   v.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>openCourseModal(el.dataset.edit));
   v.querySelectorAll('[data-addday]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); lastClickedDate=b.dataset.addday; openCourseModal(null); });
-  v.querySelectorAll('[data-copyday]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); copyDaySchedule(b.dataset.copyday); });
+  v.querySelectorAll('[data-copyday]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); openCopyDayModal(b.dataset.copyday); });
   document.getElementById('addRepeat').onclick=openRepeatModal;
 }
 // 月视图：按自然月展示，课程仅显示时间与学员姓氏。
@@ -1989,6 +2015,7 @@ function renderSalary(){
 /* ===== modals ===== */
 let editingCourseId=null, editingStudentId=null;
 let pendingReturnToCourse=false;  // 从课程弹窗跳去新建学员后，保存学员时自动回弹课程弹窗
+let pendingCopyDay='';
 
 function closeModal(id){ document.getElementById(id).hidden=true; }
 function closeAllModals(){ document.querySelectorAll('.modal').forEach(m=>m.hidden=true); }
@@ -2001,7 +2028,7 @@ function bindBackdropClose(m){
   });
 }
 function modalAllowsBackdropClose(m){
-  return !['confirmModal','courseModal','lessonRecordModal','studentModal','repeatModal','cloudConfigModal'].includes(m.id);
+  return !['confirmModal','copyDayModal','courseModal','lessonRecordModal','studentModal','repeatModal','cloudConfigModal'].includes(m.id);
 }
 function shouldCloseModalOnEscape(e){
   const t=e.target, tag=t&&t.tagName;
@@ -2088,26 +2115,46 @@ function openCourseModalAsCopy(sourceId){
   document.getElementById('courseModal').hidden=false;
   document.getElementById('courseFormBody').scrollTop=0;
 }
-// 复制整日课表：把某天的全部课程复制到「下一周同一天」(date+7)
+function copyDayLabel(ds){
+  const d=parseYMD(ds);
+  return (d.getMonth()+1)+'月'+d.getDate()+'日 周'+'日一二三四五六'[d.getDay()];
+}
+function copyableDayCourses(ds){
+  return courses.filter(c=>c.date===ds&&c.status!=='cancelled');
+}
+function openCopyDayModal(ds){
+  const list=copyableDayCourses(ds);
+  if(!list.length){ alert('当天没有可复制的课程'); return; }
+  pendingCopyDay=ds;
+  const target=ymd(addDays(parseYMD(ds),7));
+  document.getElementById('copyDayRange').textContent=copyDayLabel(ds)+' → '+copyDayLabel(target);
+  document.getElementById('copyDayCount').textContent='共 '+list.length+' 节课';
+  document.getElementById('copyDayModal').hidden=false;
+  document.getElementById('copyDayConfirm').focus();
+}
+function closeCopyDayModal(){
+  closeModal('copyDayModal'); pendingCopyDay='';
+}
+// 复制整日排课框架：只保留学员身份与上课时间，其余课程记录重新开始。
 function copyDaySchedule(ds){
-  const list=courses.filter(c=>c.date===ds && c.status!=='cancelled');
+  const list=copyableDayCourses(ds);
   if(!list.length){ alert('当天没有可复制的课程'); return; }
   const target=ymd(addDays(parseYMD(ds),7));
   let count=0, skipped=0;
   list.forEach(c=>{
     const trial=isTrialCourse(c);
     if(findDuplicateCourse(c.studentId, target, c.start, c.end, null, trial?c.trialName:'') ){ skipped++; return; }
-    const copy={id:uid(), date:target, start:c.start, end:c.end, song:c.song||'', focus:c.focus||'', note:c.note||'', homework:c.homework||'', status:c.status};
-    if(c.lessonContent!=null) copy.lessonContent=c.lessonContent;
+    const copy={id:uid(),date:target,start:c.start,end:c.end,status:'planned',lessonContent:'',homework:'',note:'',song:'',focus:''};
     if(trial){ copy.isTrial=true; copy.trialName=c.trialName; }   // 体验课：整日复制时保留类型与姓名
     else{ copy.studentId=c.studentId; }
     courses.push(copy);
     count++;
   });
   saveCourses(); render();
-  let msg='已将 '+ds+' 的 '+count+' 节课复制到 '+target;
+  let msg='已复制 '+count+' 节排课到 '+copyDayLabel(target);
   if(skipped) msg+='（跳过 '+skipped+' 节重复）';
-  alert(msg);
+  showToast(msg);
+  return {count,skipped,target};
 }
 function closeCourseModal(){ closeModal('courseModal'); editingCourseId=null; pendingReturnToCourse=false; }
 function saveCourse(){
@@ -3024,6 +3071,12 @@ function init(){
   // repeat modal events
   document.getElementById('repeatSave').onclick=generateRepeat;
   document.getElementById('repeatCancel').onclick=()=>closeModal('repeatModal');
+  document.getElementById('copyDayCancel').onclick=closeCopyDayModal;
+  document.getElementById('copyDayConfirm').onclick=()=>{
+    const ds=pendingCopyDay;
+    closeCopyDayModal();
+    if(ds) copyDaySchedule(ds);
+  };
   // 勾选/取消每周几时，动态显示对应时段行
   document.querySelectorAll('#rWeekdays input').forEach(cb=>cb.onchange=syncDayTimes);
   document.getElementById('studentDelete').onclick=()=>{ if(editingStudentId) confirmDialog('确定删除该学员？',()=>{ const id=editingStudentId; students=students.filter(s=>s.id!==id); courses=courses.filter(c=>c.studentId!==id); saveStudents(); saveCourses(); closeStudentModal(); render(); }); };
@@ -3045,7 +3098,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-10-24-teaching-sync-v7';
+const APP_VERSION = '2026-10-24-copy-schedule-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
