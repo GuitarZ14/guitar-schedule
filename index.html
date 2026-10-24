@@ -1155,16 +1155,16 @@ function renderHint(){
 }
 
 /* ===== schedule view (week grid + course management) ===== */
-// 课程卡（按学员分色，--c 注入学员色；非待上状态显示状态徽标）
+// 课程卡（按学员分色；已上课程变灰，请假/取消显示状态徽标）
 function courseCardHTML(c){
   const st=c.status;
   const color=courseColor(c);
   const statCls = st==='done'?'done':st==='absent'?'absent':st==='cancelled'?'cancelled':'';
   let stat='';
-  if(st!=='planned'){
+  if(st==='absent'||st==='cancelled'){
     const txt=STATUS_TXT[st];
-    const col = st==='done'?'var(--green)':st==='absent'?'var(--blue)':'var(--gray)';
-    const bg  = st==='done'?'var(--green-soft)':st==='absent'?'var(--blue-soft)':'var(--gray-soft)';
+    const col = st==='absent'?'var(--blue)':'var(--gray)';
+    const bg  = st==='absent'?'var(--blue-soft)':'var(--gray-soft)';
     stat='<span class="cstat" style="color:'+col+';background:'+bg+'">'+txt+'</span>';
   }
   return '<div class="ccard '+statCls+'" role="button" tabindex="0" aria-label="编辑 '+esc(courseWho(c)+' '+c.start+' '+(STATUS_TXT[st]||''))+'" style="--c:'+color+'" data-edit="'+c.id+'">'
@@ -2844,7 +2844,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-10-24-workspace-v2';
+const APP_VERSION = '2026-10-24-workspace-v3';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
