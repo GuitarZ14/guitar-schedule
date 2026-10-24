@@ -21,7 +21,7 @@ function workspace() {
   });
   vm.runInContext(source, context);
   const run = code => vm.runInContext(code, context);
-  run(`weekStart='2026-10-19'; dayCursor='2026-10-24';
+  run(`weekStart='2026-10-19'; monthCursor='2026-10'; dayCursor='2026-10-24';
     students=[{id:'a',name:'甲'},{id:'b',name:'乙'}];
     courses=[
       {id:'1',studentId:'a',date:'2026-10-19',start:'09:00',end:'10:00',status:'done'},
@@ -52,6 +52,42 @@ test('daily view and student filter share the same overview scope', () => {
   run("currentTab='edit'; renderWorkspaceSummary()");
   assert.equal(elements.get('workspaceSummary').hidden, true);
   assert.equal(elements.get('todayBar').hidden, true);
+});
+
+test('monthly overview uses the selected natural month', () => {
+  const { run, elements } = workspace();
+  run("viewMode='month'; renderWorkspaceSummary()");
+  const result = elements.get('workspaceSummary').innerHTML;
+  assert.match(result, /本月课程<\/span><b>4<small>节/);
+  assert.match(result, /已完成<\/span><b>1<small>节/);
+  assert.match(result, /<b>3<small>小时/);
+  assert.equal(elements.get('todayBar').hidden, false);
+  assert.equal(elements.get('workspaceSummary').hidden, false);
+});
+
+test('month view renders six weeks and shows only the student surname', () => {
+  const { run, elements } = workspace();
+  run(`students[0].name='张同学';
+    courses.push(
+      {id:'6',studentId:'a',date:'2026-10-24',start:'14:00',end:'15:00',status:'planned'},
+      {id:'7',studentId:'a',date:'2026-10-24',start:'15:00',end:'16:00',status:'planned'},
+      {id:'8',studentId:'a',date:'2026-10-24',start:'16:00',end:'17:00',status:'planned'}
+    ); renderMonth()`);
+  const result = elements.get('view-week').innerHTML;
+  assert.equal((result.match(/class=\"month-cell/g) || []).length, 42);
+  assert.match(result, /class="month-name">张<\/span>/);
+  assert.match(result, /aria-label="编辑 张同学 09:00 已上"/);
+  assert.doesNotMatch(result, /class="month-name">张同学<\/span>/);
+  assert.doesNotMatch(result, /data-edit="4"/);
+  assert.match(result, /data-dayjump="2026-10-24"[^>]*>\+3<\/button>/);
+});
+
+test('week view removes the schedule detail section and keeps repeat scheduling available', () => {
+  const { run, elements } = workspace();
+  run('renderWeek()');
+  const result = elements.get('view-week').innerHTML;
+  assert.doesNotMatch(result, /排课详情|courseCollapse/);
+  assert.match(result, /id="addRepeat"/);
 });
 
 test('today action list keeps older courses collapsed and escapes course labels', () => {

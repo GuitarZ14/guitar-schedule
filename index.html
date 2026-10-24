@@ -583,7 +583,7 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261024-5">
+<link rel="stylesheet" href="./workspace.css?v=20261024-7">
 </head>
 <body>
 <div id="toast"></div>
@@ -648,6 +648,7 @@
         <div class="topbar-ctrl" id="topCtrl">
           <div class="view-toggle" id="viewToggle">
             <button data-mode="week" class="active" aria-pressed="true">周视图</button>
+            <button data-mode="month" aria-pressed="false">月视图</button>
             <button data-mode="day" aria-pressed="false">日视图</button>
           </div>
           <div class="datenav" id="dateNav">
@@ -1046,8 +1047,9 @@ const SEED_COURSES = [
 
 let students=[], courses=[];
 let currentTab='week';
-let viewMode='week';       // 'week' | 'day' —— 课表视图切换
+let viewMode='week';       // 'week' | 'month' | 'day' —— 课表视图切换
 let weekStart='';
+let monthCursor='';        // 月视图当前月份 YYYY-MM
 let dayCursor='';          // 日视图当前日期
 let currentMonth='';
 let filterStudent='';      // 顶部筛选：''=全部
@@ -1205,13 +1207,16 @@ function courseCardHTML(c){
     +'<div class="cn"><span class="cdot"></span>'+esc(courseWho(c))+trialBadge(c)+'</div>'
     +stat+'</div>';
 }
+function courseSurname(c){
+  return Array.from(String(courseWho(c)||'').trim())[0]||'—';
+}
 function renderWeek(){
   const mon=parseYMD(weekStart);
   const sun=addDays(mon,6);
   const range = mon.getFullYear()+'年 '+(mon.getMonth()+1)+'.'+mon.getDate()+' – '+(sun.getMonth()+1)+'.'+sun.getDate();
   const rangeEl=document.getElementById('navRange'); if(rangeEl) rangeEl.textContent=range;
   const today=todayStr();
-  let html='<div class="schedule-panel"><div class="schedule-heading"><h2>周课表</h2><div class="schedule-legend"><span><i class="legend-dot"></i>待上</span><span><i class="legend-dot done"></i>已上</span><span><i class="legend-dot absent"></i>请假</span></div></div><div class="weekgrid">';
+  let html='<div class="schedule-panel"><div class="schedule-heading"><h2>周课表</h2><div class="schedule-head-actions"><div class="schedule-legend"><span><i class="legend-dot"></i>待上</span><span><i class="legend-dot done"></i>已上</span><span><i class="legend-dot absent"></i>请假</span></div><button id="addRepeat" class="schedule-repeat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 2 5"/><path d="M4 12V7l5 5"/></svg>重复排课</button></div></div><div class="weekgrid">';
   for(let i=0;i<7;i++){
     const day=addDays(mon,i);
     const ds=ymd(day);
@@ -1225,32 +1230,6 @@ function renderWeek(){
     html+='</div>';
   }
   html+='</div></div>';
-
-  // ---- 排课详情（折叠区，跟随筛选）----
-  const clist=courses.slice().filter(c=>!filterStudent||c.studentId===filterStudent).sort((a,b)=> a.date===b.date ? b.start.localeCompare(a.start) : b.date.localeCompare(a.date));
-  const courseCount = clist.length;
-  let bodyHtml='';
-  if(!clist.length) bodyHtml+='<div class="empty">还没有课程记录。</div>';
-  else{
-    bodyHtml+='<div class="card-list">';
-    clist.forEach(c=>{
-      const d=parseYMD(c.date);
-      const color=courseColor(c);
-      bodyHtml+='<div class="row-card"><div class="main"><b><span class="swatch" style="background:'+color+'"></span>'+esc(courseWho(c))+trialBadge(c)+'</b>'
-        +'<div class="sub">'+(d.getMonth()+1)+'月'+d.getDate()+'日 '+esc(c.start+'~'+c.end)+' · '+esc(courseContent(c).split('\n')[0])+'</div></div>'
-        +'<span class="badge '+c.status+'">'+STATUS_TXT[c.status]+'</span>'
-        +'<div class="ops"><button data-c-edit="'+c.id+'">编辑</button><button class="danger" data-c-del="'+c.id+'">删除</button></div></div>';
-    });
-    bodyHtml+='</div>';
-  }
-  html+='<div class="collapse" id="courseCollapse">'
-    +'<div class="collapse-head" id="courseCollapseHead">'
-    +'<svg class="collapse-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>'
-    +'<h3>排课详情</h3><span class="pill" style="font-size:12px">'+courseCount+' 条</span>'
-    +'<span class="spacer"></span>'
-    +'<button id="addRepeat" style="margin:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 2 5"/><path d="M4 12V7l5 5"/></svg>重复排课</button>'
-    +'</div>'
-    +'<div class="collapse-body">'+bodyHtml+'</div></div>';
 
   const v=document.getElementById('view-week'); v.innerHTML=html;
   // 点击日期列空白区 → 记住该日期，新增课程时自动填入（表头与课程卡片不触发，避免误触）
@@ -1267,14 +1246,41 @@ function renderWeek(){
   v.querySelectorAll('[data-addday]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); lastClickedDate=b.dataset.addday; openCourseModal(null); });
   v.querySelectorAll('[data-copyday]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); copyDaySchedule(b.dataset.copyday); });
   document.getElementById('addRepeat').onclick=openRepeatModal;
-  const coll=document.getElementById('courseCollapse');
-  const collHead=document.getElementById('courseCollapseHead');
-  collHead.onclick=e=>{ if(e.target.closest('button')) return; coll.classList.toggle('open'); };
-  v.querySelectorAll('[data-c-edit]').forEach(b=>b.onclick=()=>openCourseModal(b.dataset.cEdit));
-  v.querySelectorAll('[data-c-del]').forEach(b=>b.onclick=()=>{
-    confirmDialog('确定删除这条课程记录？', ()=>{
-      courses=courses.filter(c=>c.id!==b.dataset.cDel); saveCourses(); render();
+}
+// 月视图：按自然月展示，课程仅显示时间与学员姓氏。
+function renderMonth(){
+  const parts=monthCursor.split('-').map(Number);
+  const first=new Date(parts[0],parts[1]-1,1);
+  const gridStart=addDays(first,-((first.getDay()+6)%7));
+  const today=todayStr();
+  const rangeEl=document.getElementById('navRange');
+  if(rangeEl) rangeEl.textContent=first.getFullYear()+'年 '+(first.getMonth()+1)+'月';
+  let html='<div class="schedule-panel month-panel"><div class="schedule-heading"><h2>月课表</h2><div class="schedule-legend"><span><i class="legend-dot"></i>待上</span><span><i class="legend-dot done"></i>已上</span><span><i class="legend-dot absent"></i>请假</span></div></div><div class="month-scroll">'
+    +'<div class="month-weekdays">'+WEEKDAYS.map(d=>'<span>周'+d+'</span>').join('')+'</div><div class="month-grid">';
+  for(let i=0;i<42;i++){
+    const day=addDays(gridStart,i), ds=ymd(day);
+    const outside=day.getMonth()!==first.getMonth();
+    const list=courses.filter(c=>c.date===ds && c.status!=='cancelled' && (!filterStudent||c.studentId===filterStudent)).sort((a,b)=>a.start.localeCompare(b.start));
+    html+='<div class="month-cell'+(outside?' outside':'')+(ds===today?' today':'')+'" data-date="'+ds+'">'
+      +'<button class="month-day-add" data-addday="'+ds+'" aria-label="'+ds+' 新增课程">'+day.getDate()+'</button>';
+    list.slice(0,2).forEach(c=>{
+      const state=c.status==='done'?' done':c.status==='absent'?' absent':'';
+      html+='<button class="month-course'+state+'" data-edit="'+c.id+'" style="--c:'+courseColor(c)+'" aria-label="编辑 '+esc(courseWho(c)+' '+c.start+' '+(STATUS_TXT[c.status]||''))+'">'
+        +'<span class="month-time">'+esc(c.start)+'</span><span class="month-name">'+esc(courseSurname(c))+'</span></button>';
     });
+    if(list.length>2) html+='<button class="month-more" data-dayjump="'+ds+'" aria-label="查看 '+ds+' 全部 '+list.length+' 节课程">+'+(list.length-2)+'</button>';
+    html+='</div>';
+  }
+  html+='</div></div></div>';
+  const v=document.getElementById('view-week'); v.innerHTML=html;
+  v.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>openCourseModal(el.dataset.edit));
+  v.querySelectorAll('[data-addday]').forEach(b=>b.onclick=()=>{ lastClickedDate=b.dataset.addday; openCourseModal(null); });
+  v.querySelectorAll('[data-dayjump]').forEach(b=>b.onclick=()=>{
+    dayCursor=b.dataset.dayjump; viewMode='day';
+    document.querySelectorAll('#viewToggle button').forEach(x=>{
+      const on=x.dataset.mode==='day'; x.classList.toggle('active',on); x.setAttribute('aria-pressed',String(on));
+    });
+    render();
   });
 }
 // 日视图：时间轴，节点圆点=学员色
@@ -2528,6 +2534,7 @@ async function autoRestoreOnLoad(key){
 }
 // 初始化：检测是否已配置 API Key
 function initCloud(){
+  if(localStorage.getItem("gb_teaching_connection")) return false;
   const key=jbKey();
   if(!key){
     cloudReady=false;
@@ -2871,12 +2878,20 @@ function renderWorkspaceSummary(){
   layout.classList.toggle('workspace-layout',currentTab==='week');
   document.getElementById('todayBar').hidden=currentTab!=='week';
   if(currentTab!=='week') return;
-  const start=viewMode==='week'?weekStart:dayCursor;
-  const end=viewMode==='week'?ymd(addDays(parseYMD(start),6)):start;
+  let start, end, label;
+  if(viewMode==='week'){
+    start=weekStart; end=ymd(addDays(parseYMD(start),6));
+    label=weekStart===mondayOf(todayStr())?'本周课程':'所选周课程';
+  }else if(viewMode==='month'){
+    const p=monthCursor.split('-').map(Number), first=new Date(p[0],p[1]-1,1), last=new Date(p[0],p[1],0);
+    start=ymd(first); end=ymd(last); label=monthCursor===ymStr(new Date())?'本月课程':'所选月课程';
+  }else{
+    start=dayCursor; end=start; label='当日课程';
+  }
   const list=courses.filter(c=>c.date>=start && c.date<=end && c.status!=='cancelled' && (!filterStudent||c.studentId===filterStudent));
   const completed=list.filter(c=>c.status==='done').length;
   const minutes=list.filter(c=>c.status!=='absent').reduce((sum,c)=>sum+dur(c),0);
-  el.innerHTML='<div class="summary-metric"><span>'+(viewMode==='week'?(weekStart===mondayOf(todayStr())?'本周课程':'所选周课程'):'当日课程')+'</span><b>'+list.length+'<small>节</small></b></div>'
+  el.innerHTML='<div class="summary-metric"><span>'+label+'</span><b>'+list.length+'<small>节</small></b></div>'
     +'<div class="summary-metric"><span>已完成</span><b>'+completed+'<small>节</small></b></div>'
     +'<div class="summary-metric"><span title="不含请假和取消课程">排课时长</span><b>'+Number((minutes/60).toFixed(1))+'<small>小时</small></b></div>';
 }
@@ -2885,7 +2900,7 @@ function render(){
   renderWorkspaceSummary();
   populateFilter();
   renderToday(); renderHint();
-  if(currentTab==='week'){ if(viewMode==='day') renderDay(); else renderWeek(); }
+  if(currentTab==='week'){ if(viewMode==='day') renderDay(); else if(viewMode==='month') renderMonth(); else renderWeek(); }
   else if(currentTab==='edit') renderEdit();
   else if(currentTab==='salary') renderSalary();
   else renderStats();
@@ -2897,6 +2912,7 @@ function closeSidebar(){ const sb=document.getElementById('sidebar'); if(sb) sb.
 function init(){
   load();
   weekStart=mondayOf(todayStr());
+  monthCursor=ymStr(new Date());
   dayCursor=todayStr();
   currentMonth=ymStr(new Date());
   // 侧栏导航 + 移动端底栏（共用 data-tab）
@@ -2905,21 +2921,27 @@ function init(){
       b.onclick=()=>{ currentTab=b.dataset.tab; closeSidebar(); render(); };
     }
   });
-  // 周 / 日 视图切换
+  // 周 / 月 / 日 视图切换
   document.querySelectorAll('#viewToggle button').forEach(b=>b.onclick=()=>{
-    viewMode=b.dataset.mode; if(!dayCursor) dayCursor=todayStr();
+    viewMode=b.dataset.mode; if(!dayCursor) dayCursor=todayStr(); if(!monthCursor) monthCursor=ymStr(new Date());
     document.querySelectorAll('#viewToggle button').forEach(x=>x.classList.toggle('active',x===b));
     document.querySelectorAll('#viewToggle button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
     render();
   });
-  // 日期导航（周视图翻周 / 日视图翻天）
+  // 日期导航（周视图翻周 / 月视图翻月 / 日视图翻天）
   document.getElementById('navPrev').onclick=()=>{
-    if(viewMode==='week'){ weekStart=ymd(addDays(parseYMD(weekStart),-7)); } else { dayCursor=ymd(addDays(parseYMD(dayCursor),-1)); } render();
+    if(viewMode==='week') weekStart=ymd(addDays(parseYMD(weekStart),-7));
+    else if(viewMode==='month'){ const p=monthCursor.split('-').map(Number); monthCursor=ymStr(new Date(p[0],p[1]-2,1)); }
+    else dayCursor=ymd(addDays(parseYMD(dayCursor),-1));
+    render();
   };
   document.getElementById('navNext').onclick=()=>{
-    if(viewMode==='week'){ weekStart=ymd(addDays(parseYMD(weekStart),7)); } else { dayCursor=ymd(addDays(parseYMD(dayCursor),1)); } render();
+    if(viewMode==='week') weekStart=ymd(addDays(parseYMD(weekStart),7));
+    else if(viewMode==='month'){ const p=monthCursor.split('-').map(Number); monthCursor=ymStr(new Date(p[0],p[1],1)); }
+    else dayCursor=ymd(addDays(parseYMD(dayCursor),1));
+    render();
   };
-  document.getElementById('navToday').onclick=()=>{ weekStart=mondayOf(todayStr()); dayCursor=todayStr(); render(); };
+  document.getElementById('navToday').onclick=()=>{ weekStart=mondayOf(todayStr()); monthCursor=ymStr(new Date()); dayCursor=todayStr(); render(); };
   // 顶部筛选（按学员）
   document.getElementById('filterStudent').onchange=e=>{ filterStudent=e.target.value; render(); };
   // 顶部新增课程
@@ -3016,7 +3038,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-10-24-share-name-only-v1';
+const APP_VERSION = '2026-10-24-teaching-sync-v2';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
@@ -3056,6 +3078,9 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<script src="./teaching-core.js?v=20261024-1"></script>
+<script src="./teaching-sync.js?v=20261024-1"></script>
+<script src="./teaching-desktop.js?v=20261024-1"></script>
 </body>
 </html>
 
