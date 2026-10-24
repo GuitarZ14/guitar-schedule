@@ -583,7 +583,7 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261024-7">
+<link rel="stylesheet" href="./workspace.css?v=20261024-8">
 </head>
 <body>
 <div id="toast"></div>
@@ -1263,25 +1263,17 @@ function renderMonth(){
     const list=courses.filter(c=>c.date===ds && c.status!=='cancelled' && (!filterStudent||c.studentId===filterStudent)).sort((a,b)=>a.start.localeCompare(b.start));
     html+='<div class="month-cell'+(outside?' outside':'')+(ds===today?' today':'')+'" data-date="'+ds+'">'
       +'<button class="month-day-add" data-addday="'+ds+'" aria-label="'+ds+' 新增课程">'+day.getDate()+'</button>';
-    list.slice(0,2).forEach(c=>{
+    list.forEach(c=>{
       const state=c.status==='done'?' done':c.status==='absent'?' absent':'';
       html+='<button class="month-course'+state+'" data-edit="'+c.id+'" style="--c:'+courseColor(c)+'" aria-label="编辑 '+esc(courseWho(c)+' '+c.start+' '+(STATUS_TXT[c.status]||''))+'">'
         +'<span class="month-time">'+esc(c.start)+'</span><span class="month-name">'+esc(courseSurname(c))+'</span></button>';
     });
-    if(list.length>2) html+='<button class="month-more" data-dayjump="'+ds+'" aria-label="查看 '+ds+' 全部 '+list.length+' 节课程">+'+(list.length-2)+'</button>';
     html+='</div>';
   }
   html+='</div></div></div>';
   const v=document.getElementById('view-week'); v.innerHTML=html;
   v.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>openCourseModal(el.dataset.edit));
   v.querySelectorAll('[data-addday]').forEach(b=>b.onclick=()=>{ lastClickedDate=b.dataset.addday; openCourseModal(null); });
-  v.querySelectorAll('[data-dayjump]').forEach(b=>b.onclick=()=>{
-    dayCursor=b.dataset.dayjump; viewMode='day';
-    document.querySelectorAll('#viewToggle button').forEach(x=>{
-      const on=x.dataset.mode==='day'; x.classList.toggle('active',on); x.setAttribute('aria-pressed',String(on));
-    });
-    render();
-  });
 }
 // 日视图：时间轴，节点圆点=学员色
 function renderDay(){
@@ -3038,7 +3030,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-10-24-teaching-sync-v3';
+const APP_VERSION = '2026-10-24-teaching-sync-v4';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */

@@ -90,8 +90,8 @@ button.primary{background:var(--primary);}
 .month-weekdays,.month-grid{display:grid;grid-template-columns:repeat(7,minmax(92px,1fr));min-width:644px;}
 .month-weekdays{background:#fafbf9;border-bottom:1px solid var(--line);}
 .month-weekdays span{padding:6px 8px;text-align:center;font-size:10px;color:var(--muted);font-weight:500;}
-.month-grid{height:max(348px,calc(100vh - 384px));grid-template-rows:repeat(6,1fr);border-left:1px solid var(--line);}
-.month-cell{position:relative;min-height:58px;padding:2px 4px;overflow:hidden;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff;}
+.month-grid{min-height:max(348px,calc(100vh - 384px));grid-template-rows:repeat(6,minmax(58px,1fr));border-left:1px solid var(--line);}
+.month-cell{position:relative;min-height:58px;padding:2px 4px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:#fff;}
 .month-cell.outside{background:#fafbf9;}
 .month-cell.today{background:#f5f9f5;}
 .month-day-add{display:flex;align-items:center;justify-content:center;width:18px;height:16px;min-height:16px;padding:0;margin:0 0 1px auto;border:0;background:transparent;color:var(--text-2);font-size:9px;box-shadow:none;}
@@ -102,7 +102,6 @@ button.primary{background:var(--primary);}
 .month-course:hover{background:var(--primary-soft);transform:none;}
 .month-time{overflow:hidden;text-overflow:ellipsis;font-size:8px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:left;}
 .month-name{font-size:10px;font-weight:600;color:var(--text);}
-.month-more{position:absolute;top:2px;left:4px;height:16px;min-height:16px;padding:0 3px;border:0;background:var(--primary-soft);color:var(--primary);font-size:8px;box-shadow:none;}
 .month-course.done{background:#f1f3f2;opacity:.72;}
 .month-course.done .month-time,.month-course.done .month-name{color:var(--muted);}
 .month-course.absent{background:var(--blue-soft);}
@@ -150,7 +149,7 @@ button.primary{background:var(--primary);}
   .workspace-layout{display:flex;flex-direction:column;gap:16px;}.workspace-layout main{width:100%;order:0;}#todayBar{width:100%;order:1;}
   .weekgrid{display:flex;gap:0;padding:0;min-height:320px;scroll-padding:0;}.daycol{flex:0 0 148px;min-width:148px;}
   .month-weekdays,.month-grid{grid-template-columns:repeat(7,88px);min-width:616px;}
-  .month-grid{height:max(348px,calc(100dvh - 470px));}
+  .month-grid{min-height:max(348px,calc(100dvh - 470px));}
   .month-cell{min-height:58px;padding:2px 4px;}
   .month-time{font-size:8px;}.month-name{font-size:10px;}
   .daycol .dh{min-height:84px;}.dhead-add{min-width:32px;min-height:28px;}.dhead-copy{min-height:28px;}

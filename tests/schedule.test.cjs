@@ -65,7 +65,7 @@ test('monthly overview uses the selected natural month', () => {
   assert.equal(elements.get('workspaceSummary').hidden, false);
 });
 
-test('month view renders six weeks and shows only the student surname', () => {
+test('month view renders six weeks and expands every course with only the student surname', () => {
   const { run, elements } = workspace();
   run(`students[0].name='张同学';
     courses.push(
@@ -79,7 +79,10 @@ test('month view renders six weeks and shows only the student surname', () => {
   assert.match(result, /aria-label="编辑 张同学 09:00 已上"/);
   assert.doesNotMatch(result, /class="month-name">张同学<\/span>/);
   assert.doesNotMatch(result, /data-edit="4"/);
-  assert.match(result, /data-dayjump="2026-10-24"[^>]*>\+3<\/button>/);
+  assert.match(result, /data-edit="6"/);
+  assert.match(result, /data-edit="7"/);
+  assert.match(result, /data-edit="8"/);
+  assert.doesNotMatch(result, /data-dayjump|month-more/);
 });
 
 test('week view removes the schedule detail section and keeps repeat scheduling available', () => {
