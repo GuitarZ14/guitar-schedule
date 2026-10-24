@@ -4,11 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>吉他教学工作台</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="./manifest.webmanifest">
-<meta name="theme-color" content="#BD855C">
+<meta name="theme-color" content="#39765c">
 <link rel="apple-touch-icon" href="./icons/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -587,6 +584,7 @@
     display:inline-block;
   }
 </style>
+<link rel="stylesheet" href="./workspace.css?v=20261024-2">
 </head>
 <body>
 <div id="toast"></div>
@@ -596,7 +594,8 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="17" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M10 17l7-6"/><path d="M19 7l2-2"/></svg>
       <span>吉他教学工作台</span>
     </div>
-    <nav class="nav">
+    <div class="nav-caption">教学管理</div>
+    <nav class="nav" aria-label="主导航">
       <button class="nav-item active" data-tab="week">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>课表
       </button>
@@ -614,21 +613,23 @@
       <div class="remind-head">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <span>课程提醒</span>
-        <label class="switch"><input type="checkbox" id="remindToggle"><span class="slider"></span></label>
+        <label class="switch"><input type="checkbox" id="remindToggle" aria-label="课程提醒"><span class="slider"></span></label>
       </div>
       <p class="remind-sub" id="remindSub">每天 09:00 当日课 / 21:00 次日课</p>
     </div>
     <div class="sidebar-foot">
-      <span id="cloudStatus" class="cloud-status" title="点击配置云端同步" onclick="openCloudConfig()" style="display:inline-flex;align-items:center;gap:5px;">
+      <span id="cloudStatus" role="button" tabindex="0" class="cloud-status" title="点击配置云端同步" onclick="openCloudConfig()" style="display:inline-flex;align-items:center;gap:5px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0;"><path d="M17 18a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9a4 4 0 0 0 0 9h11z"/></svg><span id="cloudStatusText">未配置</span>
       </span>
+      <details class="data-tools"><summary>数据管理</summary>
       <div class="acts">
-        <button id="btnExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>导出JSON</button>
+        <button id="btnExport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>导出备份</button>
         <button id="btnImport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="M7 14l5-5 5 5"/><path d="M5 3h14"/></svg>导入恢复</button>
         <button id="btnCloudBackup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 18a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9a4 4 0 0 0 0 9h11z"/></svg>云端备份</button>
         <button id="btnCloudRestore"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>云端恢复</button>
-        <button id="btnClear" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg>清空</button>
+        <button id="btnClear" class="danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg>清空数据</button>
       </div>
+      </details>
     </div>
   </aside>
   <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
@@ -640,15 +641,15 @@
           <button class="menu-btn" id="menuBtn" aria-label="菜单">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
           </button>
-          <div class="top-title" id="topTitle">课表</div>
+          <div class="top-title"><span class="page-kicker">TEACHING WORKSPACE</span><span id="topTitle">课程安排</span></div>
           <button class="primary top-add" id="topAdd">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span class="top-add-text">新增课程</span>
           </button>
         </div>
         <div class="topbar-ctrl" id="topCtrl">
           <div class="view-toggle" id="viewToggle">
-            <button data-mode="week" class="active">周</button>
-            <button data-mode="day">日</button>
+            <button data-mode="week" class="active" aria-pressed="true">周视图</button>
+            <button data-mode="day" aria-pressed="false">日视图</button>
           </div>
           <div class="datenav" id="dateNav">
             <button id="navPrev" aria-label="上一页">‹</button>
@@ -656,20 +657,23 @@
             <button id="navToday">今天</button>
             <button id="navNext" aria-label="下一页">›</button>
           </div>
-          <select id="filterStudent" class="filter"><option value="">全部学员</option></select>
+          <select id="filterStudent" class="filter" aria-label="筛选学员"><option value="">全部学员</option></select>
         </div>
       </div>
     </header>
 
     <div class="wrap">
-      <div id="todayBar"></div>
+      <section id="workspaceSummary" class="workspace-summary" aria-label="课程概览"></section>
+      <div class="workspace-layout" id="workspaceLayout">
+        <aside id="todayBar" aria-label="今日课程与待处理课程"></aside>
+        <main>
+          <section id="view-week" class="view" aria-label="课程表"></section>
+          <section id="view-edit" class="view" hidden></section>
+          <section id="view-stats" class="view" hidden></section>
+          <section id="view-salary" class="view" hidden></section>
+        </main>
+      </div>
       <div id="dataHint" class="hint" hidden></div>
-      <main>
-        <section id="view-week" class="view"></section>
-        <section id="view-edit" class="view" hidden></section>
-        <section id="view-stats" class="view" hidden></section>
-        <section id="view-salary" class="view" hidden></section>
-      </main>
     </div>
   </div>
 
@@ -1090,37 +1094,30 @@ function renderToday(){
                          .sort((a,b)=>a.date.localeCompare(b.date));
   const todayItems = courses.filter(c=>c.date===today&&c.status!=='done'&&c.status!=='absent'&&c.status!=='cancelled')
                             .sort((a,b)=>a.start.localeCompare(b.start));
-  let headText;
-  if(todayItems.length && overdue.length){
-    headText = `今天还需要上${todayItems.length}课 · ${overdue.length}节逾期`;
-  } else if(todayItems.length){
-    headText = `今天还需要上${todayItems.length}课`;
-  } else if(overdue.length){
-    headText = `有${overdue.length}节逾期待补`;
-  } else {
-    headText = '今天没有待上课';
-  }
-  if(!overdue.length && !todayItems.length){
-    el.innerHTML='<div class="today"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>'+esc(headText)+'</h2><div class="empty">今天暂无待处理课程，教学安排很清爽。</div></div>';
-    return;
-  }
-  let html='<div class="today"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>'+esc(headText)+'</h2>';
+  const date=parseYMD(today);
+  let html='<div class="today"><h2>今日课程<span class="today-count">'+todayItems.length+' 节待上</span></h2>'
+    +'<p class="today-date">'+(date.getMonth()+1)+'月'+date.getDate()+'日 · 周'+WEEKDAYS[(date.getDay()+6)%7]+'</p>';
+  if(!todayItems.length) html+='<div class="empty">今天没有待上课程。</div>';
   const renderItem=(c,over)=>{
     const d=parseYMD(c.date);
-    const when = over ? (d.getMonth()+1)+'月'+d.getDate()+'日' : '今天 '+c.start;
+    const when = over ? (d.getMonth()+1)+'月'+d.getDate()+'日 · '+c.start : c.start+' – '+c.end;
     /* 上课状态角标：逾期/待上（本块仅课表页渲染） */
     return `<div class="titem ${over?'over':''}">
       <div class="when">${esc(when)}</div>
-      <div class="who"><b>${esc(courseWho(c))}${trialBadge(c)}</b><span>${esc(c.start+'~'+c.end)}</span></div>
-      <div class="tag">${over?'逾期':'待上'}</div>
+      <div class="who"><b>${esc(courseWho(c))}${trialBadge(c)}</b><span>${esc(c.song||c.focus||'')}</span></div>
+      <div class="tag">${over?'待处理':'待上'}</div>
       <div class="acts">
         <button class="btn-absent" data-absent="${c.id}">请假</button>
         <button class="primary" data-done="${c.id}">完成</button>
       </div>
     </div>`;
   };
-  overdue.forEach(c=>html+=renderItem(c,true));
   todayItems.forEach(c=>html+=renderItem(c,false));
+  if(overdue.length){
+    html+='<details class="overdue-list"><summary>'+overdue.length+' 节往期课程待处理</summary>';
+    overdue.forEach(c=>html+=renderItem(c,true));
+    html+='</details>';
+  }
   html+='</div>';
   el.innerHTML=html;
   // 完成
@@ -1153,7 +1150,7 @@ function renderToday(){
 
 function renderHint(){
   const el=document.getElementById('dataHint');
-  if(courses.length>=30){ el.hidden=false; el.textContent='数据已积累 '+courses.length+' 条，建议点右上角「导出JSON」备份。'; }
+  if(currentTab==='week' && courses.length>=30 && !jbBin()){ el.hidden=false; el.textContent='已保存 '+courses.length+' 条课程，可在侧栏「数据管理」中导出备份。'; }
   else el.hidden=true;
 }
 
@@ -1170,7 +1167,7 @@ function courseCardHTML(c){
     const bg  = st==='done'?'var(--green-soft)':st==='absent'?'var(--blue-soft)':'var(--gray-soft)';
     stat='<span class="cstat" style="color:'+col+';background:'+bg+'">'+txt+'</span>';
   }
-  return '<div class="ccard '+statCls+'" style="--c:'+color+'" data-edit="'+c.id+'">'
+  return '<div class="ccard '+statCls+'" role="button" tabindex="0" aria-label="编辑 '+esc(courseWho(c)+' '+c.start+' '+(STATUS_TXT[st]||''))+'" style="--c:'+color+'" data-edit="'+c.id+'">'
     +'<div class="ct">'+esc(c.start+'~'+c.end)+'</div>'
     +'<div class="cn"><span class="cdot"></span>'+esc(courseWho(c))+trialBadge(c)+'</div>'
     +stat+'</div>';
@@ -1178,10 +1175,10 @@ function courseCardHTML(c){
 function renderWeek(){
   const mon=parseYMD(weekStart);
   const sun=addDays(mon,6);
-  const range = ymd(mon).slice(5)+' ~ '+ymd(sun).slice(5);
+  const range = mon.getFullYear()+'年 '+(mon.getMonth()+1)+'.'+mon.getDate()+' – '+(sun.getMonth()+1)+'.'+sun.getDate();
   const rangeEl=document.getElementById('navRange'); if(rangeEl) rangeEl.textContent=range;
   const today=todayStr();
-  let html='<div class="weekgrid">';
+  let html='<div class="schedule-panel"><div class="schedule-heading"><h2>周课表</h2><div class="schedule-legend"><span><i class="legend-dot"></i>待上</span><span><i class="legend-dot done"></i>已上</span><span><i class="legend-dot absent"></i>请假</span></div></div><div class="weekgrid">';
   for(let i=0;i<7;i++){
     const day=addDays(mon,i);
     const ds=ymd(day);
@@ -1190,11 +1187,11 @@ function renderWeek(){
     const dhAdd = '<button class="dhead-add" data-addday="'+ds+'" title="新增课程">+</button>';
     const dhCopy = list.length ? '<button class="dhead-copy" data-copyday="'+ds+'" title="复制本日课表到下周">复制本日</button>' : '';
     html+='<div class="daycol'+(isToday?' today':'')+'" data-date="'+ds+'"><div class="dh">'+dhAdd+'<div class="dh-date"><b>'+day.getDate()+'</b>周'+WEEKDAYS[i]+'</div>'+dhCopy+'</div>';
-    if(!list.length){ html+='<div class="none">暂无课程 · 点 + 或此处添加</div>'; }
+    if(!list.length){ html+='<div class="none">暂无课程</div>'; }
     list.forEach(c=>{ html+=courseCardHTML(c); });
     html+='</div>';
   }
-  html+='</div>';
+  html+='</div></div>';
 
   // ---- 排课详情（折叠区，跟随筛选）----
   const clist=courses.slice().filter(c=>!filterStudent||c.studentId===filterStudent).sort((a,b)=> a.date===b.date ? b.start.localeCompare(a.start) : b.date.localeCompare(a.date));
@@ -1219,7 +1216,6 @@ function renderWeek(){
     +'<h3>排课详情</h3><span class="pill" style="font-size:12px">'+courseCount+' 条</span>'
     +'<span class="spacer"></span>'
     +'<button id="addRepeat" style="margin:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 2 5"/><path d="M4 12V7l5 5"/></svg>重复排课</button>'
-    +'<button class="primary" id="addCourse" style="margin:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>新增课程</button>'
     +'</div>'
     +'<div class="collapse-body">'+bodyHtml+'</div></div>';
 
@@ -1237,7 +1233,6 @@ function renderWeek(){
   v.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>openCourseModal(el.dataset.edit));
   v.querySelectorAll('[data-addday]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); lastClickedDate=b.dataset.addday; openCourseModal(null); });
   v.querySelectorAll('[data-copyday]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); copyDaySchedule(b.dataset.copyday); });
-  document.getElementById('addCourse').onclick=()=>openCourseModal(null);
   document.getElementById('addRepeat').onclick=openRepeatModal;
   const coll=document.getElementById('courseCollapse');
   const collHead=document.getElementById('courseCollapseHead');
@@ -1301,13 +1296,13 @@ function renderEdit(){
   const mLabel=parseInt(ym.slice(5),10)+'月';  // 表头动态文案：本月/9月/8月…
   const levels=[...new Set(students.map(s=>s.level||'其他'))];
 
-  let html='<div class="sec-head"><h3>学员管理</h3><span class="spacer"></span>'
+  let html='<div class="student-panel"><div class="sec-head"><h2>学员档案</h2><span class="spacer"></span>'
     +'<button class="tbtn" id="expStuMonth" title="导出'+mLabel+'全部学员的已上日期（每堂课一行）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>导出'+mLabel+'上课详情</button>'
     +'<button class="primary" id="addStudent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>新增学员</button></div>';
 
   /* 空数据状态（无任何学员） */
   if(!students.length){
-    html+='<div class="empty">还没有学员，点上方「新增学员」添加。</div>';
+    html+='<div class="empty">还没有学员，点上方「新增学员」添加。</div></div>';
     const v=document.getElementById('view-edit'); v.innerHTML=html;
     document.getElementById('addStudent').onclick=()=>openStudentModal(null);
     document.getElementById('expStuMonth').onclick=()=>exportStuMonth(ym);
@@ -1316,20 +1311,20 @@ function renderEdit(){
 
   /* 月份行：与月度统计页同款交互；选中历史/未来月份时出现「回本月」 */
   const isCurMonth=(ym===today.slice(0,7));
-  html+='<div class="weeknav stu-monthbar"><span class="range">选择月份</span>'
+  html+='<div class="student-controls"><div class="weeknav stu-monthbar"><label class="range" for="stuMonthPick">月份</label>'
     +'<input type="month" id="stuMonthPick" value="'+esc(ym)+'" style="max-width:180px">'
     +(isCurMonth?'':'<button class="tbtn" id="stuMonthBack">回本月</button>')
     +'</div>';
 
   /* 工具栏：搜索 + 类型筛选 + 状态筛选 */
   html+='<div class="stu-toolbar">'
-    +'<input id="stuSearch" type="search" placeholder="搜索姓名" value="'+esc(stuSearch)+'">'
-    +'<select id="stuTypeFilter"><option value="">全部类型</option>'
+    +'<input id="stuSearch" type="search" aria-label="搜索学员姓名" placeholder="搜索姓名" value="'+esc(stuSearch)+'">'
+    +'<select id="stuTypeFilter" aria-label="课程类型筛选"><option value="">全部类型</option>'
     +levels.map(l=>'<option value="'+esc(l)+'"'+(l===stuTypeFilter?' selected':'')+'>'+esc(l)+'</option>').join('')
     +'</select>'
-    +'<select id="stuStatusFilter"><option value="">全部状态</option>'
+    +'<select id="stuStatusFilter" aria-label="学员状态筛选"><option value="">全部状态</option>'
     +Object.keys(STU_STATUS).map(k=>'<option value="'+k+'"'+(k===stuStatusFilter?' selected':'')+'>'+STU_STATUS[k].txt+'</option>').join('')
-    +'</select></div>';
+    +'</select></div></div>';
 
   /* 计算层：每名学员一行的展示数据（不改数据源） */
   const kw=stuSearch.trim().toLowerCase();
@@ -1365,7 +1360,7 @@ function renderEdit(){
   const pageRows=rows.slice((stuPage-1)*STU_PAGE_SIZE, stuPage*STU_PAGE_SIZE);
 
   /* 表格 */
-  html+='<div class="stu-table-wrap"><table class="stu-table"><thead><tr>'
+  html+='<div class="stu-table-wrap" tabindex="0" role="region" aria-label="学员档案表，可横向滚动"><table class="stu-table"><thead><tr>'
     +'<th class="sortable" data-sort="name">学员 '+sortArrow('name')+'</th>'
     +'<th>'+mLabel+'已上日期</th>'
     +'<th>'+mLabel+'待上日期</th>'
@@ -1417,6 +1412,7 @@ function renderEdit(){
     +'<span>第 '+stuPage+' / '+totalPages+' 页</span>'
     +'<button class="tbtn" id="stuNext"'+(stuPage>=totalPages?' disabled':'')+'>下一页</button></div>';
 
+  html+='</div>';
   const v=document.getElementById('view-edit'); v.innerHTML=html;
 
   /* 事件绑定（改状态 → 重渲染，渲染函数之间零互调） */
@@ -1434,10 +1430,22 @@ function renderEdit(){
   document.getElementById('stuMonthPick').onchange=e=>{ stuMonth=e.target.value||''; stuPage=1; renderEdit(); };
   const monthBack=document.getElementById('stuMonthBack');
   if(monthBack) monthBack.onclick=()=>{ stuMonth=''; stuPage=1; renderEdit(); };
-  v.querySelectorAll('th.sortable').forEach(th=>th.onclick=()=>{
-    const k=th.dataset.sort;
-    if(stuSortKey===k) stuSortDir*=-1; else { stuSortKey=k; stuSortDir=1; }
-    renderEdit();
+  v.querySelectorAll('th.sortable').forEach(th=>{
+    th.tabIndex=0;
+    th.setAttribute('aria-sort',stuSortKey===th.dataset.sort?(stuSortDir===1?'ascending':'descending'):'none');
+    th.onclick=()=>{
+      const k=th.dataset.sort;
+      if(stuSortKey===k) stuSortDir*=-1; else { stuSortKey=k; stuSortDir=1; }
+      renderEdit();
+    };
+    th.onkeydown=e=>{
+      if(e.key==='Enter'||e.key===' '){
+        e.preventDefault();
+        const k=th.dataset.sort;
+        th.click();
+        v.querySelector('th[data-sort="'+k+'"]').focus();
+      }
+    };
   });
   v.querySelectorAll('[data-stu-edit]').forEach(b=>b.onclick=()=>openStudentModal(b.dataset.stuEdit));
   v.querySelectorAll('[data-stu-book]').forEach(b=>b.onclick=()=>{
@@ -1476,31 +1484,15 @@ function monthMap(ym){
   return map;
 }
 function svgBars(map){
-  const ids=Object.keys(map);
+  const ids=Object.keys(map).sort((a,b)=>map[b].min-map[a].min);
   if(!ids.length) return '<p class="empty">本月暂无课程记录。</p>';
-  const data=ids.map(id=>({id, name:keyWho(id), min:map[id].min}));
-  const maxDone=Math.max(...data.map(d=>d.min),1);
-  const max=maxDone;
-  const bw=16, groupGap=24, h=150, base=h-26;
-  // 保证 viewBox 宽度不小于 300，避免少数据时过度放大
-  const rawW=data.length*(bw+groupGap);
-  const W=Math.max(rawW,300);
-  const offsetX=(W-rawW)/2;  // 居中偏移
-  let s='';
-  data.forEach((d,i)=>{
-    const gx=offsetX+groupGap/2+i*(bw+groupGap);
-    // 已上时长（实色，学员色主柱）
-    const bh=Math.max(4,d.min/max*(base-14));
-    const y=base-bh;
-    s+='<rect x="'+gx+'" y="'+y+'" width="'+bw+'" height="'+bh+'" rx="4" fill="'+keyColor(d.id)+'"/>';
-    s+='<text x="'+(gx+bw/2)+'" y="'+(y-4)+'" text-anchor="middle" class="barval">'+fmtMin(d.min)+'</text>';
-    s+='<text x="'+(gx+bw/2)+'" y="'+(base+15)+'" text-anchor="middle" class="barname">'+esc(d.name)+'</text>';
-  });
-  const svg='<svg viewBox="0 0 '+W+' '+h+'" class="chart" preserveAspectRatio="xMidYMid meet">'+s+'</svg>';
-  const legend='<div style="font-size:12px;color:var(--muted);margin-top:8px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">'
-    +'<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:11px;height:11px;border-radius:3px;background:var(--primary);display:inline-block;"></span>已上时长</span></div>';
-  return svg+legend;
+  const max=Math.max(...ids.map(id=>map[id].min),1);
+  return '<div class="duration-bars" role="list" aria-label="学员已上课程时长">'+ids.map(id=>
+    '<div class="duration-row" role="listitem"><div class="duration-label"><span>'+esc(keyWho(id))+'</span><b>'+fmtMin(map[id].min)+'</b></div>'
+    +'<div class="duration-track"><span style="width:'+(map[id].min/max*100)+'%"></span></div></div>'
+  ).join('')+'</div>';
 }
+
 function renderStats(){
   const ym=currentMonth;
   const map=monthMap(ym);
@@ -1510,18 +1502,19 @@ function renderStats(){
   const studentCount=ids.length;
   /* totalAbsent 仍按底层口径算出（monthMap 的 absent 统计逻辑保留），
      但按需求不再作为 KPI 展示——上课状态仅在课表页展示 */
-  let html='<div class="weeknav"><span class="range">选择月份</span>'
+  let html='<div class="weeknav report-controls"><label class="range" for="monthPick">月份</label>'
     +'<input type="month" id="monthPick" value="'+esc(ym)+'" style="max-width:180px">'
     +'<span class="spacer" style="margin-left:auto"></span>'
     +'<button id="expCsv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>导出CSV</button></div>';
   html+='<div class="kpis">'
-    +'<div class="kpi"><b>'+totalCount+'</b><span>已上课时(节)</span></div>'
-    +'<div class="kpi"><b>'+studentCount+'</b><span>上课学员</span></div></div>';
-  html+='<div class="panel"><h3 style="margin:0 0 10px;color:var(--text);font-size:16px">学员时长分布</h3>'+svgBars(map)+'</div>';
-  html+='<div class="panel"><h3 style="margin:0 0 10px;color:var(--text);font-size:16px">明细报表</h3>';
+    +'<div class="kpi"><span>已上课程</span><b>'+totalCount+'<small>节</small></b></div>'
+    +'<div class="kpi"><span>授课总时长</span><b>'+Number((totalMin/60).toFixed(1))+'<small>小时</small></b></div>'
+    +'<div class="kpi"><span title="含仅有请假记录的学员；体验课独立计入">课程学员</span><b>'+studentCount+'<small>位</small></b></div></div>';
+  html+='<div class="stats-panels"><section class="panel duration-panel"><h2>学员时长分布</h2>'+svgBars(map)+'</section>';
+  html+='<section class="panel report-panel"><h2>课程明细</h2>';
   if(!ids.length) html+='<p class="empty">本月暂无课程记录。</p>';
   else{
-    html+='<table><thead><tr><th>学员</th><th class="num">节数</th><th class="num">总时长</th><th class="num">占比</th></tr></thead><tbody>';
+    html+='<div class="report-table-wrap" tabindex="0" role="region" aria-label="月度课程明细，可横向滚动"><table><thead><tr><th>学员</th><th class="num">节数</th><th class="num">总时长</th><th class="num">占比</th></tr></thead><tbody>';
     ids.sort((a,b)=>map[b].min-map[a].min).forEach(id=>{
       const pct=totalMin? Math.round(map[id].min/totalMin*100):0;
       /* 收集该学员本月已上课日期，格式化为"X月X号"，每个日期独立 <span> 以支持横向流式排列 */
@@ -1529,15 +1522,15 @@ function renderStats(){
                                .sort((a,b)=>a.date.localeCompare(b.date))
                                .map(c=>{ const d=parseYMD(c.date); return (d.getMonth()+1)+'月'+d.getDate()+'号'; });
       const tipHtml = doneDates.length
-        ? '<span class="stat-tip">'+map[id].count+'<span class="stat-tip-box">'+doneDates.map(d=>'<span>'+esc(d)+'</span>').join('')+'</span></span>'
+        ? '<details class="stat-dates"><summary aria-label="查看'+esc(keyWho(id))+'的上课日期">'+map[id].count+'<span class="dates-chevron">⌄</span></summary><div class="stat-dates-list">'+doneDates.map(d=>'<span>'+esc(d)+'</span>').join('')+'</div></details>'
         : map[id].count;
       html+='<tr><td>'+esc(keyWho(id))+'</td><td class="num">'+tipHtml+'</td><td class="num">'+fmtMin(map[id].min)+'</td><td class="num">'+pct+'%</td></tr>';
     });
-    html+='</tbody></table>';
+    html+='</tbody></table></div>';
   }
-  html+='</div>';
+  html+='</section></div>';
   const v=document.getElementById('view-stats'); v.innerHTML=html;
-  document.getElementById('monthPick').onchange=e=>{ currentMonth=e.target.value; render(); };
+  document.getElementById('monthPick').onchange=e=>{ currentMonth=e.target.value||ymStr(new Date()); render(); };
   document.getElementById('expCsv').onclick=()=>exportCsv(ym,map,totalCount,totalMin);
 }
 
@@ -2692,7 +2685,7 @@ function populateFilter(){
   const sel=document.getElementById('filterStudent');
   if(!sel) return;
   if(filterStudent && !students.find(s=>s.id===filterStudent)) filterStudent='';
-  let html='<option value="">全部学员（仅课表页）</option>';
+  let html='<option value="">全部学员</option>';
   students.forEach(s=>{ html+='<option value="'+s.id+'"'+(s.id===filterStudent?' selected':'')+'>'+esc(s.name)+'</option>'; });
   sel.innerHTML=html;
 }
@@ -2707,10 +2700,27 @@ function switchTab(){
   const onWeek = currentTab==='week';
   const topCtrl=document.getElementById('topCtrl'); if(topCtrl) topCtrl.style.display = onWeek?'':'none';
   const topAdd=document.getElementById('topAdd'); if(topAdd) topAdd.style.display = onWeek?'inline-flex':'none';
-  const tt=document.getElementById('topTitle'); if(tt) tt.textContent = ({week:'课表',edit:'学员管理',stats:'月度统计',salary:'工资统计'})[currentTab]||'';
+  const tt=document.getElementById('topTitle'); if(tt) tt.textContent = ({week:'课程安排',edit:'学员管理',stats:'月度统计',salary:'工资统计'})[currentTab]||'';
+}
+function renderWorkspaceSummary(){
+  const el=document.getElementById('workspaceSummary');
+  el.hidden=currentTab!=='week';
+  const layout=document.getElementById('workspaceLayout');
+  layout.classList.toggle('workspace-layout',currentTab==='week');
+  document.getElementById('todayBar').hidden=currentTab!=='week';
+  if(currentTab!=='week') return;
+  const start=viewMode==='week'?weekStart:dayCursor;
+  const end=viewMode==='week'?ymd(addDays(parseYMD(start),6)):start;
+  const list=courses.filter(c=>c.date>=start && c.date<=end && c.status!=='cancelled' && (!filterStudent||c.studentId===filterStudent));
+  const completed=list.filter(c=>c.status==='done').length;
+  const minutes=list.filter(c=>c.status!=='absent').reduce((sum,c)=>sum+dur(c),0);
+  el.innerHTML='<div class="summary-metric"><span>'+(viewMode==='week'?(weekStart===mondayOf(todayStr())?'本周课程':'所选周课程'):'当日课程')+'</span><b>'+list.length+'<small>节</small></b></div>'
+    +'<div class="summary-metric"><span>已完成</span><b>'+completed+'<small>节</small></b></div>'
+    +'<div class="summary-metric"><span title="不含请假和取消课程">排课时长</span><b>'+Number((minutes/60).toFixed(1))+'<small>小时</small></b></div>';
 }
 function render(){
   switchTab();
+  renderWorkspaceSummary();
   populateFilter();
   renderToday(); renderHint();
   if(currentTab==='week'){ if(viewMode==='day') renderDay(); else renderWeek(); }
@@ -2737,6 +2747,7 @@ function init(){
   document.querySelectorAll('#viewToggle button').forEach(b=>b.onclick=()=>{
     viewMode=b.dataset.mode; if(!dayCursor) dayCursor=todayStr();
     document.querySelectorAll('#viewToggle button').forEach(x=>x.classList.toggle('active',x===b));
+    document.querySelectorAll('#viewToggle button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
     render();
   });
   // 日期导航（周视图翻周 / 日视图翻天）
@@ -2770,6 +2781,14 @@ function init(){
   // 前端兜底调度：页面打开时命中 09:00/21:00 弹站内提醒（与后端 Actions 互补）
   scheduleInAppReminders();
   setInterval(scheduleInAppReminders, 60*1000);
+  // Keyboard access for course cards and cloud configuration.
+  document.getElementById('cloudStatus').onkeydown=e=>{
+    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openCloudConfig(); }
+  };
+  document.getElementById('view-week').addEventListener('keydown',e=>{
+    const card=e.target.closest('.ccard');
+    if(card && (e.key==='Enter'||e.key===' ')){ e.preventDefault(); openCourseModal(card.dataset.edit); }
+  });
   // course modal events
   document.getElementById('courseSave').onclick=saveCourse;
   document.getElementById('courseCancel').onclick=closeCourseModal;
@@ -2825,7 +2844,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-10-11-v1';
+const APP_VERSION = '2026-10-24-workspace-v2';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
@@ -2867,3 +2886,4 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
+
