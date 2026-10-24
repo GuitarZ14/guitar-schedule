@@ -719,8 +719,8 @@
       <label><span class="lab">结束</span><input type="time" id="fEnd"></label>
     </div>
     <div class="dur-display" id="courseDurDisplay"></div>
-    <label class="course-homework"><span class="lab">作业重点</span><textarea id="fHomework" rows="3" maxlength="2000" placeholder="如：每天练习 10 分钟；60 BPM，和弦转换保持连贯"></textarea></label>
-    <label><span class="lab">上课内容</span><textarea id="fLessonContent" rows="5" placeholder="如：左手基本功练习、C–G 和弦转换、《童年》前 8 小节"></textarea></label>
+    <label class="course-homework"><span class="lab">作业总结</span><textarea id="fHomework" rows="3" maxlength="2000" placeholder="如：每天练习 10 分钟；60 BPM，和弦转换保持连贯"></textarea></label>
+    <label><span class="lab">上课重点</span><textarea id="fLessonContent" rows="5" placeholder="如：左手基本功练习、C–G 和弦转换、《童年》前 8 小节"></textarea></label>
     <details class="course-private-note" id="coursePrivateNote"><summary>私人备注 <span>不出现在分享图中</span></summary>
       <label><span class="lab">备注</span><textarea id="fNote" placeholder="仅供老师查看"></textarea></label>
     </details>
@@ -757,8 +757,8 @@
     <button type="button" class="modal-x" id="lessonRecordClose" aria-label="关闭">×</button>
     <h3 id="lessonRecordTitle">编辑记录</h3>
     <p id="lessonRecordTime" class="lesson-sub"></p>
-    <label><span class="lab">作业重点</span><textarea id="lessonHomework" rows="5" maxlength="2000" placeholder="如：每天练习 10 分钟；60 BPM，和弦转换保持连贯"></textarea></label>
-    <label><span class="lab">上课内容</span><textarea id="lessonContent" rows="4" maxlength="2000" placeholder="记录本节课学习的曲目、技巧和进度"></textarea></label>
+    <label><span class="lab">作业总结</span><textarea id="lessonHomework" rows="5" maxlength="2000" placeholder="如：每天练习 10 分钟；60 BPM，和弦转换保持连贯"></textarea></label>
+    <label><span class="lab">上课重点</span><textarea id="lessonContent" rows="4" maxlength="2000" placeholder="记录本节课学习的曲目、技巧和进度"></textarea></label>
     <div class="sheet-actions"><span class="spacer"></span><button type="button" id="lessonRecordCancel" class="ghost">取消</button><button type="submit" class="primary">保存记录</button></div>
   </form>
 </div>
@@ -869,7 +869,7 @@
       </section>
       <section>
         <h4><span aria-hidden="true">↻</span>重新开始</h4>
-        <ul><li>状态统一为「待上」</li><li>上课内容为空</li><li>作业重点为空</li><li>私人备注为空</li></ul>
+        <ul><li>状态统一为「待上」</li><li>上课重点为空</li><li>作业总结为空</li><li>私人备注为空</li></ul>
       </section>
     </div>
     <p class="copy-day-tip">下周课程可复制后逐节编辑</p>
@@ -1328,7 +1328,7 @@ function renderDay(){
         +'<span class="tl-name"><span class="tl-dot"></span>'+esc(courseWho(c))+trialBadge(c)+'</span>'
         +(statTxt?'<span class="badge '+c.status+'" style="margin-left:auto">'+statTxt+'</span>':'')+'</div>'
         +'<div class="tl-meta">'
-        +(courseContent(c)?'<span class="course-lesson-text">上课内容：'+esc(courseContent(c))+'</span>':'')
+        +(courseContent(c)?'<span class="course-lesson-text">上课重点：'+esc(courseContent(c))+'</span>':'')
         +(c.note?'<span>备注：'+esc(c.note)+'</span>':'')
         +'</div></div></div>';
     });
@@ -1543,8 +1543,8 @@ function openStudentDetail(id,date){
     const r=lessonReport(c);
     return '<article class="lesson-card"><header><strong>'+esc(r.name)+'</strong><span>'+esc(r.type)+'</span></header>'
       +'<div class="lesson-time"><span>'+esc(lessonDateLabel(r.date))+'</span><b>'+esc(r.time)+'</b><span class="badge '+c.status+'">'+STATUS_TXT[c.status]+'</span></div>'
-      +'<section class="lesson-homework"><h4>作业重点</h4><p>'+esc(r.homework||'尚未填写作业重点')+'</p></section>'
-      +'<section class="lesson-content"><h4>上课内容</h4><p>'+esc(r.content||'尚未填写上课内容')+'</p></section>'
+      +'<section class="lesson-homework"><h4>作业总结</h4><p>'+esc(r.homework||'尚未填写作业总结')+'</p></section>'
+      +'<section class="lesson-content"><h4>上课重点</h4><p>'+esc(r.content||'尚未填写上课重点')+'</p></section>'
       +'<div class="lesson-actions"><button type="button" data-lesson-edit="'+esc(c.id)+'">编辑记录</button><button type="button" class="primary" data-lesson-share="'+esc(c.id)+'">生成分享图</button></div></article>';
   }).join(''):'<div class="empty">当天没有课程（请假、取消的课程不展示）。</div>';
   const my=courses.filter(c=>c.studentId===id&&!isTrialCourse(c));
@@ -1599,9 +1599,9 @@ function createLessonShareImage(r){
   ctx.font='600 38px '+font;
   const names=wrapLessonText(ctx,r.name,756);
   ctx.font='600 38px '+font;
-  const homework=wrapLessonText(ctx,r.homework||'尚未填写作业重点',700);
+  const homework=wrapLessonText(ctx,r.homework||'尚未填写作业总结',700);
   ctx.font='30px '+font;
-  const content=wrapLessonText(ctx,r.content||'尚未填写上课内容',756);
+  const content=wrapLessonText(ctx,r.content||'尚未填写上课重点',756);
   const headerHeight=names.length*54+142, homeworkHeight=homework.length*58+128;
   canvas.width=900; canvas.height=headerHeight+homeworkHeight+content.length*48+200;
   ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -1612,12 +1612,12 @@ function createLessonShareImage(r){
   ctx.fillStyle='#202b27'; ctx.font='500 30px '+font; ctx.fillText(r.time,72,dateY+48);
   const top=headerHeight+30;
   ctx.fillStyle='#edf4ef'; ctx.fillRect(44,top,812,homeworkHeight);
-  ctx.fillStyle='#285a44'; ctx.font='600 28px '+font; ctx.fillText('作业重点',100,top+55);
+  ctx.fillStyle='#285a44'; ctx.font='600 28px '+font; ctx.fillText('作业总结',100,top+55);
   ctx.font='600 38px '+font;
   homework.forEach((line,i)=>ctx.fillText(line,100,top+115+i*58));
   const contentTop=top+homeworkHeight+50;
   ctx.fillStyle='#e9ecea'; ctx.fillRect(72,contentTop,756,2);
-  ctx.fillStyle='#45524b'; ctx.font='600 28px '+font; ctx.fillText('上课内容',72,contentTop+58);
+  ctx.fillStyle='#45524b'; ctx.font='600 28px '+font; ctx.fillText('上课重点',72,contentTop+58);
   ctx.fillStyle='#202b27'; ctx.font='30px '+font;
   content.forEach((line,i)=>ctx.fillText(line,72,contentTop+116+i*48));
   return canvas.toDataURL('image/png');
@@ -1631,7 +1631,7 @@ function openLessonShare(id,fromCourse=false){
     document.getElementById('lessonShareImage').src=url;
     document.getElementById('lessonShareImage').alt=r.name+' '+r.date+' '+r.time+' 课程与作业反馈图';
     const save=document.getElementById('lessonShareSave');
-    save.href=url; save.download=r.name+'-'+r.date+'-作业重点.png';
+    save.href=url; save.download=r.name+'-'+r.date+'-作业总结.png';
     lessonShareCourseId=fromCourse?id:'';
     document.getElementById('lessonShareBack').textContent=fromCourse?'返回课程':'返回详情';
     closeAllModals();
@@ -3098,7 +3098,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-10-24-copy-schedule-v1';
+const APP_VERSION = '2026-10-24-feedback-labels-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */

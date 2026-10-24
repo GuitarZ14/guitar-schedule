@@ -60,7 +60,7 @@ test('detail defaults to today, escapes text and places homework above lesson co
   const detail = elements.get('studentLessons').innerHTML;
   assert.equal(elements.get('lessonDate').value, '2026-10-24');
   assert.equal((detail.match(/class="lesson-card"/g) || []).length, 2);
-  assert.ok(detail.indexOf('作业重点') < detail.indexOf('上课内容'));
+  assert.ok(detail.indexOf('作业总结') < detail.indexOf('上课重点'));
   assert.match(detail, /&lt;img/);
   assert.doesNotMatch(detail, /<img|私人备注|不公开/);
   run(`openStudentDetail('s','2026-10-25')`);

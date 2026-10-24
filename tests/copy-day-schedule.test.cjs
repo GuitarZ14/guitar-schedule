@@ -43,8 +43,8 @@ test('copy preview clearly shows source, target, count and reset rules', () => {
   assert.equal(elements.get('copyDayRange').textContent, '10月24日 周六 → 10月31日 周六');
   assert.equal(elements.get('copyDayCount').textContent, '共 3 节课');
   assert.match(html, /状态统一为「待上」/);
-  assert.match(html, /上课内容为空/);
-  assert.match(html, /作业重点为空/);
+  assert.match(html, /上课重点为空/);
+  assert.match(html, /作业总结为空/);
   assert.match(html, /私人备注为空/);
 });
 
