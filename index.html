@@ -3098,7 +3098,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-10-24-feedback-labels-v1';
+const APP_VERSION = '2026-10-25-teaching-live-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
@@ -3138,9 +3138,9 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script src="./teaching-core.js?v=20261024-1"></script>
-<script src="./teaching-sync.js?v=20261024-1"></script>
-<script src="./teaching-desktop.js?v=20261024-1"></script>
+<script src="./teaching-core.js?v=20261025-1"></script>
+<script src="./teaching-sync.js?v=20261025-1"></script>
+<script src="./teaching-desktop.js?v=20261025-1"></script>
 </body>
 </html>
 

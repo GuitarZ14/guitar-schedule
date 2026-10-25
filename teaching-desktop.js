@@ -3,6 +3,7 @@
   'use strict';
   const core = window.TeachingCore;
   const CONNECTION = 'gb_teaching_connection';
+  const DEFAULT_ENDPOINT = 'https://cloud1-d8g72uobwdbbdb2eb-1452920132.ap-shanghai.app.tcloudbase.com/teaching';
   const CACHE = 'gb_teaching_sync_v1';
   let client = null, connection = null, timer = null, conflictOpen = false;
   const snapshot = () => ({ students, courses, extraIncome: loadExtraIncome() });
@@ -97,7 +98,7 @@
     const { d, close } = dialog('连接 GuitarBuddy 教师端');
     const text = document.createElement('p'); text.textContent = '在小程序「教师小天地 → 设置」生成连接口令。首次连接前请导出当前课表备份。'; d.append(text);
     function input(title, type, value) { const l = document.createElement('label'); l.textContent = title; l.style.display = 'block'; l.style.margin = '12px 0'; const i = document.createElement('input'); i.type = type; i.value = value || ''; i.style.cssText = 'display:block;width:100%;box-sizing:border-box;padding:10px;margin-top:6px;'; l.append(i); d.append(l); return i; }
-    const endpoint = input('教学云函数 HTTPS 地址', 'url', connection && connection.endpoint);
+    const endpoint = input('教学云函数 HTTPS 地址', 'url', connection && connection.endpoint || DEFAULT_ENDPOINT);
     const token = input('电脑连接口令', 'password', ''); token.autocomplete = 'off';
     const mode = document.createElement('select');
     [['cloud', '使用教师端数据（替换本机数据）'], ['merge', '将电脑数据合并到教师端']].forEach(([value, name]) => { const option = document.createElement('option'); option.value = value; option.textContent = name; mode.append(option); });
