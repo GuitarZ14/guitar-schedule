@@ -2098,8 +2098,13 @@ function snapshotEditable(record){ return record ? JSON.parse(JSON.stringify(rec
 function allowOverwrite(label, baseline, latest){
   if(!baseline) return true;
   if(!latest){ alert('这条'+label+'记录已在其他设备删除。当前填写的内容已保留，请先复制需要的文字。'); return false; }
-  const same=window.TeachingCore ? window.TeachingCore.same(baseline,latest) : JSON.stringify(baseline)===JSON.stringify(latest);
-  return same || window.confirm('这条'+label+'记录在你编辑期间已被其他设备修改。\n继续保存会覆盖对方的修改。\n取消将保留当前表单文字，方便核对。\n\n确定仍要覆盖吗？');
+  const browser=typeof window!=='undefined' ? window : null;
+  const same=browser && browser.TeachingCore ? browser.TeachingCore.same(baseline,latest) : JSON.stringify(baseline)===JSON.stringify(latest);
+  if(same) return true;
+  // Browser always supplies confirm; isolated Node regression harnesses do not.
+  const ask=browser && typeof browser.confirm==='function' ? browser.confirm.bind(browser)
+    : (typeof confirm==='function' ? confirm : null);
+  return ask ? ask('这条'+label+'记录在你编辑期间已被其他设备修改。\n继续保存会覆盖对方的修改。\n取消将保留当前表单文字，方便核对。\n\n确定仍要覆盖吗？') : false;
 }
 let pendingReturnToCourse=false;  // 从课程弹窗跳去新建学员后，保存学员时自动回弹课程弹窗
 let pendingCourseDraft=null;
