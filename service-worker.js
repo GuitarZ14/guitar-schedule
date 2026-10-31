@@ -3,7 +3,7 @@
  *       JSONBin 备份接口始终走网络（不缓存，避免脏数据）。
  * 更新：改 CACHE 版本号即可让旧缓存失效。
  */
-const CACHE = 'guitar-wb-v48';
+const CACHE = 'guitar-wb-v49';
 
 // 应用外壳（缓存这些即可离线运行；任意文件缺失也不阻断安装）
 const SHELL = [
@@ -11,7 +11,7 @@ const SHELL = [
   './index.html',
   './teaching-core.js?v=20261025-1',
   './teaching-sync.js?v=20261025-1',
-  './teaching-desktop.js?v=20261025-1',
+  './teaching-desktop.js?v=20261031-1',
   './workspace.css?v=20261024-11',
   './manifest.webmanifest',
   './icon.svg',
