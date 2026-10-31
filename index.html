@@ -1571,6 +1571,7 @@ function openLessonRecord(id){
   const c=courses.find(x=>x.id===id);
   if(!c) return;
   const r=lessonReport(c); editingLessonId=id;
+  editingLessonBaseline=snapshotEditable(c);
   closeAllModals();
   document.getElementById('lessonRecordTime').textContent=r.name+' · '+lessonDateLabel(r.date)+' '+r.time;
   document.getElementById('lessonHomework').value=r.homework;
@@ -1581,10 +1582,12 @@ function openLessonRecord(id){
 function saveLessonRecord(e){
   e.preventDefault();
   const c=courses.find(x=>x.id===editingLessonId);
+  if(!allowOverwrite('课程',editingLessonBaseline,c)) return;
   if(!c) return;
   c.homework=document.getElementById('lessonHomework').value.trim();
   c.lessonContent=document.getElementById('lessonContent').value.trim();
   saveCourses();
+  editingLessonBaseline=null;
   openStudentDetail(lessonStudentId,lessonSelectedDate);
   showToast('课程记录已保存');
 }
@@ -1840,6 +1843,7 @@ function salaryUpdate(val, box, month){
 }
 
 let salaryRenderedMonth = '';
+const incomeEditBaselines=new Map();
 function renderSalary(options={}){
   const today=todayStr();
   salaryMonth = salaryMonth || today.slice(0,7);
@@ -2033,7 +2037,11 @@ function renderSalary(options={}){
     const editBtn=e.target.closest('.ei-edit');
     if(editBtn){
       const item=editBtn.closest('.extra-income-item');
-      if(item) item.classList.add('editing');
+      if(item){
+        const saved=loadExtraIncome().find(x=>x.id===item.dataset.eid);
+        if(saved) incomeEditBaselines.set(item.dataset.eid,snapshotEditable(saved));
+        item.classList.add('editing');
+      }
       return;
     }
     /* 保存编辑 */
@@ -2050,7 +2058,12 @@ function renderSalary(options={}){
       if(!/^\d{4}-\d{2}-\d{2}$/.test(newDate)){ alert('请选择有效的发生日期'); return; }
       const arr=loadExtraIncome();
       const idx=arr.findIndex(x=>x.id===eid);
-      if(idx>=0){ arr[idx].desc=newDesc; arr[idx].amount=newAmt; arr[idx].date=newDate; delete arr[idx].needDate; saveExtraIncome(arr); }
+      if(idx<0){ alert('这笔收入已在另一设备删除。当前文字已保留，请核对后重新添加。'); return; }
+      if(!allowOverwrite('额外收入',incomeEditBaselines.get(eid),arr[idx])) return;
+      arr[idx].desc=newDesc; arr[idx].amount=newAmt; arr[idx].date=newDate;
+      delete arr[idx].needDate;
+      saveExtraIncome(arr);
+      incomeEditBaselines.delete(eid);
       item.classList.remove('editing'); // 保存成功后退出编辑态，不回填旧草稿
       renderSalary();
       return;
@@ -2059,7 +2072,7 @@ function renderSalary(options={}){
     const cancelBtn=e.target.closest('.ei-cancel');
     if(cancelBtn){
       const item=cancelBtn.closest('.extra-income-item');
-      if(item) item.classList.remove('editing');
+      if(item){ incomeEditBaselines.delete(item.dataset.eid); item.classList.remove('editing'); }
       return;
     }
     /* 删除按钮 */
@@ -2070,6 +2083,7 @@ function renderSalary(options={}){
       const eid=item.dataset.eid;
       confirmDialog('确定删除「'+esc(item.querySelector('.ei-desc').textContent)+'」这条额外收入？',()=>{
         const arr=loadExtraIncome().filter(x=>x.id!==eid);
+        incomeEditBaselines.delete(eid);
         saveExtraIncome(arr);
         renderSalary();
       });
@@ -2079,6 +2093,14 @@ function renderSalary(options={}){
 
 /* ===== modals ===== */
 let editingCourseId=null, editingStudentId=null;
+let editingCourseBaseline=null, editingStudentBaseline=null, editingLessonBaseline=null;
+function snapshotEditable(record){ return record ? JSON.parse(JSON.stringify(record)) : null; }
+function allowOverwrite(label, baseline, latest){
+  if(!baseline) return true;
+  if(!latest){ alert('这条'+label+'记录已在其他设备删除。当前填写的内容已保留，请先复制需要的文字。'); return false; }
+  const same=window.TeachingCore ? window.TeachingCore.same(baseline,latest) : JSON.stringify(baseline)===JSON.stringify(latest);
+  return same || window.confirm('这条'+label+'记录在你编辑期间已被其他设备修改。\n继续保存会覆盖对方的修改。\n取消将保留当前表单文字，方便核对。\n\n确定仍要覆盖吗？');
+}
 let pendingReturnToCourse=false;  // 从课程弹窗跳去新建学员后，保存学员时自动回弹课程弹窗
 let pendingCourseDraft=null;
 let pendingCopyDay='';
@@ -2089,6 +2111,7 @@ function captureCourseDraft(){
     values, type:courseFormType, status:getRadio('fStatus'),
     noteOpen:document.getElementById('coursePrivateNote').open,
     title:document.getElementById('courseModalTitle').textContent,
+    originalCourse:snapshotEditable(editingCourseBaseline),
     scroll:document.getElementById('courseFormBody').scrollTop
   };
 }
@@ -2102,6 +2125,7 @@ function returnToCourseDraft(newStudentId){
   setRadio('fStatus',draft.status);
   document.getElementById('coursePrivateNote').open=draft.noteOpen;
   document.getElementById('courseModalTitle').textContent=draft.title;
+  editingCourseBaseline=draft.originalCourse;
   if(newStudentId && draft.type==='regular') document.getElementById('fStudent').value=newStudentId;
   document.getElementById('courseFormBody').scrollTop=draft.scroll;
   updateCourseDurDisplay();
@@ -2154,6 +2178,7 @@ function openCourseModal(id){
   const m=document.getElementById('courseModal');
   if(id){
     const c=courses.find(x=>x.id===id); editingCourseId=id;
+    editingCourseBaseline=snapshotEditable(c);
     document.getElementById('courseModalTitle').textContent='编辑课程';
     document.getElementById('fStudent').value=c.studentId;
     document.getElementById('fDate').value=c.date;
@@ -2166,7 +2191,7 @@ function openCourseModal(id){
     document.getElementById('fTrialName').value=c.trialName||'';
     setCourseType(isTrialCourse(c)?'trial':'regular');
   }else{
-    editingCourseId=null;
+    editingCourseId=null; editingCourseBaseline=null;
     document.getElementById('courseModalTitle').textContent='新增课程';
     document.getElementById('fStudent').selectedIndex=0;
     document.getElementById('fDate').value=lastClickedDate || todayStr();
@@ -2189,7 +2214,7 @@ function openCourseModalAsCopy(sourceId){
   if(!src) return;
   closeAllModals();
   fillStudentSelect();
-  editingCourseId=null;
+  editingCourseId=null; editingCourseBaseline=null;
   document.getElementById('courseModalTitle').textContent='复制课程';
   document.getElementById('fStudent').value=src.studentId;
   document.getElementById('fDate').value=src.date;
@@ -2246,7 +2271,7 @@ function copyDaySchedule(ds){
   showToast(msg);
   return {count,skipped,target};
 }
-function closeCourseModal(){ closeModal('courseModal'); editingCourseId=null; pendingReturnToCourse=false; pendingCourseDraft=null; }
+function closeCourseModal(){ closeModal('courseModal'); editingCourseId=null; editingCourseBaseline=null; pendingReturnToCourse=false; pendingCourseDraft=null; }
 function saveCourse(){
   const isTrial = courseFormType==='trial';
   let studentId='', trialName='';
@@ -2282,6 +2307,7 @@ function saveCourse(){
   const savedId=editingCourseId||uid();
   if(editingCourseId){
     const c=courses.find(x=>x.id===editingCourseId);
+    if(!allowOverwrite('课程',editingCourseBaseline,c)) return;
     Object.assign(c,data);
     /* 类型可能被改过（常规 ↔ 体验），把另一套字段清干净，避免残留脏数据 */
     if(isTrial) delete c.studentId;
@@ -2301,6 +2327,7 @@ function openStudentModal(id){
   const m=document.getElementById('studentModal');
   if(id){
     const s=students.find(x=>x.id===id); editingStudentId=id;
+    editingStudentBaseline=snapshotEditable(s);
     document.getElementById('studentModalTitle').textContent='编辑学员';
     document.getElementById('sName').value=s.name;
     document.getElementById('sLevel').value=s.level||'其他';
@@ -2314,7 +2341,7 @@ function openStudentModal(id){
     const gn=document.getElementById('sGiftNone'); gn.checked=(g0===0); document.getElementById('sGift').disabled=gn.checked;
     document.getElementById('studentDelete').style.display='';
   }else{
-    editingStudentId=null;
+    editingStudentId=null; editingStudentBaseline=null;
     document.getElementById('studentModalTitle').textContent='新增学员';
     document.getElementById('sName').value='';
     document.getElementById('sLevel').value='入门弹唱';
@@ -2329,7 +2356,7 @@ function openStudentModal(id){
   }
   m.hidden=false;
 }
-function closeStudentModal(){ closeModal('studentModal'); editingStudentId=null; }
+function closeStudentModal(){ closeModal('studentModal'); editingStudentId=null; editingStudentBaseline=null; }
 function openRepeatModal(){
   closeAllModals();
   fillStudentSelect('rStudent');
@@ -2422,7 +2449,9 @@ function saveStudent(){
     phone:document.getElementById('sPhone').value.trim(), teacher:document.getElementById('sTeacher').value.trim(),
     stuStatus:document.getElementById('sStuStatus').value||'active', totalHours:total, giftHours:gift };
   if(editingStudentId){
-    const s=students.find(x=>x.id===editingStudentId); Object.assign(s,data);
+    const s=students.find(x=>x.id===editingStudentId);
+    if(!allowOverwrite('学员',editingStudentBaseline,s)) return;
+    Object.assign(s,data);
   }else{
     data.id=uid();
     students.push(Object.assign({},data));
@@ -3186,7 +3215,14 @@ function init(){
   });
   // ESC 关闭最上层弹窗
   document.addEventListener('keydown',e=>{
-    if(shouldCloseModalOnEscape(e)){ const open=[...document.querySelectorAll('.modal')].filter(m=>!m.hidden); if(open.length) open[open.length-1].hidden=true; }
+    if(shouldCloseModalOnEscape(e)){
+      const open=[...document.querySelectorAll('.modal')].filter(m=>!m.hidden);
+      const top=open[open.length-1];
+      if(top && top.id==='studentModal' && pendingReturnToCourse){
+        pendingReturnToCourse=false;
+        returnToCourseDraft();
+      }else if(top) top.hidden=true;
+    }
   });
   render();
 }
@@ -3196,7 +3232,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-10-31-form-guard-v2';
+const APP_VERSION = '2026-10-31-form-guard-v3';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */
