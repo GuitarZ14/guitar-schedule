@@ -25,6 +25,15 @@
     if (!response.ok || !result.ok) { const e = new Error(result.error || '同步服务请求失败'); e.code = result.code; throw e; }
     return result;
   }
+  let composing = false, deferredRender = false;
+  document.addEventListener('compositionstart', () => { composing = true; }, true);
+  document.addEventListener('compositionend', () => {
+    composing = false;
+    if (deferredRender) {
+      deferredRender = false;
+      setTimeout(() => render(), 0);
+    }
+  }, true);
   function apply(data) {
     // A successful periodic pull is not itself a data change. Never redraw active forms
     // unless the remote records actually differ from local records (order independent).
@@ -33,7 +42,8 @@
     localStorage.setItem(STORE.students, JSON.stringify(students));
     localStorage.setItem(STORE.courses, JSON.stringify(courses));
     localStorage.setItem(EXTRA_INCOME_KEY, JSON.stringify(data.extraIncome));
-    render();
+    if (composing) deferredRender = true;
+    else render();
   }
   function toggleLegacy() {
     ['btnCloudBackup', 'btnCloudRestore', 'cloudStatus'].forEach(id => { const el = document.getElementById(id); if (el) el.hidden = !!connection; });
