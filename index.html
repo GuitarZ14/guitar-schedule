@@ -1831,10 +1831,36 @@ function salaryUpdate(val, box, month){
     +'</div>';
 }
 
-function renderSalary(){
+let salaryRenderedMonth = '';
+function renderSalary(options={}){
   const today=todayStr();
   salaryMonth = salaryMonth || today.slice(0,7);
   const ym=salaryMonth;
+  // The view can be rebuilt by a real cloud update while the user is typing.
+  // Snapshot unsaved values before replacing innerHTML; switching months and
+  // successful additions intentionally start with a clean form.
+  const previousView=document.getElementById('view-salary');
+  const keepDraft=!options.clearDraft && salaryRenderedMonth===ym && !!previousView.querySelector('#eiDesc');
+  const draft=keepDraft ? {
+    desc:previousView.querySelector('#eiDesc').value,
+    amount:previousView.querySelector('#eiAmt').value,
+    date:previousView.querySelector('#eiDate').value,
+    hours:previousView.querySelector('#salaryInput').value,
+    edits:Array.from(previousView.querySelectorAll('.extra-income-item.editing')).map(item=>({
+      id:item.dataset.eid,
+      desc:item.querySelector('.ei-edit-desc').value,
+      amount:item.querySelector('.ei-edit-amt').value,
+      date:item.querySelector('.ei-edit-date').value
+    }))
+  } : null;
+  const focused=keepDraft && previousView.contains(document.activeElement) ? document.activeElement : null;
+  const focusedRow=focused && focused.closest('.extra-income-item.editing');
+  const focusedClass=focused && ['ei-edit-desc','ei-edit-amt','ei-edit-date'].find(c=>focused.classList.contains(c));
+  const focus=focused ? {
+    id:focused.id, rowId:focusedRow && focusedRow.dataset.eid, className:focusedClass,
+    start:typeof focused.selectionStart==='number' ? focused.selectionStart : null,
+    end:typeof focused.selectionEnd==='number' ? focused.selectionEnd : null
+  } : null;
   const auto=countDoneInMonth(ym);
   const currentYm=today.slice(0,7);
   const isCurrent=(ym===currentYm);
@@ -1929,10 +1955,39 @@ function renderSalary(){
   html+='</div>';
 
   const v=document.getElementById('view-salary'); v.innerHTML=html;
+  salaryRenderedMonth=ym;
+  if(draft){
+    [['eiDesc',draft.desc],['eiAmt',draft.amount],['eiDate',draft.date]].forEach(([id,value])=>{
+      const field=document.getElementById(id); if(field) field.value=value;
+    });
+    v.querySelectorAll('.extra-income-item').forEach(item=>{
+      const edit=draft.edits.find(x=>x.id===item.dataset.eid);
+      if(!edit) return;
+      item.classList.add('editing');
+      item.querySelector('.ei-edit-desc').value=edit.desc;
+      item.querySelector('.ei-edit-amt').value=edit.amount;
+      item.querySelector('.ei-edit-date').value=edit.date;
+    });
+  }
 
   const input=document.getElementById('salaryInput');
   const box=document.getElementById('salaryResultBox');
-  salaryUpdate(auto, box, ym);                 // 自动填入后即时计算
+  if(draft) input.value=draft.hours;
+  salaryUpdate(input.value, box, ym);         // 保留尚未提交的手动课时调整
+  // Restore text cursor/focus so cloud updates do not interrupt typing.
+  if(focus){
+    let target=focus.id && document.getElementById(focus.id);
+    if(!target && focus.rowId && focus.className){
+      const row=Array.from(v.querySelectorAll('.extra-income-item')).find(x=>x.dataset.eid===focus.rowId);
+      target=row && row.querySelector('.'+focus.className);
+    }
+    if(target){
+      target.focus({preventScroll:true});
+      if(focus.start!==null && target.setSelectionRange){
+        try{ target.setSelectionRange(focus.start,focus.end); }catch(e){}
+      }
+    }
+  }
   input.oninput=()=>salaryUpdate(input.value, box, ym);  // 手动微调仍实时响应
 
   /* 月份选择器切换 */
@@ -1961,7 +2016,7 @@ function renderSalary(){
     arr.push({id:uid(), desc, amount:amt, date});
     saveExtraIncome(arr);
     salaryMonth=date.slice(0,7);   // 添加后跳到该笔收入实际归属的月份视图
-    renderSalary();  // 重新渲染整个工资页（含刷新总额）
+    renderSalary({clearDraft:true}); // 添加成功后才清空表单
   };
   /* 额外收入：编辑 / 删除（事件委托） */
   document.getElementById('extraIncomeList').onclick=function(e){
@@ -1987,6 +2042,7 @@ function renderSalary(){
       const arr=loadExtraIncome();
       const idx=arr.findIndex(x=>x.id===eid);
       if(idx>=0){ arr[idx].desc=newDesc; arr[idx].amount=newAmt; arr[idx].date=newDate; delete arr[idx].needDate; saveExtraIncome(arr); }
+      item.classList.remove('editing'); // 保存成功后退出编辑态，不回填旧草稿
       renderSalary();
       return;
     }
@@ -3098,7 +3154,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-10-25-teaching-live-v1';
+const APP_VERSION = '2026-10-31-income-draft-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 检测版本变更 → 强制清缓存重载 */
@@ -3140,7 +3196,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="./teaching-core.js?v=20261025-1"></script>
 <script src="./teaching-sync.js?v=20261025-1"></script>
-<script src="./teaching-desktop.js?v=20261025-1"></script>
+<script src="./teaching-desktop.js?v=20261031-1"></script>
 </body>
 </html>
 
