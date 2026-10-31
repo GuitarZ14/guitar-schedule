@@ -26,6 +26,9 @@
     return result;
   }
   function apply(data) {
+    // A successful periodic pull is not itself a data change. Never redraw active forms
+    // unless the remote records actually differ from local records (order independent).
+    if (core.diff(snapshot(), data, {}).length === 0) return;
     students = data.students; courses = data.courses;
     localStorage.setItem(STORE.students, JSON.stringify(students));
     localStorage.setItem(STORE.courses, JSON.stringify(courses));
