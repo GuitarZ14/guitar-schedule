@@ -1347,7 +1347,13 @@ function sortArrow(key){
     ? '<svg class="sort-ic on" viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></svg>'
     : '<svg class="sort-ic on" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg>';
 }
+let stuSearchComposing=false;
 function renderEdit(){
+  const oldSearch=document.getElementById('stuSearch');
+  if(oldSearch && stuSearchComposing) return; // Leave IME composition intact.
+  const searchFocused=oldSearch && document.activeElement===oldSearch;
+  const searchStart=searchFocused ? oldSearch.selectionStart : null;
+  const searchEnd=searchFocused ? oldSearch.selectionEnd : null;
   const today=todayStr();
   const ym=stuMonth||today.slice(0,7);  // 统计口径：所选月份的自然月（默认本月，可切换任意月份）
   const mLabel=parseInt(ym.slice(5),10)+'月';  // 表头动态文案：本月/9月/8月…
@@ -1459,21 +1465,23 @@ function renderEdit(){
 
   html+='</div>';
   const v=document.getElementById('view-edit'); v.innerHTML=html;
+  if(searchFocused){
+    const newSearch=document.getElementById('stuSearch');
+    if(newSearch){
+      newSearch.focus({preventScroll:true});
+      if(searchStart!==null && searchEnd!==null) newSearch.setSelectionRange(searchStart,searchEnd);
+    }
+  }
 
   /* 事件绑定（改状态 → 重渲染，渲染函数之间零互调） */
   document.getElementById('addStudent').onclick=()=>openStudentModal(null);
   document.getElementById('expStuMonth').onclick=()=>exportStuMonth(ym);
   const searchBox=document.getElementById('stuSearch');
-  let searchComposing=false;
-  searchBox.oncompositionstart=()=>{ searchComposing=true; };
-  searchBox.oncompositionend=e=>{ searchComposing=false; searchBox.oninput(e); };
+  searchBox.oncompositionstart=()=>{ stuSearchComposing=true; };
+  searchBox.oncompositionend=e=>{ stuSearchComposing=false; searchBox.oninput(e); };
   searchBox.oninput=e=>{
-    // Keep the input node intact while the IME is composing; filter after committing Chinese text.
-    if(searchComposing||e.isComposing||e.target.value===stuSearch) return;
-    const start=e.target.selectionStart, end=e.target.selectionEnd;
+    if(stuSearchComposing||e.isComposing||e.target.value===stuSearch) return;
     stuSearch=e.target.value; stuPage=1; renderEdit();
-    const nb=document.getElementById('stuSearch'); nb.focus();   // 重渲染后找回焦点，避免打字中断
-    nb.setSelectionRange(start,end);
   };
   document.getElementById('stuTypeFilter').onchange=e=>{ stuTypeFilter=e.target.value; stuPage=1; renderEdit(); };
   document.getElementById('stuStatusFilter').onchange=e=>{ stuStatusFilter=e.target.value; stuPage=1; renderEdit(); };
@@ -1846,6 +1854,7 @@ function renderSalary(options={}){
     amount:previousView.querySelector('#eiAmt').value,
     date:previousView.querySelector('#eiDate').value,
     hours:previousView.querySelector('#salaryInput').value,
+    hoursEdited:previousView.querySelector('#salaryInput').dataset.manualEdit==='1',
     edits:Array.from(previousView.querySelectorAll('.extra-income-item.editing')).map(item=>({
       id:item.dataset.eid,
       desc:item.querySelector('.ei-edit-desc').value,
@@ -1972,8 +1981,8 @@ function renderSalary(options={}){
 
   const input=document.getElementById('salaryInput');
   const box=document.getElementById('salaryResultBox');
-  if(draft) input.value=draft.hours;
-  salaryUpdate(input.value, box, ym);         // 保留尚未提交的手动课时调整
+  if(draft && draft.hoursEdited){ input.value=draft.hours; input.dataset.manualEdit='1'; }
+  salaryUpdate(input.value, box, ym);         // Use updated auto count unless user manually changed it
   // Restore text cursor/focus so cloud updates do not interrupt typing.
   if(focus){
     let target=focus.id && document.getElementById(focus.id);
@@ -1988,7 +1997,7 @@ function renderSalary(options={}){
       }
     }
   }
-  input.oninput=()=>salaryUpdate(input.value, box, ym);  // 手动微调仍实时响应
+  input.oninput=()=>{ input.dataset.manualEdit='1'; salaryUpdate(input.value, box, ym); };
 
   /* 月份选择器切换 */
   document.getElementById('salaryMonth').onchange=()=>{
@@ -2071,7 +2080,32 @@ function renderSalary(options={}){
 /* ===== modals ===== */
 let editingCourseId=null, editingStudentId=null;
 let pendingReturnToCourse=false;  // 从课程弹窗跳去新建学员后，保存学员时自动回弹课程弹窗
+let pendingCourseDraft=null;
 let pendingCopyDay='';
+function captureCourseDraft(){
+  const ids=['fStudent','fTrialName','fDate','fStart','fEnd','fNote','fHomework','fLessonContent'];
+  const values={}; ids.forEach(id=>{ values[id]=document.getElementById(id).value; });
+  return {
+    values, type:courseFormType, status:getRadio('fStatus'),
+    noteOpen:document.getElementById('coursePrivateNote').open,
+    title:document.getElementById('courseModalTitle').textContent,
+    scroll:document.getElementById('courseFormBody').scrollTop
+  };
+}
+function returnToCourseDraft(newStudentId){
+  const draft=pendingCourseDraft;
+  pendingCourseDraft=null;
+  openCourseModal(editingCourseId||null);
+  if(!draft) return;
+  Object.keys(draft.values).forEach(id=>{ document.getElementById(id).value=draft.values[id]; });
+  setCourseType(draft.type);
+  setRadio('fStatus',draft.status);
+  document.getElementById('coursePrivateNote').open=draft.noteOpen;
+  document.getElementById('courseModalTitle').textContent=draft.title;
+  if(newStudentId && draft.type==='regular') document.getElementById('fStudent').value=newStudentId;
+  document.getElementById('courseFormBody').scrollTop=draft.scroll;
+  updateCourseDurDisplay();
+}
 
 function closeModal(id){ document.getElementById(id).hidden=true; }
 function closeAllModals(){ document.querySelectorAll('.modal').forEach(m=>m.hidden=true); }
@@ -2212,7 +2246,7 @@ function copyDaySchedule(ds){
   showToast(msg);
   return {count,skipped,target};
 }
-function closeCourseModal(){ closeModal('courseModal'); editingCourseId=null; pendingReturnToCourse=false; }
+function closeCourseModal(){ closeModal('courseModal'); editingCourseId=null; pendingReturnToCourse=false; pendingCourseDraft=null; }
 function saveCourse(){
   const isTrial = courseFormType==='trial';
   let studentId='', trialName='';
@@ -2313,24 +2347,29 @@ const DAY_NAMES=['周一','周二','周三','周四','周五','周六','周日']
 function syncDayTimes(){
   const container=document.getElementById('rDayTimes');
   const checks=document.querySelectorAll('#rWeekdays input');
-  // 收集当前已勾选的天（保持顺序）
-  let html='';
-  checks.forEach(cb=>{
-    const d=Number(cb.value);
-    if(cb.checked){
-      // 查找是否已有该天的行，保留已填的值
-      const existing=container.querySelector('[data-day="'+d+'"]');
-      const s=existing?existing.querySelector('.dt-start').value:'16:00';
-      const e=existing?existing.querySelector('.dt-end').value:addMinutes(s||'16:00', DEFAULT_COURSE_DURATION);
-      html+='<div class="day-time-row" data-day="'+d+'">'
-        +'<span class="day-label">'+DAY_NAMES[d]+'</span>'
-        +'<input type="time" class="dt-start" value="'+s+'" placeholder="开始">'
-        +'<span style="color:var(--muted);font-size:13px">~</span>'
-        +'<input type="time" class="dt-end" value="'+e+'" placeholder="结束">'
-        +'</div>';
-    }
+  const selected=new Set(Array.from(checks).filter(cb=>cb.checked).map(cb=>cb.value));
+  // Reuse live time nodes when adding weekdays; don't reset pickers/selection.
+  container.querySelectorAll('.day-time-row').forEach(row=>{
+    if(!selected.has(row.dataset.day)) row.remove();
   });
-  container.innerHTML=html;
+  let previous=null;
+  checks.forEach(cb=>{
+    if(!cb.checked) return;
+    const d=cb.value;
+    let row=container.querySelector('[data-day="'+d+'"]');
+    if(!row){
+      row=document.createElement('div');
+      row.className='day-time-row';
+      row.dataset.day=d;
+      const start='16:00', end=addMinutes(start, DEFAULT_COURSE_DURATION);
+      row.innerHTML='<span class="day-label">'+DAY_NAMES[Number(d)]+'</span>'
+        +'<input type="time" class="dt-start" value="'+start+'" placeholder="开始">'
+        +'<span style="color:var(--muted);font-size:13px">~</span>'
+        +'<input type="time" class="dt-end" value="'+end+'" placeholder="结束">';
+      container.insertBefore(row,previous?previous.nextSibling:container.firstChild);
+    }
+    previous=row;
+  });
 }
 function generateRepeat(){
   const studentId=document.getElementById('rStudent').value;
@@ -2385,17 +2424,14 @@ function saveStudent(){
   if(editingStudentId){
     const s=students.find(x=>x.id===editingStudentId); Object.assign(s,data);
   }else{
-    students.push(Object.assign({id:uid()},data));
+    data.id=uid();
+    students.push(Object.assign({},data));
   }
   saveStudents(); closeStudentModal();
-  // 如果是从课程弹窗跳过来新建学员的，保存后自动回弹课程弹窗
+  // Reopen the exact course draft rather than resetting the form.
   if(pendingReturnToCourse){
     pendingReturnToCourse=false;
-    openCourseModal(editingCourseId||null);
-    // 自动选中新创建的学员
-    if(!editingCourseId && data.id){
-      document.getElementById('fStudent').value=data.id;
-    }
+    returnToCourseDraft(data.id);
   }else{
     render();
   }
@@ -3097,7 +3133,8 @@ function init(){
   document.getElementById('fEnd').addEventListener('change', updateCourseDurDisplay);
   document.getElementById('fEnd').addEventListener('input', updateCourseDurDisplay);
   document.getElementById('newStudentQuick').onclick=()=>{
-    pendingReturnToCourse=true;  // 标记：保存学员后要回弹课程弹窗
+    pendingCourseDraft=captureCourseDraft();
+    pendingReturnToCourse=true;
     openStudentModal(null);
   };
   // 课程类型分段控件：常规课 / 体验课（仅新增/编辑课程弹窗）
@@ -3119,7 +3156,7 @@ function init(){
   document.getElementById('studentCancel').onclick=()=>{
     if(pendingReturnToCourse){
       pendingReturnToCourse=false;
-      openCourseModal(editingCourseId||null);
+      returnToCourseDraft();
     }else{
       closeStudentModal();
     }
@@ -3141,7 +3178,12 @@ function init(){
     if(modalAllowsBackdropClose(m)) bindBackdropClose(m);
   });
   // × 关闭按钮：点击任意弹窗的 × 关掉对应弹窗
-  document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));
+  document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.close==='studentModal' && pendingReturnToCourse){
+      pendingReturnToCourse=false;
+      returnToCourseDraft();
+    }else closeModal(b.dataset.close);
+  });
   // ESC 关闭最上层弹窗
   document.addEventListener('keydown',e=>{
     if(shouldCloseModalOnEscape(e)){ const open=[...document.querySelectorAll('.modal')].filter(m=>!m.hidden); if(open.length) open[open.length-1].hidden=true; }
@@ -3154,18 +3196,14 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-10-31-income-draft-v1';
+const APP_VERSION = '2026-10-31-form-guard-v2';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
-    /* 检测版本变更 → 强制清缓存重载 */
+    /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */
     const lastVer = localStorage.getItem('wb_app_version');
     if (lastVer && lastVer !== APP_VERSION) {
-      localStorage.removeItem('wb_app_version');  // 先清除旧标记
-      caches.keys().then(keys => keys.forEach(k => caches.delete(k))).then(() => {
-        localStorage.setItem('wb_app_version', APP_VERSION);
-        location.reload(true);   // 强制重载（绕过所有缓存）
-      });
-      return;  // 等待重载，不继续注册旧 SW
+      caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
+        .catch(e => console.warn('旧缓存清理失败：',e));
     }
     localStorage.setItem('wb_app_version', APP_VERSION);
 
@@ -3196,7 +3234,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="./teaching-core.js?v=20261025-1"></script>
 <script src="./teaching-sync.js?v=20261025-1"></script>
-<script src="./teaching-desktop.js?v=20261031-1"></script>
+<script src="./teaching-desktop.js?v=20261031-2"></script>
 </body>
 </html>
 
