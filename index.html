@@ -194,6 +194,9 @@
   /* 「今天还需要上 N 课」的 .titem .who span 是 display:block（特异性 0,3,1），
      会把同为 span 的体验徽标撑满整行 —— 必须用同特异性选择器拉回行内 */
   .titem .who span.tribadge{display:inline-block; width:auto; overflow:visible; text-overflow:clip; font-size:11px; color:var(--primary-d);}
+  .tribadge.special{background:var(--blue-soft); color:var(--blue); border-color:rgba(110,138,163,.3);}
+  .titem .who span.tribadge.special{color:var(--blue);}
+  .course-type-hint{display:block; margin-top:6px; font-size:12px; font-weight:400; color:var(--muted); line-height:1.5;}
 
   .hint{background:var(--warn-soft); border:1px solid rgba(245,166,35,0.3); color:var(--text-2); border-radius:var(--r-md); padding:10px 14px; font-size:13px; margin-bottom:14px;}
 
@@ -704,7 +707,10 @@
       <div class="seg" id="fCourseType">
         <button type="button" class="seg-btn on" data-type="regular">常规课</button>
         <button type="button" class="seg-btn" data-type="trial">体验课</button>
+        <button type="button" class="seg-btn" data-type="online">网课</button>
+        <button type="button" class="seg-btn" data-type="home">上门教学</button>
       </div>
+      <span class="course-type-hint" id="courseTypeHint" aria-live="polite"></span>
     </label>
     <label id="fStudentRow"><span class="lab">学员</span>
       <select id="fStudent"></select>
@@ -983,7 +989,15 @@ function studentColor(id){ const s=students.find(x=>x.id===id); return (s&&s.col
    （不计入 66 节阈值），但课表与月度统计照常展示。 */
 const TRIAL_COLOR='#B07A3F';          // 体验课统一木棕，与学员 12 分色区分
 const TRIAL_KEY_PREFIX='T|';
-function isTrialCourse(c){ return !!(c && c.isTrial); }
+function isTrialCourse(c){ return !!(c && (c.isTrial || c.courseType==='trial')); }
+/* 老数据没有 courseType 时仍视为常规课；体验课兼容旧版 isTrial。 */
+function courseKind(c){
+  if(isTrialCourse(c)) return 'trial';
+  return c && (c.courseType==='online'||c.courseType==='home') ? c.courseType : 'regular';
+}
+function isNonCountingCourse(c){ return courseKind(c)==='online'||courseKind(c)==='home'; }
+function countsForSalary(c){ return !isTrialCourse(c) && !isNonCountingCourse(c); }
+function courseKindName(c){ return ({regular:'常规课',trial:'体验课',online:'网课',home:'上门教学'})[courseKind(c)]; }
 function courseWho(c){ return isTrialCourse(c) ? (c.trialName||'体验课学员') : studentName(c.studentId); }
 function courseColor(c){ return isTrialCourse(c) ? TRIAL_COLOR : studentColor(c.studentId); }
 function courseKey(c){ return isTrialCourse(c) ? TRIAL_KEY_PREFIX+(c.trialName||'体验课学员') : c.studentId; }
@@ -993,7 +1007,13 @@ function keyWho(k){
   return k.indexOf(TRIAL_KEY_PREFIX)===0 ? k.slice(TRIAL_KEY_PREFIX.length)+'（体验）' : studentName(k);
 }
 function keyColor(k){ return String(k).indexOf(TRIAL_KEY_PREFIX)===0 ? TRIAL_COLOR : studentColor(k); }
-function trialBadge(c){ return isTrialCourse(c) ? '<span class="tribadge">体验</span>' : ''; }
+function trialBadge(c){
+  const kind=courseKind(c);
+  if(kind==='trial') return '<span class="tribadge">体验</span>';
+  if(kind==='online') return '<span class="tribadge special">网课</span>';
+  if(kind==='home') return '<span class="tribadge special">上门</span>';
+  return '';
+}
 
 /* ===== 可配置参数 ===== */
 const DEFAULT_COURSE_DURATION = 50; // 默认课程时长（分钟），改这里即可全局调整
@@ -1393,9 +1413,9 @@ function renderEdit(){
   const kw=stuSearch.trim().toLowerCase();
   let rows=students.map(s=>{
     const my=courses.filter(c=>c.studentId===s.id);
-    const doneAll=my.filter(c=>c.status==='done');                 // 请假/取消不计已上
-    const monthDone=my.filter(c=>c.status==='done'&&c.date.indexOf(ym)===0);
-    const monthPlan=my.filter(c=>c.status==='planned'&&c.date.indexOf(ym)===0);
+    const doneAll=my.filter(c=>!isNonCountingCourse(c)&&c.status==='done');                 // 请假/取消不计已上
+    const monthDone=my.filter(c=>!isNonCountingCourse(c)&&c.status==='done'&&c.date.indexOf(ym)===0);
+    const monthPlan=my.filter(c=>!isNonCountingCourse(c)&&c.status==='planned'&&c.date.indexOf(ym)===0);
     const hTotal=(s.totalHours!=null&&!isNaN(s.totalHours))?Number(s.totalHours):null;
     const hGift=Number(s.giftHours)||0;
     const remain=hTotal!=null?Math.max(0,hTotal+hGift-doneAll.length):null;
@@ -1532,7 +1552,7 @@ function courseContent(c){
 }
 function lessonReport(c){
   const s=students.find(x=>x.id===c.studentId);
-  return {name:isTrialCourse(c)?c.trialName||'未命名学员':s?s.name:'未命名学员',type:isTrialCourse(c)?'体验课':s?s.level||'吉他课':'吉他课',date:c.date,time:c.start+'–'+c.end,
+  return {name:isTrialCourse(c)?c.trialName||'未命名学员':s?s.name:'未命名学员',type:courseKind(c)==='regular'?(s?s.level||'吉他课':'吉他课'):courseKindName(c),date:c.date,time:c.start+'–'+c.end,
     homework:c.homework||'',content:courseContent(c)};
 }
 function lessonDateLabel(date){
@@ -1656,13 +1676,13 @@ function monthMap(ym){
   const map={};
   const init=()=>({count:0,min:0,absent:0});
   /* 分组键用 courseKey(c)：常规课=学员 id，体验课='T|姓名'（独立成项，不并入同名学员） */
-  courses.filter(c=>c.status==='done'&&c.date.indexOf(ym)===0).forEach(c=>{
+  courses.filter(c=>!isNonCountingCourse(c)&&c.status==='done'&&c.date.indexOf(ym)===0).forEach(c=>{
     const k=courseKey(c);
     const e=map[k]||(map[k]=init());
     e.count++; e.min+=dur(c);
   });
   // 补上只有请假记录的学员
-  courses.filter(c=>c.status==='absent'&&c.date.indexOf(ym)===0).forEach(c=>{
+  courses.filter(c=>!isNonCountingCourse(c)&&c.status==='absent'&&c.date.indexOf(ym)===0).forEach(c=>{
     const k=courseKey(c);
     if(!map[k]) map[k]=init();
     map[k].absent++;
@@ -1704,7 +1724,7 @@ function renderStats(){
     ids.sort((a,b)=>map[b].min-map[a].min).forEach(id=>{
       const pct=totalMin? Math.round(map[id].min/totalMin*100):0;
       /* 收集该学员本月已上课日期，格式化为"X月X号"，每个日期独立 <span> 以支持横向流式排列 */
-      const doneDates = courses.filter(c=>courseKey(c)===id&&c.status==='done'&&c.date.indexOf(ym)===0)
+      const doneDates = courses.filter(c=>!isNonCountingCourse(c)&&courseKey(c)===id&&c.status==='done'&&c.date.indexOf(ym)===0)
                                .sort((a,b)=>a.date.localeCompare(b.date))
                                .map(c=>{ const d=parseYMD(c.date); return (d.getMonth()+1)+'月'+d.getDate()+'号'; });
       const tipHtml = doneDates.length
@@ -1778,7 +1798,7 @@ function countMonthDoneToToday(){
   const today=todayStr();
   return courses.filter(c=>{
     if(c.status!=='done') return false;
-    if(isTrialCourse(c)) return false;
+    if(!countsForSalary(c)) return false;
     if(c.date.indexOf(ym)!==0) return false;
     // 再限今天及之前（避免统计未来日期的课程）
     return c.date<=today;
@@ -1792,7 +1812,7 @@ function countDoneInMonth(ym){
   const currentYm=today.slice(0,7);
   return courses.filter(c=>{
     if(c.status!=='done') return false;
-    if(isTrialCourse(c)) return false;
+    if(!countsForSalary(c)) return false;
     if(c.date.indexOf(ym)!==0) return false;
     if(ym===currentYm) return c.date<=today;
     return true;
@@ -1810,7 +1830,7 @@ function sumExtraIncome(month){
 function getSalaryMonths(){
   const set=new Set();
   /* 体验课不计入工资，因此不因其单独产生"有工资数据的月份" */
-  courses.filter(c=>c.status==='done' && !isTrialCourse(c)).forEach(c=>set.add(c.date.slice(0,7)));
+  courses.filter(c=>c.status==='done' && countsForSalary(c)).forEach(c=>set.add(c.date.slice(0,7)));
   loadExtraIncome().forEach(i=>{ const m=monthOf(i); if(m) set.add(m); });
   return Array.from(set).sort().reverse();
 }
@@ -1878,7 +1898,7 @@ function renderSalary(options={}){
   const currentYm=today.slice(0,7);
   const isCurrent=(ym===currentYm);
   /* 与统计页对齐：该月总已完成数（含未来日期的，用于对照） */
-  const monthTotalDone=courses.filter(c=>c.status==='done'&&c.date.indexOf(ym)===0).length;
+  const monthTotalDone=courses.filter(c=>!isNonCountingCourse(c)&&c.status==='done'&&c.date.indexOf(ym)===0).length;
   /* 统计范围截止日：历史月到月底，当前月到今天 */
   const [y,m]=ym.split('-').map(Number);
   const lastDay=ym+'-'+String(new Date(y,m,0).getDate()).padStart(2,'0');
@@ -2131,7 +2151,7 @@ function returnToCourseDraft(newStudentId){
   document.getElementById('coursePrivateNote').open=draft.noteOpen;
   document.getElementById('courseModalTitle').textContent=draft.title;
   editingCourseBaseline=draft.originalCourse;
-  if(newStudentId && draft.type==='regular') document.getElementById('fStudent').value=newStudentId;
+  if(newStudentId && draft.type!=='trial') document.getElementById('fStudent').value=newStudentId;
   document.getElementById('courseFormBody').scrollTop=draft.scroll;
   updateCourseDurDisplay();
 }
@@ -2159,18 +2179,21 @@ function fillStudentSelect(selId){
   sel.innerHTML=students.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('')
     || '<option value="">（请先新增学员）</option>';
 }
-/* ===== 课程类型：常规课（默认）| 体验课 =====
+/* ===== 课程类型：常规课（默认）| 体验课 | 网课 | 上门教学 =====
    常规课 → 学员下拉，只能选在读名单，校验逻辑与原来完全一致（未做任何放宽）
-   体验课 → 切换为「学员姓名」文本框，允许输入不在名单中的名字，不做名单校验 */
+   体验课 → 切换为「学员姓名」文本框，允许输入不在名单中的名字，不做名单校验；
+   网课 / 上门教学 → 选择已有学员，但不计入统计课时、工资课时或课包扣减。 */
 let courseFormType='regular';
 function setCourseType(t){
-  courseFormType = (t==='trial') ? 'trial' : 'regular';
+  courseFormType = ['regular','trial','online','home'].includes(t) ? t : 'regular';
   const seg=document.getElementById('fCourseType');
   if(seg) Array.from(seg.querySelectorAll('.seg-btn')).forEach(b=>b.classList.toggle('on', b.dataset.type===courseFormType));
   const regRow=document.getElementById('fStudentRow');
   const triRow=document.getElementById('fTrialRow');
   if(regRow) regRow.hidden = courseFormType==='trial';
   if(triRow) triRow.hidden = courseFormType!=='trial';
+  const hint=document.getElementById('courseTypeHint');
+  if(hint) hint.textContent = (courseFormType==='online'||courseFormType==='home') ? '仅记录课程安排，不计入总课时、工资课时或学员课包扣减。' : '';
 }
 function fillCourseFeedback(c){
   document.getElementById('fHomework').value=c.homework||'';
@@ -2194,7 +2217,7 @@ function openCourseModal(id){
     setRadio('fStatus', c.status);
     document.getElementById('courseDelete').style.display='';
     document.getElementById('fTrialName').value=c.trialName||'';
-    setCourseType(isTrialCourse(c)?'trial':'regular');
+    setCourseType(courseKind(c));
   }else{
     editingCourseId=null; editingCourseBaseline=null;
     document.getElementById('courseModalTitle').textContent='新增课程';
@@ -2230,7 +2253,7 @@ function openCourseModalAsCopy(sourceId){
   setRadio('fStatus', src.status);
   document.getElementById('courseDelete').style.display='none';
   document.getElementById('fTrialName').value=src.trialName||'';
-  setCourseType(isTrialCourse(src)?'trial':'regular');
+  setCourseType(courseKind(src));
   updateCourseDurDisplay();
   document.getElementById('courseModal').hidden=false;
   document.getElementById('courseFormBody').scrollTop=0;
@@ -2264,7 +2287,7 @@ function copyDaySchedule(ds){
   list.forEach(c=>{
     const trial=isTrialCourse(c);
     if(findDuplicateCourse(c.studentId, target, c.start, c.end, null, trial?c.trialName:'') ){ skipped++; return; }
-    const copy={id:uid(),date:target,start:c.start,end:c.end,status:'planned',lessonContent:'',homework:'',note:'',song:'',focus:''};
+    const copy={id:uid(),courseType:courseKind(c),date:target,start:c.start,end:c.end,status:'planned',lessonContent:'',homework:'',note:'',song:'',focus:''};
     if(trial){ copy.isTrial=true; copy.trialName=c.trialName; }   // 体验课：整日复制时保留类型与姓名
     else{ copy.studentId=c.studentId; }
     courses.push(copy);
@@ -2292,6 +2315,7 @@ function saveCourse(){
   }
   const data={
     studentId,
+    courseType:courseFormType,
     date:document.getElementById('fDate').value,
     start:document.getElementById('fStart').value,
     end:document.getElementById('fEnd').value,
@@ -2510,7 +2534,7 @@ function stuMonthRecords(ym){
   students.slice()
     .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'zh'))
     .forEach(s=>{
-      courses.filter(c=>!isTrialCourse(c) && c.studentId===s.id && c.status==='done' && String(c.date||'').indexOf(ym)===0)
+      courses.filter(c=>!isTrialCourse(c) && !isNonCountingCourse(c) && c.studentId===s.id && c.status==='done' && String(c.date||'').indexOf(ym)===0)
         .sort((a,b)=>String(a.date).localeCompare(String(b.date)))
         .forEach(c=>recs.push({name:s.name, date:c.date}));
     });
@@ -3070,7 +3094,7 @@ function renderWorkspaceSummary(){
   }else{
     start=dayCursor; end=start; label='当日课程';
   }
-  const list=courses.filter(c=>c.date>=start && c.date<=end && c.status!=='cancelled' && (!filterStudent||c.studentId===filterStudent));
+  const list=courses.filter(c=>c.date>=start && c.date<=end && c.status!=='cancelled' && (!filterStudent||c.studentId===filterStudent) && !isNonCountingCourse(c));
   const completed=list.filter(c=>c.status==='done').length;
   const minutes=list.filter(c=>c.status!=='absent').reduce((sum,c)=>sum+dur(c),0);
   el.innerHTML='<div class="summary-metric"><span>'+label+'</span><b>'+list.length+'<small>节</small></b></div>'
@@ -3171,7 +3195,7 @@ function init(){
     pendingReturnToCourse=true;
     openStudentModal(null);
   };
-  // 课程类型分段控件：常规课 / 体验课（仅新增/编辑课程弹窗）
+  // 课程类型分段控件：常规课 / 体验课 / 网课 / 上门教学（仅新增/编辑课程弹窗）
   document.getElementById('fCourseType').onclick=(e)=>{
     const b=e.target.closest('.seg-btn');
     if(b) setCourseType(b.dataset.type);
