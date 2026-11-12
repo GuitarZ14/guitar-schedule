@@ -52,7 +52,7 @@ function statement(student,courses,asOf){
    note:(c.instrument==='electric'?'电吉他':c.instrument==='bass'?'电贝斯':c.instrument==='ukulele'?'尤克里里':'吉他')+'课'+
      (c.start?' · '+c.start:'')+'（已上）',isLesson:true}));
  const entries=[{key:'opening',id:'opening',type:'opening',label:TYPES.opening,date:START,
-   delta:account.opening,note:'11月1日上课前确认余额',isLesson:false},
+   delta:account.opening,note:'11月1日上课前确认余额'+(account.openingNote?' · '+account.openingNote:''),isLesson:false},
    ...changes.filter(x=>x.date<=date),...lessonLines];
  entries.sort((a,b)=>b.date.localeCompare(a.date)||
    (b.time||'').localeCompare(a.time||'')||a.key.localeCompare(b.key));

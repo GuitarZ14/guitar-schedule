@@ -5,7 +5,7 @@
   const CONNECTION = 'gb_teaching_connection';
   const DEFAULT_ENDPOINT = 'https://cloud1-d8g72uobwdbbdb2eb-1452920132.ap-shanghai.app.tcloudbase.com/teaching';
   const CACHE = 'gb_teaching_sync_v1';
-  let client = null, connection = null, timer = null, conflictOpen = false;
+  let client = null, connection = null, timer = null, conflictOpen = false, lastState = 'disconnected';
   const snapshot = () => ({ students, courses, extraIncome: loadExtraIncome() });
   const label = document.createElement('span');
   label.style.cssText = 'display:block;font-size:12px;line-height:1.5;margin:6px 0;';
@@ -19,7 +19,7 @@
   label.after(conflictButton);
 
   function status(text) { label.textContent = text; }
-  function balanceStatus(state) { window.dispatchEvent(new CustomEvent('teaching-sync-state', { detail: { state } })); }
+  function balanceStatus(state) { lastState = state; window.dispatchEvent(new CustomEvent('teaching-sync-state', { detail: { state } })); }
   async function request(input, config = connection) {
     const response = await fetch(config.endpoint, { method: 'POST', headers: { Authorization: 'Bearer ' + config.token, 'Content-Type': 'application/json' }, body: JSON.stringify(input), cache: 'no-store' });
     const result = await response.json();
@@ -113,10 +113,40 @@
         const details = document.createElement('details'), summary = document.createElement('summary'); summary.textContent = '查看完整记录差异'; details.append(summary, pre); d.append(comparison, details);
       } else d.append(pre);
     });
-    [true, false].forEach(useLocal => { const b = document.createElement('button'); b.textContent = useLocal ? '保留本机版本' : '采用云端版本'; b.onclick = () => { try { client.resolve(useLocal); d.close(); flush(); } catch (e) { window.alert('无法处理冲突：' + e.message); } }; b.style.marginRight = '10px'; d.append(b); });
+    const accountConflict = conflicts.some(c => c.kind === 'students' &&
+      !core.same(c.local && c.local.lessonAccount || null, c.remote && c.remote.lessonAccount || null));
+    if (accountConflict) {
+      const warning = document.createElement('p');
+      warning.textContent = '检测到课包流水冲突。请先导出本机备份并逐条核对余额；为避免重复充值，不允许用本机旧课包覆盖云端。采用云端版本会舍弃未同步的本机课包修改，不能直接重复充值。';
+      warning.style.color = '#9f4938'; warning.setAttribute('role','alert'); d.append(warning);
+    }
+    [true, false].forEach(useLocal => {
+      const b = document.createElement('button'); b.textContent = useLocal ? '保留本机版本' : '采用云端版本';
+      b.disabled = accountConflict && useLocal;
+      if (b.disabled) b.title = '课包冲突不能用本机版本覆盖云端，请先核对流水';
+      b.onclick = () => {
+        if (accountConflict && !useLocal && !window.confirm('确认已导出本机备份并核对课包？采用云端会舍弃本机未同步的课包修改，不能直接重复充值。')) return;
+        try { client.resolve(useLocal); d.close(); flush(); }
+        catch (e) { window.alert('无法处理冲突：' + e.message); }
+      };
+      b.style.marginRight = '10px'; d.append(b);
+    });
     const stateHint = document.createElement('p'); stateHint.textContent = '学员状态冲突会保留云端最新课包；未采用的本机状态操作会标记在历史中。'; d.append(stateHint);
     close.textContent = '稍后处理'; d.append(close); d.addEventListener('close', () => { conflictOpen = false; }, { once: true }); d.showModal();
   }
+  // Package operations are the only write path for lessonAccount on desktop.
+  // They require a fresh cloud pull and an acknowledged push before success.
+  const packageWriter = window.TeachingPackageActions.create({
+    connected: () => !!connection && !!client,
+    client: () => client,
+    request: input => request(input),
+    today: () => todayStr(),
+    now: () => new Date().toISOString(),
+  });
+  window.TeachingDesktopPackages = {
+    ready: () => !!connection && !!client && lastState === 'saved' && !client.dirty() && !client.conflicts() && !packageWriter.isBusy(),
+    commit: input => packageWriter.commit(input),
+  };
   button.onclick = () => {
     const { d, close } = dialog('连接 GuitarBuddy 教师端');
     const text = document.createElement('p'); text.textContent = '在小程序「教师小天地 → 设置」生成连接口令。首次连接前请导出当前课表备份。'; d.append(text);
