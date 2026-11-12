@@ -586,7 +586,7 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261024-11">
+<link rel="stylesheet" href="./workspace.css?v=20261112-balance-v3">
 </head>
 <body>
 <div id="toast"></div>
@@ -925,6 +925,8 @@
 </div>
 
 <!-- 云端同步改用 JSONBin.io（无需安全域名/CORS/匿名登录），仅备份时调用其 REST 接口 -->
+<script src="./teaching-lesson-balance.js?v=20261112-balance-v3"></script>
+<script src="./teaching-balances.js?v=20261112-balance-v3"></script>
 <script>
 "use strict";
 /* ===== store ===== */
@@ -993,7 +995,8 @@ function isTrialCourse(c){ return !!(c && (c.isTrial || c.courseType==='trial'))
 /* 老数据没有 courseType 时仍视为常规课；体验课兼容旧版 isTrial。 */
 function courseKind(c){
   if(isTrialCourse(c)) return 'trial';
-  return c && (c.courseType==='online'||c.courseType==='home') ? c.courseType : 'regular';
+  const kind=c && (c.courseCategory || c.courseType);
+  return kind==='online'||kind==='home' ? kind : 'regular';
 }
 function isNonCountingCourse(c){ return courseKind(c)==='online'||courseKind(c)==='home'; }
 function countsForSalary(c){ return !isTrialCourse(c) && !isNonCountingCourse(c); }
@@ -1379,16 +1382,17 @@ function renderEdit(){
   const mLabel=parseInt(ym.slice(5),10)+'月';  // 表头动态文案：本月/9月/8月…
   const levels=[...new Set(students.map(s=>s.level||'其他'))];
 
-  let html='<div class="student-panel"><div class="sec-head"><h2>学员档案</h2><span class="spacer"></span>'
+  let html='<div id="balanceOverview">'+window.TeachingBalanceView.overview()+'</div><div class="balance-layout"><div class="student-panel"><div class="sec-head"><h2>学员档案</h2><span class="spacer"></span>'
     +'<button class="tbtn" id="expStuMonth" title="导出'+mLabel+'全部学员的已上日期（每堂课一行）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>导出'+mLabel+'上课详情</button>'
     +'<button class="primary" id="addStudent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>新增学员</button></div>';
 
   /* 空数据状态（无任何学员） */
   if(!students.length){
-    html+='<div class="empty">还没有学员，点上方「新增学员」添加。</div></div>';
+    html+='<div class="empty">还没有学员，点上方「新增学员」添加。</div></div><div id="balanceDetail"></div></div>';
     const v=document.getElementById('view-edit'); v.innerHTML=html;
     document.getElementById('addStudent').onclick=()=>openStudentModal(null);
     document.getElementById('expStuMonth').onclick=()=>exportStuMonth(ym);
+    window.TeachingBalanceView.bind();
     return;
   }
 
@@ -1413,14 +1417,11 @@ function renderEdit(){
   const kw=stuSearch.trim().toLowerCase();
   let rows=students.map(s=>{
     const my=courses.filter(c=>c.studentId===s.id);
-    const doneAll=my.filter(c=>!isNonCountingCourse(c)&&c.status==='done');                 // 请假/取消不计已上
     const monthDone=my.filter(c=>!isNonCountingCourse(c)&&c.status==='done'&&c.date.indexOf(ym)===0);
     const monthPlan=my.filter(c=>!isNonCountingCourse(c)&&c.status==='planned'&&c.date.indexOf(ym)===0);
-    const hTotal=(s.totalHours!=null&&!isNaN(s.totalHours))?Number(s.totalHours):null;
-    const hGift=Number(s.giftHours)||0;
-    const remain=hTotal!=null?Math.max(0,hTotal+hGift-doneAll.length):null;
+    const balance=window.TeachingBalanceView.balance(s);
     return {s, doneDates:monthDone.map(c=>c.date), planDates:monthPlan.map(c=>c.date),
-      monthDone:monthDone.length, monthPlan:monthPlan.length, remain};
+      monthDone:monthDone.length, monthPlan:monthPlan.length, remain:balance.remaining, balance};
   }).filter(r=>{
     if(kw && r.s.name.toLowerCase().indexOf(kw)<0) return false;
     if(stuTypeFilter && (r.s.level||'其他')!==stuTypeFilter) return false;
@@ -1443,10 +1444,10 @@ function renderEdit(){
   /* 表格 */
   html+='<div class="stu-table-wrap" tabindex="0" role="region" aria-label="学员档案表，可横向滚动"><table class="stu-table"><thead><tr>'
     +'<th class="sortable" data-sort="name">学员 '+sortArrow('name')+'</th>'
+    +'<th class="num sortable" data-sort="remain">剩余课时 '+sortArrow('remain')+'</th>'
     +'<th>'+mLabel+'已上日期</th>'
     +'<th>'+mLabel+'待上日期</th>'
     +'<th class="num sortable" data-sort="monthDone">'+mLabel+'已上/计划 '+sortArrow('monthDone')+'</th>'
-    +'<th class="num sortable" data-sort="remain">剩余课时 '+sortArrow('remain')+'</th>'
     +'<th>课程类型</th>'
     +'<th>状态</th>'
     +'<th>操作</th>'
@@ -1457,15 +1458,12 @@ function renderEdit(){
   }else{
     pageRows.forEach(r=>{
       const st=STU_STATUS[r.s.stuStatus]||STU_STATUS.active;
-      const low=(r.remain!=null&&r.remain<=2);
-      html+='<tr class="stu-row">'
-        +'<td class="stu-name" data-stu-view="'+r.s.id+'"><span class="swatch" style="background:'+r.s.color+'"></span>'+esc(r.s.name)+'</td>'
+      html+='<tr class="stu-row" data-balance-student="'+esc(r.s.id)+'">'
+        +'<td class="stu-name"><button type="button" class="balance-name" data-stu-view="'+esc(r.s.id)+'"><span class="swatch" style="background:'+r.s.color+'"></span>'+esc(r.s.name)+'</button></td>'
+        +'<td class="num balance-cell">'+window.TeachingBalanceView.cell(r.balance)+'</td>'
         +'<td class="dt-col"><div class="dtags">'+dateTags(r.doneDates,today)+'</div></td>'
         +'<td class="dt-col"><div class="dtags">'+(r.planDates.length?dateTags(r.planDates,today):'<span class="dtag-none">该月无待上</span>')+'</div></td>'
         +'<td class="num"><b>'+r.monthDone+'</b><span class="sep">/</span>'+r.monthPlan+'</td>'
-        +'<td class="num">'+(r.remain!=null
-            ?'<b class="'+(low?'h-low':'h-ok')+'">'+r.remain+'</b>'+(low?'<span class="h-tip">建议续费</span>':'')
-            :'<span class="dtag-none">未设置</span>')+'</td>'
         +'<td>'+esc(r.s.level||'其他')+'</td>'
         +'<td><span class="stu-tag '+st.cls+'">'+st.txt+'</span></td>'
         +'<td class="ops-cell">'
@@ -1483,7 +1481,7 @@ function renderEdit(){
     +'<span>第 '+stuPage+' / '+totalPages+' 页</span>'
     +'<button class="tbtn" id="stuNext"'+(stuPage>=totalPages?' disabled':'')+'>下一页</button></div>';
 
-  html+='</div>';
+  html+='</div><div id="balanceDetail"></div></div>';
   const v=document.getElementById('view-edit'); v.innerHTML=html;
   if(searchFocused){
     const newSearch=document.getElementById('stuSearch');
@@ -1533,8 +1531,9 @@ function renderEdit(){
     document.getElementById('fStudent').value=id;
   });
   v.querySelectorAll('[data-stu-view]').forEach(el=>el.onclick=()=>{
-    openStudentDetail(el.dataset.stuView);
+    window.TeachingBalanceView.select(el.dataset.stuView);
   });
+  window.TeachingBalanceView.bind();
   const clearBtn=document.getElementById('stuClearFilter');
   if(clearBtn) clearBtn.onclick=()=>{ stuSearch=''; stuTypeFilter=''; stuStatusFilter=''; stuPage=1; renderEdit(); };
   const prev=document.getElementById('stuPrev'), next=document.getElementById('stuNext');
@@ -2289,7 +2288,7 @@ function copyDaySchedule(ds){
     if(findDuplicateCourse(c.studentId, target, c.start, c.end, null, trial?c.trialName:'') ){ skipped++; return; }
     const copy={id:uid(),courseType:courseKind(c),date:target,start:c.start,end:c.end,status:'planned',lessonContent:'',homework:'',note:'',song:'',focus:''};
     if(trial){ copy.isTrial=true; copy.trialName=c.trialName; }   // 体验课：整日复制时保留类型与姓名
-    else{ copy.studentId=c.studentId; }
+    else{ copy.studentId=c.studentId; copy.courseCategory=courseKind(c); }
     courses.push(copy);
     count++;
   });
@@ -2325,6 +2324,7 @@ function saveCourse(){
     status:getRadio('fStatus'),
   };
   if(isTrial){ data.isTrial=true; data.trialName=trialName; }
+  else data.courseCategory=courseFormType;
   if(!data.date||!data.start||!data.end){ alert('请填写日期、开始和结束时间'); return; }
   if(dur(data)<=0){ alert('结束时间需晚于开始时间'); return; }
   // 重复录入校验：同一个人（学员 / 体验课姓名）+ 同时间(日期+起止) 不可重复
@@ -2339,7 +2339,7 @@ function saveCourse(){
     if(!allowOverwrite('课程',editingCourseBaseline,c)) return;
     Object.assign(c,data);
     /* 类型可能被改过（常规 ↔ 体验），把另一套字段清干净，避免残留脏数据 */
-    if(isTrial) delete c.studentId;
+    if(isTrial){ delete c.studentId; delete c.courseCategory; }
     else { delete c.isTrial; delete c.trialName; }
   }else{
     courses.push(Object.assign({id:savedId},data));
@@ -3261,7 +3261,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-12-instrument-sync-v1';
+const APP_VERSION = '2026-11-12-lesson-balance-v3';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */
@@ -3299,7 +3299,7 @@ if ('serviceWorker' in navigator) {
 </script>
 <script src="./teaching-core.js?v=20261112-1"></script>
 <script src="./teaching-sync.js?v=20261025-1"></script>
-<script src="./teaching-desktop.js?v=20261031-2"></script>
+<script src="./teaching-desktop.js?v=20261112-balance-v3"></script>
 </body>
 </html>
 

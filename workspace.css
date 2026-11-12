@@ -1,4 +1,45 @@
 /* Minimal professional workspace. Existing data and editing flows stay intact. */
+/* Read-only lesson accounts, following the existing workspace palette. */
+.balance-overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:10px;background:#fff;margin-bottom:12px;padding:20px 0;}
+.balance-metric{padding:0 24px;border-right:1px solid var(--line);}
+.balance-metric:last-child{border:0;}
+.balance-metric span,.balance-metric small{color:var(--muted);font-size:12px;}
+.balance-metric span{display:block;margin-bottom:6px;}
+.balance-metric b{font-size:28px;font-weight:550;margin-right:8px;font-variant-numeric:tabular-nums;}
+.balance-sync{font-size:12px;color:var(--muted);margin:0 0 20px;}
+.balance-layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start;}
+.balance-layout .student-panel{min-width:0;}
+.balance-detail{background:#fff;border:1px solid var(--line);border-radius:10px;position:sticky;top:20px;overflow:hidden;}
+.balance-detail header{padding:22px 22px 18px;}
+.balance-detail header h3{font-size:21px;margin:0 0 6px;}
+.balance-detail header>span:last-child{color:var(--muted);font-size:12px;}
+.balance-hero{margin:0 20px 20px;padding:18px;background:var(--primary-soft);border-radius:8px;}
+.balance-hero>span{font-size:12px;color:var(--muted);}
+.balance-hero>div{margin:8px 0;}
+.balance-hero b{font-size:34px;font-weight:550;font-variant-numeric:tabular-nums;}
+.balance-hero>small{font-size:11px;color:var(--muted);display:block;line-height:1.7;}
+.balance-unknown{font-size:12px;color:var(--muted);}
+.balance-tabs{display:flex;padding:0 12px;border-bottom:1px solid var(--line);}
+.balance-tabs button{flex:1;border:0;border-radius:0;background:transparent;padding:12px 4px;font-size:12px;color:var(--muted);}
+.balance-tabs button[aria-selected=true]{border-bottom:2px solid var(--primary);color:var(--primary-d);font-weight:600;}
+.balance-body{padding:18px 20px;max-height:60vh;overflow:auto;}
+.balance-body .empty{padding:24px 0;}
+.balance-breakdown{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:11px;color:var(--muted);padding-bottom:16px;border-bottom:1px solid var(--line);}
+.balance-breakdown b{float:right;color:var(--text);}
+.balance-ledger{list-style:none;padding:0;margin:0;}
+.balance-ledger li{padding:16px 0;border-bottom:1px solid var(--line);}
+.balance-ledger li:last-child{border:0;}
+.balance-ledger li>div{display:flex;justify-content:space-between;gap:10px;font-size:12px;}
+.balance-ledger p,.balance-ledger time,.balance-ledger small{font-size:11px;color:var(--muted);line-height:1.7;overflow-wrap:anywhere;}
+.balance-ledger p{margin:5px 0 0;white-space:pre-wrap;}
+.balance-profile{margin:0;font-size:12px;}
+.balance-profile>div{padding:12px 0;border-bottom:1px solid var(--line);}
+.balance-profile dt{color:var(--muted);margin-bottom:5px;}
+.balance-profile dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;}
+.balance-name{border:0;padding:0;background:transparent;min-height:36px;font:inherit;display:inline-flex;align-items:center;text-align:left;}
+.stu-row.balance-selected td{background:var(--primary-soft);}
+@media(max-width:1200px){.balance-layout{grid-template-columns:minmax(0,1fr) 300px;gap:14px;}.balance-layout .sec-head{flex-wrap:wrap;}.balance-layout .sec-head h2{width:100%;}}
+@media(max-width:900px){.balance-layout{grid-template-columns:minmax(0,1fr);}.balance-detail{position:static;}.balance-body{max-height:450px;}.balance-metric{padding:0 12px;}.balance-metric b{font-size:23px;}.balance-metric small{display:block;}.balance-sync{line-height:1.8;}}
 :root{
   --glass:#fff; --glass-strong:#fff; --glass-border:#e5e8e6; --line:#e9ecea;
   --text:#202b27; --text-2:#45524b; --muted:#6b7770; --muted-2:#77837b;
@@ -294,3 +335,6 @@ button:disabled:hover{transform:none;box-shadow:none;}
   #view-stats .kpis{padding:18px 0;margin-bottom:16px;}#view-stats .kpi{padding:0 14px;}#view-stats .kpi span{font-size:11px;}#view-stats .kpi b{font-size:24px;}#view-stats .kpi small{font-size:10px;margin-left:4px;}
   .stats-panels{grid-template-columns:1fr;gap:16px;}#view-stats .panel h2{padding:16px;}.duration-bars{padding:20px 16px;gap:20px;}.report-table-wrap{padding:0 4px 6px;}
 }
+
+.balance-layout .stu-table th:nth-child(2),.balance-layout .stu-table td:nth-child(2){min-width:115px;}
+.balance-layout .stu-row.balance-selected td:first-child{background:var(--primary-soft);}

@@ -19,6 +19,7 @@
   label.after(conflictButton);
 
   function status(text) { label.textContent = text; }
+  function balanceStatus(state) { window.dispatchEvent(new CustomEvent('teaching-sync-state', { detail: { state } })); }
   async function request(input, config = connection) {
     const response = await fetch(config.endpoint, { method: 'POST', headers: { Authorization: 'Bearer ' + config.token, 'Content-Type': 'application/json' }, body: JSON.stringify(input), cache: 'no-store' });
     const result = await response.json();
@@ -55,6 +56,7 @@
     button.textContent = connection ? 'GuitarBuddy 连接设置' : '连接 GuitarBuddy';
   }
   function start(initial) {
+    balanceStatus('disconnected');
     const config = { ...connection };
     let instance;
     instance = window.TeachingSync.create({
@@ -66,6 +68,7 @@
         const labels = { syncing: '正在与教师端同步…', pending: '本地已保存 · 待同步', saved: '教师端与电脑已同步', retry: '检测到新版本，正在重新检查', conflict: '同一记录在两端修改，请处理冲突', error: '同步失败 · 本地修改已保留' };
         status(labels[state] || state);
         if (state === 'saved' || state === 'pending') apply(client.getData());
+        balanceStatus(state);
         if (state === 'error') label.textContent += '：' + detail.message;
         if (state === 'retry') setTimeout(flush, 300);
         conflictButton.hidden = state !== 'conflict';
@@ -84,7 +87,7 @@
   function changed() {
     if (!client) return;
     try { client.write(snapshot()); schedule(); }
-    catch (e) { status('本地已保存，但不能同步：' + e.message); }
+    catch (e) { status('本地已保存，但不能同步：' + e.message); balanceStatus('error'); }
   }
   function dialog(title) {
     const d = document.createElement('dialog');
@@ -140,7 +143,7 @@
     d.append(connect);
     if (connection) {
       const disconnect = document.createElement('button'); disconnect.textContent = '断开本机连接'; disconnect.type = 'button'; disconnect.style.margin = '12px';
-      disconnect.onclick = () => { if (!window.confirm('断开连接？本地数据保留，未同步修改请先导出备份。')) return; client = null; connection = null; localStorage.removeItem(CONNECTION); localStorage.removeItem(CACHE); clearTimeout(timer); toggleLegacy(); status('已断开，本地数据保留；刷新页面可重新使用原云备份'); d.close(); };
+      disconnect.onclick = () => { if (!window.confirm('断开连接？本地数据保留，未同步修改请先导出备份。')) return; client = null; connection = null; localStorage.removeItem(CONNECTION); localStorage.removeItem(CACHE); clearTimeout(timer); toggleLegacy(); balanceStatus('disconnected'); status('已断开，本地数据保留；刷新页面可重新使用原云备份'); d.close(); };
       d.append(disconnect);
     }
     d.append(close); d.showModal();
@@ -153,5 +156,5 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) flush(); });
   setInterval(flush, 15000);
   try { connection = JSON.parse(localStorage.getItem(CONNECTION) || 'null'); if (connection) start(); }
-  catch (e) { status('连接配置无法读取，请重新连接'); }
+  catch (e) { status('连接配置无法读取，请重新连接'); balanceStatus('error'); }
 }());

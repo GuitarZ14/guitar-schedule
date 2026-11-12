@@ -10,6 +10,9 @@ function workspace() {
   const elements = new Map();
   const context = vm.createContext({
     console,
+    Date: class extends Date {
+      constructor(...args) { super(...(args.length ? args : ['2026-10-24T12:00:00+08:00'])); }
+    },
     document: {
       getElementById(id) {
         if (!elements.has(id)) elements.set(id, {
@@ -32,6 +35,17 @@ function workspace() {
     ];`);
   return { run, elements };
 }
+
+test('teacher categories remain separate from wages while legacy website types still work', () => {
+  const { run } = workspace();
+  assert.equal(run("courseKind({courseCategory:'online'})"),'online');
+  assert.equal(run("courseKind({courseCategory:'home',courseType:'regular'})"),'home');
+  assert.equal(run("countsForSalary({courseCategory:'online'})"),false);
+  assert.equal(run("countsForSalary({courseCategory:'home'})"),false);
+  assert.equal(run("countsForSalary({courseType:'online'})"),false);
+  assert.equal(run("countsForSalary({isTrial:true})"),false);
+  assert.equal(run("countsForSalary({courseCategory:'regular'})"),true);
+});
 
 test('weekly overview respects date boundaries, statuses and overnight duration', () => {
   const { run, elements } = workspace();

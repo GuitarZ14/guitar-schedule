@@ -70,6 +70,14 @@ test('copy keeps only learner identity and time, resetting all lesson data', () 
   assert.equal(copied.some(c=>c.start==='18:00'), false, 'cancelled source courses are not copied');
 });
 
+test('copy keeps the teacher category without changing the source course', () => {
+  const { run } = workspace();
+  run("courses[0].courseCategory='online'; copyDaySchedule('2026-10-24')");
+  assert.equal(run("courses.find(c=>c.date==='2026-10-31' && c.studentId==='a').courseCategory"),'online');
+  assert.equal(run("courses[0].courseType"),undefined);
+  assert.equal(run("courses[0].courseCategory"),'online');
+});
+
 test('existing target lessons are skipped without overwriting their data', () => {
   const { run } = workspace();
   run(`courses.push({id:'existing',studentId:'a',date:'2026-10-31',start:'09:30',end:'10:20',status:'done',lessonContent:'保留'})`);

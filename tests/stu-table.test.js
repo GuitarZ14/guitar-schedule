@@ -134,7 +134,7 @@ t('旧卡片视图的删除按钮已收进弹窗，表格操作列无删除', ()
 console.log('\n=== 4. 本月上课详情 stuMonthRecords（导出数据源）===');
 const isTrial = c => !!(c && c.isTrial);
 const buildRecs = new Function('students', 'courses', 'isTrialCourse',
-  extractFn('stuMonthRecords') + '\nreturn stuMonthRecords;');
+  extractFn('courseKind') + '\n' + extractFn('isNonCountingCourse') + '\n' + extractFn('stuMonthRecords') + '\nreturn stuMonthRecords;');
 const STU = [
   {id:'s1', name:'小明'},
   {id:'s2', name:'乐乐'},
@@ -281,13 +281,13 @@ const CRS_SALARY = [
 ];
 const TRIAL_ONLY = [{isTrial:true, trialName:'小美', date:'2026-09-04', status:'done'}];
 const countDone = new Function('courses', 'todayStr', 'isTrialCourse',
-  extractFn('countDoneInMonth') + '\nreturn countDoneInMonth;')(
+  extractFn('courseKind') + '\n' + extractFn('isNonCountingCourse') + '\n' + extractFn('countsForSalary') + '\n' + extractFn('countDoneInMonth') + '\nreturn countDoneInMonth;')(
   CRS_SALARY, () => '2026-09-30', isTrial);
 const countToToday = new Function('courses', 'todayStr', 'isTrialCourse',
-  extractFn('countMonthDoneToToday') + '\nreturn countMonthDoneToToday;')(
+  extractFn('courseKind') + '\n' + extractFn('isNonCountingCourse') + '\n' + extractFn('countsForSalary') + '\n' + extractFn('countMonthDoneToToday') + '\nreturn countMonthDoneToToday;')(
   CRS_SALARY, () => '2026-09-30', isTrial);
 const salaryMonths = new Function('courses', 'loadExtraIncome', 'isTrialCourse',
-  extractFn('getSalaryMonths') + '\nreturn getSalaryMonths;')(CRS_SALARY, () => [], isTrial);
+  extractFn('courseKind') + '\n' + extractFn('isNonCountingCourse') + '\n' + extractFn('countsForSalary') + '\n' + extractFn('getSalaryMonths') + '\nreturn getSalaryMonths;')(CRS_SALARY, () => [], isTrial);
 
 t('工资口径：体验课不计入课时（decision 2026-09-29）', () => {
   ok(countDone('2026-09') === 2, '应为 2 节常规课，实际 ' + countDone('2026-09'));
@@ -296,10 +296,10 @@ t('工资口径：体验课不计入课时（decision 2026-09-29）', () => {
 });
 t('工资口径：只有体验课的月份不产生工资课时，也不进工资月份列表', () => {
   const onlyTrial = new Function('courses', 'todayStr', 'isTrialCourse',
-    extractFn('countDoneInMonth') + '\nreturn countDoneInMonth;')(TRIAL_ONLY, () => '2026-09-30', isTrial);
+    extractFn('courseKind') + '\n' + extractFn('isNonCountingCourse') + '\n' + extractFn('countsForSalary') + '\n' + extractFn('countDoneInMonth') + '\nreturn countDoneInMonth;')(TRIAL_ONLY, () => '2026-09-30', isTrial);
   ok(onlyTrial('2026-09') === 0, '体验课不应计入课时');
   const months = new Function('courses', 'loadExtraIncome', 'isTrialCourse',
-    extractFn('getSalaryMonths') + '\nreturn getSalaryMonths;')(TRIAL_ONLY, () => [], isTrial);
+    extractFn('courseKind') + '\n' + extractFn('isNonCountingCourse') + '\n' + extractFn('countsForSalary') + '\n' + extractFn('getSalaryMonths') + '\nreturn getSalaryMonths;')(TRIAL_ONLY, () => [], isTrial);
   ok(months().length === 0, '体验课不应产生工资月份，实际 ' + months().join(','));
   ok(salaryMonths().indexOf('2026-09') >= 0, '有常规课的月份应保留');
 });
