@@ -4,6 +4,16 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function (core, status) {
   'use strict';
   const onlyStatus = (old, next) => old && next && core.same(status.withoutStatus(old), status.withoutStatus(next));
+  function confirmsOperation(op, saved) {
+    if (core.same(op.data, saved)) return true;
+    if (!op.data || !saved || !['students', 'courses'].includes(op.kind)) return false;
+    const field = op.kind === 'students' ? 'stuStatusHistory' : 'attendanceHistory';
+    const expected = { ...op.data }, actual = { ...saved };
+    const history = Array.isArray(expected[field]) ? expected[field] : [];
+    const savedHistory = Array.isArray(actual[field]) ? actual[field] : [];
+    delete expected[field]; delete actual[field];
+    return core.same(expected, actual) && history.every(entry => savedHistory.some(item => core.same(entry, item)));
+  }
   function merge(base, local, remote) {
     const result = core.merge(base, local, remote);
     // A state-only edit may merge with remote profile/package changes. A state
@@ -88,7 +98,7 @@
             if (ops.some(op => ['students','courses'].includes(op.kind) && op.data == null))
               throw new Error('检测到待同步的物理删除记录，已阻止上传。请保留历史并从备份核对');
             const saved = ops.length ? valid(await options.request({ action: 'push', operations: ops })) : remote;
-            if (ops.some(op => !core.same(op.data, saved.data[op.kind].find(x => x.id === op.id) || null))) throw new Error('云端返回结果未确认本次更改，本地修改已保留');
+            if (ops.some(op => !confirmsOperation(op, saved.data[op.kind].find(x => x.id === op.id) || null))) throw new Error('云端返回结果未确认本次更改，本地修改已保留');
             // Only edits made while this request was running remain pending.
             const final = merge(localAtSend, state.data, saved.data);
             if (final.conflicts.length) { hold(saved, final); return false; }

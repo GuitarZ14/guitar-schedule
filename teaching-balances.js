@@ -24,7 +24,8 @@
       + metric('待续费学员', complete ? accounts.filter(b => b.remaining != null && b.remaining <= 2).length : '—', '剩余 ≤ 2 节')
       + metric('课时未初始化', complete ? accounts.filter(b => !b.initialized).length : '—', '在读学员') + '</section>'
       + '<p class="balance-sync" role="status">' + esc(labels[syncState] || '待同步')
-      + (syncedAt ? ' · 最近同步 ' + esc(syncedAt) : '') + ' · 课包余额截至今天，与所选统计月份无关</p>';
+      + (syncedAt ? ' · 最近同步 ' + esc(syncedAt) : '') + ' · 课包余额截至今天，与所选统计月份无关</p>'
+      + '<div id="teachingReminders" aria-label="待处理提醒"></div>';
   }
   function detail() {
     const s = students.find(s => s.id === selectedId);
@@ -46,17 +47,20 @@
       const list = window.TeachingLessonBalance.studentCourses(s.id, courses, todayStr());
       body = '<button type="button" class="tbtn" id="balanceLessonFeedback">查看课后记录与分享</button>'
         + (list.length ? '<ol class="balance-ledger">' + list.map(c => '<li><div><b>' + esc(c.date) + '</b><span>' + esc(c.statusLabel) + '</span></div><p>' + esc(c.timeText + ' · ' + courseKindName(c) + ' · ' + c.classText) + '</p><small>' + (c.counted ? '计入课包扣减 1 节' : '不计入当前课包扣减') + '</small></li>').join('') + '</ol>' : '<div class="empty">暂无课程记录</div>');
+    } else if (tab === 'growth' || tab === 'binding') {
+      body = '<div id="studentInsights" role="status">正在准备只读资料…</div>';
     } else if (tab === 'history') {
       body = window.TeachingStudentStatusView.historyHtml(s);
     } else {
       body = '<dl class="balance-profile">' + [['课程类型', s.level], ['状态', (STU_STATUS[s.stuStatus] || STU_STATUS.active).txt], ['联系电话', s.phone], ['老师', s.teacher], ['备注', s.note]].map(([k,v]) => '<div><dt>' + k + '</dt><dd>' + esc(v || '—') + '</dd></div>').join('') + '</dl>';
     }
+    const insightTab=tab==='growth'||tab==='binding';
     return '<aside class="balance-detail" aria-label="学员详情"><header><span class="page-kicker">STUDENT PROFILE</span><h3>' + esc(s.name) + '</h3><span>' + esc(s.level || '吉他学员') + '</span></header>'
-      + window.TeachingStudentStatusView.summary(s, syncState)
+      + (insightTab ? '' : window.TeachingStudentStatusView.summary(s, syncState)
       + '<div class="balance-hero"><span>剩余课时</span><div>' + cell(b) + '</div><small>与 GuitarBuddy 使用同一份课包流水；未确认同步时禁止修改。</small></div>'
-      + packageActions
-      + '<div class="balance-tabs" role="tablist" aria-label="学员详情分类">' + [['ledger','课时流水'],['courses','课程记录'],['profile','基本资料'],['history','状态历史']].map(([key,label]) => '<button type="button" role="tab" data-balance-tab="' + key + '" aria-selected="' + (tab === key) + '">' + label + '</button>').join('') + '</div>'
-      + '<div class="balance-body" role="tabpanel" aria-label="' + ({ledger:'课时流水',courses:'课程记录',profile:'基本资料',history:'状态历史'})[tab] + '">' + body + '</div></aside>';
+      + packageActions)
+      + '<div class="balance-tabs" role="tablist" aria-label="学员详情分类">' + [['ledger','课时流水'],['courses','课程记录'],['profile','基本资料'],['growth','成长档案'],['binding','绑定状态'],['history','状态历史']].map(([key,label]) => '<button type="button" role="tab" data-balance-tab="' + key + '" aria-selected="' + (tab === key) + '">' + label + '</button>').join('') + '</div>'
+      + '<div class="balance-body" role="tabpanel" aria-label="' + ({ledger:'课时流水',courses:'课程记录',profile:'基本资料',growth:'成长档案',binding:'绑定状态',history:'状态历史'})[tab] + '">' + body + '</div></aside>';
   }
   function bind(resetScroll) {
     const host = document.getElementById('balanceDetail');
@@ -67,6 +71,9 @@
     host.innerHTML = detail();
     const body = host.querySelector('.balance-body');
     if (body) body.scrollTop = scroll;
+    if ((tab === 'growth' || tab === 'binding') && window.TeachingStudentDetail) window.TeachingStudentDetail.mount(host.querySelector('#studentInsights'), students.find(s=>s.id===selectedId), courses, tab);
+    const reminder=document.getElementById('teachingReminders');
+    if(reminder && window.TeachingStudentDetail) window.TeachingStudentDetail.mountReminder(reminder,students,courses,syncState,todayStr());
     document.querySelectorAll('[data-balance-student]').forEach(el => {
       el.classList.toggle('balance-selected', el.dataset.balanceStudent === selectedId);
     });
