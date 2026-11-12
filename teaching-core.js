@@ -5,8 +5,9 @@
   'use strict';
   const KINDS = ['students', 'courses', 'extraIncome'];
   const STATUS = { planned: '待上', done: '已上', absent: '已请假', cancelled: '取消' };
-  const INSTRUMENTS = ['guitar', 'bass', 'ukulele'];
-  const INSTRUMENT_NAMES = { guitar: '吉他', bass: '电贝斯', ukulele: '尤克里里' };
+  // Keep the desktop validator compatible with GuitarBuddy's four lesson instruments.
+  const INSTRUMENTS = ['guitar', 'electric', 'bass', 'ukulele'];
+  const INSTRUMENT_NAMES = { guitar: '木吉他', electric: '电吉他', bass: '电贝斯', ukulele: '尤克里里' };
   const clone = value => JSON.parse(JSON.stringify(value));
   function canonical(value) {
     if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']';
