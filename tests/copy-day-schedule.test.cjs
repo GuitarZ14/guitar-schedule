@@ -72,10 +72,12 @@ test('copy keeps only learner identity and time, resetting all lesson data', () 
 
 test('copy keeps the teacher category without changing the source course', () => {
   const { run } = workspace();
-  run("courses[0].courseCategory='online'; copyDaySchedule('2026-10-24')");
+  run("courses[0].courseCategory='online'; courses[0].instrument='electric'; copyDaySchedule('2026-10-24')");
   assert.equal(run("courses.find(c=>c.date==='2026-10-31' && c.studentId==='a').courseCategory"),'online');
   assert.equal(run("courses[0].courseType"),undefined);
   assert.equal(run("courses[0].courseCategory"),'online');
+  assert.equal(run("courses[0].instrument"),'electric');
+  assert.equal(run("courses.find(c=>c.date==='2026-10-31' && c.studentId==='a').instrument"),'electric');
 });
 
 test('existing target lessons are skipped without overwriting their data', () => {
@@ -89,6 +91,6 @@ test('existing target lessons are skipped without overwriting their data', () =>
 
 test('week action is renamed to copy schedule and explains its scope', () => {
   assert.match(html, />复制排课<\/button>/);
-  assert.match(html, /只复制学员和上课时间到下周/);
+  assert.match(html, /只复制学员、乐器和上课时间到下周/);
   assert.doesNotMatch(html, />复制本日<\/button>/);
 });
