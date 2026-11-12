@@ -1,50 +1,87 @@
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory(require('./teaching-core'));
-  else root.TeachingSync = factory(root.TeachingCore);
-}(typeof globalThis !== 'undefined' ? globalThis : this, function (core) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./teaching-core'), require('./teaching-student-status'));
+  else root.TeachingSync = factory(root.TeachingCore, root.TeachingStudentStatus);
+}(typeof globalThis !== 'undefined' ? globalThis : this, function (core, status) {
   'use strict';
+  const onlyStatus = (old, next) => old && next && core.same(status.withoutStatus(old), status.withoutStatus(next));
+  function merge(base, local, remote) {
+    const result = core.merge(base, local, remote);
+    // A state-only edit may merge with remote profile/package changes. A state
+    // changed differently on both devices still requires an explicit decision.
+    result.conflicts = result.conflicts.filter(c => {
+      const old = base.students.find(s => s.id === c.id);
+      if (c.kind !== 'students' || !old || !c.local || !c.remote) return true;
+      let value;
+      if (onlyStatus(old, c.local) && [status.current(old), status.current(c.local)].includes(status.current(c.remote))) value = { ...c.remote, stuStatus: status.current(c.local) };
+      else if (onlyStatus(old, c.remote) && status.current(c.local) === status.current(old)) value = { ...c.local, stuStatus: status.current(c.remote) };
+      if (!value) return true;
+      value.stuStatusHistory = status.mergeHistory(c.local, c.remote);
+      result.data.students = result.data.students.map(s => s.id === c.id ? value : s);
+      return false;
+    });
+    return result;
+  }
   function create(options) {
-    let state = options.load() || { base: core.empty(), data: core.empty(), versions: {}, revision: 0 };
-    let running = null, pendingConflict = null;
-    const emit = (status, detail) => options.onChange && options.onChange(status, detail);
-    const persist = () => options.save(core.clone(state));
+    const loaded = options.load();
+    let state = loaded || { base: core.empty(), data: core.empty(), versions: {}, revision: 0 };
+    let running = null, pendingConflict = loaded && loaded.pendingConflict || null;
+    const emit = (value, detail) => options.onChange && options.onChange(value, detail);
+    const persist = () => options.save(core.clone({ ...state, pendingConflict }));
+    const hold = (remote, merged) => { pendingConflict = { remote, merged }; persist(); emit('conflict', merged.conflicts); };
+    function valid(response) {
+      if (!response || !response.data || !response.versions || !Number.isInteger(response.revision)) throw new Error('同步响应不完整');
+      core.normalize(response.data);
+      return response;
+    }
     const api = {
       getData: () => core.clone(state.data),
       dirty: () => core.diff(state.base, state.data, state.versions).length > 0,
-      write(data) { state.data = core.normalize(data); persist(); emit('pending'); },
-      conflicts: () => pendingConflict && core.clone(pendingConflict.merged.conflicts),
+      write(data) { state.data = core.normalize(data); persist(); emit(pendingConflict ? 'conflict' : 'pending', api.conflicts()); },
+      conflicts: () => pendingConflict && core.clone(merge(state.base, state.data, pendingConflict.remote.data).conflicts),
       resolve(useLocal) {
         if (!pendingConflict) return;
         const { remote } = pendingConflict;
-        // 冲突期间仍可能编辑；重新合并最新草稿，再应用明确选择。
-        const latest = core.merge(state.base, state.data, remote.data);
-        if (!useLocal) latest.conflicts.forEach(c => {
+        const latest = merge(state.base, state.data, remote.data);
+        latest.conflicts.forEach(c => {
+          let chosen = useLocal ? c.local : c.remote;
+          const old = state.base.students.find(s => s.id === c.id);
+          if (c.kind === 'students' && chosen && c.local && c.remote && onlyStatus(old, c.local)) {
+            // Resolve only the requested state; always retain the newest cloud
+            // account/profile. Keep rejected local attempts as such in history.
+            const localHistory = status.history(c.local).map(entry => status.history(old).some(e => e.id === entry.id) ? entry : { ...entry, outcome: 'discarded' });
+            chosen = { ...c.remote, stuStatusHistory: status.mergeHistory({stuStatusHistory:localHistory}, c.remote) };
+            if (useLocal) chosen = status.change(chosen, status.current(c.local), '同步冲突：确认保留本机状态', 'resolve_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), new Date().toISOString());
+          }
+          if (c.kind === 'students' && chosen && c.remote) {
+            chosen = { ...chosen };
+            if (c.remote.lessonAccount) chosen.lessonAccount = core.clone(c.remote.lessonAccount);
+            else delete chosen.lessonAccount;
+          }
           latest.data[c.kind] = latest.data[c.kind].filter(x => x.id !== c.id);
-          if (c.remote) latest.data[c.kind].push(c.remote);
+          if (chosen) latest.data[c.kind].push(chosen);
         });
         state = { base: remote.data, data: latest.data, versions: remote.versions, revision: remote.revision };
         pendingConflict = null; persist(); emit(api.dirty() ? 'pending' : 'saved');
       },
       sync() {
         if (running) return running;
-        if (pendingConflict) return Promise.resolve(false);
+        if (pendingConflict) { emit('conflict', api.conflicts()); return Promise.resolve(false); }
         running = (async () => {
           emit('syncing');
           try {
-            const remote = await options.request({ action: 'pull' });
-            if (!remote || !remote.data || !remote.versions || !Number.isInteger(remote.revision)) throw new Error('同步响应不完整');
-            const merged = core.merge(state.base, state.data, remote.data);
-            if (merged.conflicts.length) { pendingConflict = { remote, merged }; emit('conflict', merged.conflicts); return false; }
+            const remote = valid(await options.request({ action: 'pull' }));
+            const merged = merge(state.base, state.data, remote.data);
+            if (merged.conflicts.length) { hold(remote, merged); return false; }
             const localAtSend = core.clone(state.data);
             const sent = merged.data;
             const ops = core.diff(remote.data, sent, remote.versions);
-            const saved = ops.length ? await options.request({ action: 'push', operations: ops }) : remote;
-            // 请求期间新增的修改保留；不让同步返回值覆盖尚未上传的编辑。
-            // state.data 尚未包含 pull 带来的变化，按旧本地草稿作基准保留并发编辑。
-            const final = core.merge(localAtSend, state.data, saved.data);
-            if (final.conflicts.length) { pendingConflict = { remote: saved, merged: final }; emit('conflict', final.conflicts); return false; }
+            const saved = ops.length ? valid(await options.request({ action: 'push', operations: ops })) : remote;
+            if (ops.some(op => !core.same(op.data, saved.data[op.kind].find(x => x.id === op.id) || null))) throw new Error('云端返回结果未确认本次更改，本地修改已保留');
+            // Only edits made while this request was running remain pending.
+            const final = merge(localAtSend, state.data, saved.data);
+            if (final.conflicts.length) { hold(saved, final); return false; }
             state = { base: saved.data, data: final.data, versions: saved.versions, revision: saved.revision };
-            persist(); emit(api.dirty() ? 'pending' : 'saved'); return true;
+            pendingConflict = null; persist(); emit(api.dirty() ? 'pending' : 'saved'); return true;
           } catch (e) { emit(e.code === 'CONFLICT' ? 'retry' : 'error', e); return false; }
           finally { running = null; }
         })();

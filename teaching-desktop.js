@@ -85,7 +85,7 @@
   }
   function schedule() { clearTimeout(timer); timer = setTimeout(flush, 500); }
   function changed() {
-    if (!client) return;
+    if (!client) { balanceStatus('disconnected'); return; }
     try { client.write(snapshot()); schedule(); }
     catch (e) { status('本地已保存，但不能同步：' + e.message); balanceStatus('error'); }
   }
@@ -103,11 +103,18 @@
     const explain = document.createElement('p'); explain.textContent = '请比较以下记录。选择会应用于本次列出的全部冲突，其他记录正常合并。'; d.append(explain);
     const describe = x => x ? JSON.stringify(x, null, 2) : '已删除';
     conflicts.forEach(c => {
-      const h = document.createElement('h4'); h.textContent = c.kind + ' / ' + c.id;
+      const h = document.createElement('h4'); h.textContent = c.kind === 'students' ? '学员：' + (c.local?.name || c.remote?.name || c.id) : c.kind + ' / ' + c.id;
       const pre = document.createElement('pre'); pre.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;';
-      pre.textContent = '本机：\n' + describe(c.local) + '\n\n云端：\n' + describe(c.remote); d.append(h, pre);
+      pre.textContent = '本机：\n' + describe(c.local) + '\n\n云端：\n' + describe(c.remote);
+      d.append(h);
+      if (c.kind === 'students' && c.local && c.remote) {
+        const names = window.TeachingStudentStatus.labels;
+        const comparison = document.createElement('p'); comparison.textContent = '本机状态：' + (names[c.local.stuStatus || 'active'] || '未知') + '；GuitarBuddy 状态：' + (names[c.remote.stuStatus || 'active'] || '未知');
+        const details = document.createElement('details'), summary = document.createElement('summary'); summary.textContent = '查看完整记录差异'; details.append(summary, pre); d.append(comparison, details);
+      } else d.append(pre);
     });
-    [true, false].forEach(useLocal => { const b = document.createElement('button'); b.textContent = useLocal ? '保留本机版本' : '采用云端版本'; b.onclick = () => { client.resolve(useLocal); d.close(); flush(); }; b.style.marginRight = '10px'; d.append(b); });
+    [true, false].forEach(useLocal => { const b = document.createElement('button'); b.textContent = useLocal ? '保留本机版本' : '采用云端版本'; b.onclick = () => { try { client.resolve(useLocal); d.close(); flush(); } catch (e) { window.alert('无法处理冲突：' + e.message); } }; b.style.marginRight = '10px'; d.append(b); });
+    const stateHint = document.createElement('p'); stateHint.textContent = '学员状态冲突会保留云端最新课包；未采用的本机状态操作会标记在历史中。'; d.append(stateHint);
     close.textContent = '稍后处理'; d.append(close); d.addEventListener('close', () => { conflictOpen = false; }, { once: true }); d.showModal();
   }
   button.onclick = () => {

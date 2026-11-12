@@ -586,7 +586,7 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261112-balance-v3">
+<link rel="stylesheet" href="./workspace.css?v=20261112-status-v1">
 </head>
 <body>
 <div id="toast"></div>
@@ -797,13 +797,14 @@
     <label><span class="lab">联系电话</span><input id="sPhone" type="tel" inputmode="tel" placeholder="11 位手机号（列表中脱敏显示）" maxlength="15"></label>
     <label><span class="lab">负责老师</span><input id="sTeacher" placeholder="如：张老师" maxlength="12"></label>
     <label><span class="lab">在读状态</span>
-      <select id="sStuStatus">
+      <select id="sStuStatus" aria-describedby="studentStatusHelp">
         <option value="active">在读</option>
         <option value="leave">请假</option>
         <option value="paused">停课</option>
-        <option value="finished">结课</option>
+        <option value="finished">已结课</option>
       </select>
     </label>
+    <small id="studentStatusHelp">已有学员请在右侧学员详情中调整状态，以确认变更并保留历史。</small>
     <label><span class="lab">备注</span><textarea id="sNote" placeholder="如：左手按弦偏弱"></textarea></label>
     <label><span class="lab">报名课时（总课时）</span><input type="number" id="sTotal" min="0" inputmode="numeric" placeholder="如：40"></label>
     <label><span class="lab">赠送课时</span>
@@ -925,8 +926,10 @@
 </div>
 
 <!-- 云端同步改用 JSONBin.io（无需安全域名/CORS/匿名登录），仅备份时调用其 REST 接口 -->
-<script src="./teaching-lesson-balance.js?v=20261112-balance-v3"></script>
-<script src="./teaching-balances.js?v=20261112-balance-v3"></script>
+<script src="./teaching-lesson-balance.js?v=20261112-status-v1"></script>
+<script src="./teaching-student-status.js?v=20261112-status-v1"></script>
+<script src="./teaching-status-view.js?v=20261112-status-v1"></script>
+<script src="./teaching-balances.js?v=20261112-status-v1"></script>
 <script>
 "use strict";
 /* ===== store ===== */
@@ -1117,7 +1120,7 @@ const STU_STATUS={
   active:  {txt:'在读', cls:'st-active'},
   leave:   {txt:'请假', cls:'st-leave'},
   paused:  {txt:'停课', cls:'st-paused'},
-  finished:{txt:'结课', cls:'st-finished'}
+  finished:{txt:'已结课', cls:'st-finished'}
 };
 /* 联系电话脱敏：138****5678；位数不足按首3尾2遮中段 */
 function maskPhone(p){
@@ -2354,6 +2357,7 @@ function saveCourseAndShare(){
 function openStudentModal(id){
   closeAllModals();  // 先关掉所有弹窗
   const m=document.getElementById('studentModal');
+  document.getElementById('sStuStatus').disabled=!!id;
   if(id){
     const s=students.find(x=>x.id===id); editingStudentId=id;
     editingStudentBaseline=snapshotEditable(s);
@@ -2480,6 +2484,7 @@ function saveStudent(){
   if(editingStudentId){
     const s=students.find(x=>x.id===editingStudentId);
     if(!allowOverwrite('学员',editingStudentBaseline,s)) return;
+    data.stuStatus=s.stuStatus||'active';
     Object.assign(s,data);
   }else{
     data.id=uid();
@@ -3261,7 +3266,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-12-lesson-balance-v3';
+const APP_VERSION = '2026-11-12-student-status-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */
@@ -3298,8 +3303,8 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <script src="./teaching-core.js?v=20261112-1"></script>
-<script src="./teaching-sync.js?v=20261025-1"></script>
-<script src="./teaching-desktop.js?v=20261112-balance-v3"></script>
+<script src="./teaching-sync.js?v=20261112-status-v1"></script>
+<script src="./teaching-desktop.js?v=20261112-status-v1"></script>
 </body>
 </html>
 

@@ -1,4 +1,4 @@
-/* Read-only student package view; never writes accounts or starts synchronization. */
+/* Student package queries remain read-only; status changes use the existing student sync. */
 (function () {
   'use strict';
   let syncState = 'disconnected', verified = false, syncedAt = null;
@@ -7,12 +7,12 @@
   function readable() { return verified && ['saved', 'pending', 'syncing'].includes(syncState); }
   function balance(student) {
     if (!readable()) return { initialized: false, remaining: null, remainingText: labels[syncState] || '待同步', unavailable: true };
-    try { return window.TeachingLessonBalance.statement(student, courses, todayStr()); }
+    try { return { ...window.TeachingLessonBalance.statement(student, courses, todayStr()), studentStatus: student.stuStatus || 'active' }; }
     catch (e) { return { initialized: false, remaining: null, remainingText: '课包数据待核验', unavailable: true }; }
   }
   function cell(b) {
     if (b.remaining == null) return '<span class="balance-unknown">' + esc(b.remainingText) + '</span>';
-    const low = b.remaining <= 2;
+    const low = (!b.studentStatus || b.studentStatus === 'active') && b.remaining <= 2;
     return '<b class="' + (low ? 'h-low' : 'h-ok') + '">' + b.remaining + '</b><small> 节</small>' + (low ? '<span class="h-tip">建议续费</span>' : '');
   }
   function overview() {
@@ -39,13 +39,16 @@
       const list = window.TeachingLessonBalance.studentCourses(s.id, courses, todayStr());
       body = '<button type="button" class="tbtn" id="balanceLessonFeedback">查看课后记录与分享</button>'
         + (list.length ? '<ol class="balance-ledger">' + list.map(c => '<li><div><b>' + esc(c.date) + '</b><span>' + esc(c.statusLabel) + '</span></div><p>' + esc(c.timeText + ' · ' + courseKindName(c) + ' · ' + c.classText) + '</p><small>' + (c.counted ? '计入课包扣减 1 节' : '不计入当前课包扣减') + '</small></li>').join('') + '</ol>' : '<div class="empty">暂无课程记录</div>');
+    } else if (tab === 'history') {
+      body = window.TeachingStudentStatusView.historyHtml(s);
     } else {
       body = '<dl class="balance-profile">' + [['课程类型', s.level], ['状态', (STU_STATUS[s.stuStatus] || STU_STATUS.active).txt], ['联系电话', s.phone], ['老师', s.teacher], ['备注', s.note]].map(([k,v]) => '<div><dt>' + k + '</dt><dd>' + esc(v || '—') + '</dd></div>').join('') + '</dl>';
     }
     return '<aside class="balance-detail" aria-label="学员详情"><header><span class="page-kicker">STUDENT PROFILE</span><h3>' + esc(s.name) + '</h3><span>' + esc(s.level || '吉他学员') + '</span></header>'
+      + window.TeachingStudentStatusView.summary(s, syncState)
       + '<div class="balance-hero"><span>剩余课时</span><div>' + cell(b) + '</div><small>课包查询 · 充值与调整请在教师小天地操作</small></div>'
-      + '<div class="balance-tabs" role="tablist" aria-label="学员详情分类">' + [['ledger','课时流水'],['courses','课程记录'],['profile','基本资料']].map(([key,label]) => '<button type="button" role="tab" data-balance-tab="' + key + '" aria-selected="' + (tab === key) + '">' + label + '</button>').join('') + '</div>'
-      + '<div class="balance-body" role="tabpanel" aria-label="' + ({ledger:'课时流水',courses:'课程记录',profile:'基本资料'})[tab] + '">' + body + '</div></aside>';
+      + '<div class="balance-tabs" role="tablist" aria-label="学员详情分类">' + [['ledger','课时流水'],['courses','课程记录'],['profile','基本资料'],['history','状态历史']].map(([key,label]) => '<button type="button" role="tab" data-balance-tab="' + key + '" aria-selected="' + (tab === key) + '">' + label + '</button>').join('') + '</div>'
+      + '<div class="balance-body" role="tabpanel" aria-label="' + ({ledger:'课时流水',courses:'课程记录',profile:'基本资料',history:'状态历史'})[tab] + '">' + body + '</div></aside>';
   }
   function bind(resetScroll) {
     const host = document.getElementById('balanceDetail');
@@ -63,6 +66,8 @@
       el.onclick = () => { tab = el.dataset.balanceTab; bind(true); };
       if (el.dataset.balanceTab === focusedTab) el.focus({preventScroll:true});
     });
+    const picker = host.querySelector('[data-student-status]');
+    if (picker) picker.onchange = () => { const to = picker.value; picker.value = students.find(s => s.id === selectedId)?.stuStatus || 'active'; window.TeachingStudentStatusView.open(selectedId, to); };
     const feedback = document.getElementById('balanceLessonFeedback');
     if (feedback) feedback.onclick = () => openStudentDetail(selectedId);
   }

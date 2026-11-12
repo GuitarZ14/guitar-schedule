@@ -338,3 +338,21 @@ button:disabled:hover{transform:none;box-shadow:none;}
 
 .balance-layout .stu-table th:nth-child(2),.balance-layout .stu-table td:nth-child(2){min-width:115px;}
 .balance-layout .stu-row.balance-selected td:first-child{background:var(--primary-soft);}
+
+/* Student status uses the existing workbench surfaces and controls. */
+.student-status{padding:16px 20px;border-bottom:1px solid var(--line);}
+.student-status>div,.status-picker{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.status-picker{margin-top:12px;font-size:12px;color:var(--text-2);}
+.status-picker select{width:140px;min-height:36px;padding:6px 10px;}
+.student-status p,.student-status small,.status-history-hint{font-size:12px;line-height:1.7;color:var(--muted);}
+.student-status p{margin:10px 0 4px;}
+.status-dialog{box-sizing:border-box;width:min(480px,calc(100% - 32px));max-height:90vh;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:24px;color:var(--text);background:var(--glass);}
+.status-dialog::backdrop{background:#202b2755;}
+.status-dialog h3{margin:0 0 18px;font-size:20px;}
+.status-dialog p{font-size:14px;line-height:1.7;overflow-wrap:anywhere;}
+.status-dialog label{display:block;margin-top:18px;font-size:14px;}
+.status-dialog textarea{box-sizing:border-box;display:block;width:100%;margin-top:8px;resize:vertical;}
+.status-dialog small{color:var(--muted);}
+.status-future{padding:12px;background:var(--primary-soft);border-radius:7px;}
+.status-error{color:var(--red);}
+.status-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
