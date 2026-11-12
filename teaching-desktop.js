@@ -5,7 +5,7 @@
   const CONNECTION = 'gb_teaching_connection';
   const DEFAULT_ENDPOINT = 'https://cloud1-d8g72uobwdbbdb2eb-1452920132.ap-shanghai.app.tcloudbase.com/teaching';
   const CACHE = 'gb_teaching_sync_v1';
-  let client = null, connection = null, timer = null, conflictOpen = false, lastState = 'disconnected';
+  let client = null, connection = null, timer = null, conflictOpen = false, lastState = 'disconnected', lastSavedAt = 0;
   const snapshot = () => ({ students, courses, extraIncome: loadExtraIncome() });
   const label = document.createElement('span');
   label.style.cssText = 'display:block;font-size:12px;line-height:1.5;margin:6px 0;';
@@ -19,9 +19,9 @@
   label.after(conflictButton);
 
   function status(text) { label.textContent = text; }
-  function balanceStatus(state) { lastState = state; window.dispatchEvent(new CustomEvent('teaching-sync-state', { detail: { state } })); }
-  async function request(input, config = connection) {
-    const response = await fetch(config.endpoint, { method: 'POST', headers: { Authorization: 'Bearer ' + config.token, 'Content-Type': 'application/json' }, body: JSON.stringify(input), cache: 'no-store' });
+  function balanceStatus(state) { lastState = state; if(state==='saved')lastSavedAt=Date.now(); window.dispatchEvent(new CustomEvent('teaching-sync-state', { detail: { state } })); }
+  async function request(input, config = connection, signal) {
+    const response = await fetch(config.endpoint, { method: 'POST', headers: { Authorization: 'Bearer ' + config.token, 'Content-Type': 'application/json' }, body: JSON.stringify(input), cache: 'no-store', signal });
     const result = await response.json();
     if (!response.ok || !result.ok) { const e = new Error(result.error || '同步服务请求失败'); e.code = result.code; throw e; }
     return result;
@@ -154,6 +154,29 @@
   window.TeachingDesktopPackages = {
     ready: () => !!connection && !!client && lastState === 'saved' && !client.dirty() && !client.conflicts() && !packageWriter.isBusy(),
     commit: input => packageWriter.commit(input),
+  };
+  window.TeachingDesktopHomework = {
+    ready: () => !!connection && !!client && lastState === 'saved' && Date.now()-lastSavedAt>=0 && Date.now()-lastSavedAt<=60000 && navigator.onLine!==false && !client.dirty() && !client.conflicts(),
+    async scope() {
+      if (!this.ready()) throw new Error('请先连接 GuitarBuddy 并完成同步');
+      const selected = connection;
+      const result = await request({ action: 'status' }, selected);
+      if (selected !== connection || !result.workspaceId || !result.authorized) throw new Error('教师连接已变化，请重新连接');
+      return result.workspaceId;
+    },
+    async request(input, expectedWorkspaceId) {
+      if (!this.ready()) throw new Error('请先连接 GuitarBuddy 并完成同步');
+      if (!input || !['teacherCoursePlan', 'teacherCoursePlans', 'teacherSheetCatalog', 'teacherPracticeState', 'teacherBindingInfo', 'saveMixedDraft', 'publishMixed', 'reviewMixed', 'assessMixed'].includes(input.action)) throw new Error('该作业操作暂未开放');
+      const selected=connection, controller=new AbortController(), timer=setTimeout(()=>controller.abort(),15000);
+      try {
+        const result=await request({ action: 'desktopHomework', request: input, ...(expectedWorkspaceId ? {expectedWorkspaceId} : {}) },selected,controller.signal);
+        if (selected!==connection) throw new Error('教师连接已变化，请重新核对结果');
+        return result;
+      } catch(error) {
+        if(error.name==='AbortError') throw new Error('请求超时');
+        throw error;
+      } finally { clearTimeout(timer); }
+    },
   };
   button.onclick = () => {
     const { d, close } = dialog('连接 GuitarBuddy 教师端');

@@ -586,7 +586,7 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261112-package-v1">
+<link rel="stylesheet" href="./workspace.css?v=20261112-insights-v1">
 </head>
 <body>
 <div id="toast"></div>
@@ -603,6 +603,9 @@
       </button>
       <button class="nav-item" data-tab="edit">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>学员管理
+      </button>
+      <button class="nav-item" data-tab="homework">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v5h4M9 12h7M9 16h7"/></svg>课程作业
       </button>
       <button class="nav-item" data-tab="stats">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-5 3 3 5-7"/></svg>月度统计
@@ -672,6 +675,7 @@
         <main>
           <section id="view-week" class="view" aria-label="课程表"></section>
           <section id="view-edit" class="view" hidden></section>
+          <section id="view-homework" class="view" hidden></section>
           <section id="view-stats" class="view" hidden></section>
           <section id="view-salary" class="view" hidden></section>
         </main>
@@ -931,7 +935,7 @@
 <script src="./teaching-lesson-balance.js?v=20261112-package-v1"></script>
 <script src="./teaching-student-status.js?v=20261112-status-v1"></script>
 <script src="./teaching-status-view.js?v=20261112-status-v1"></script>
-<script src="./teaching-balances.js?v=20261112-package-v1"></script>
+<script src="./teaching-balances.js?v=20261112-insights-v1"></script>
 <script>
 "use strict";
 /* ===== store ===== */
@@ -3101,17 +3105,19 @@ function populateFilter(){
   sel.innerHTML=html;
 }
 function switchTab(){
+  if(currentTab!=='homework' && window.TeachingHomeworkPage) window.TeachingHomeworkPage.leave();
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.tab===currentTab));
   document.querySelectorAll('.bottomnav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===currentTab));
   document.getElementById('view-week').hidden=currentTab!=='week';
   document.getElementById('view-edit').hidden=currentTab!=='edit';
+  document.getElementById('view-homework').hidden=currentTab!=='homework';
   document.getElementById('view-stats').hidden=currentTab!=='stats';
   document.getElementById('view-salary').hidden=currentTab!=='salary';
   // 顶栏控件仅在「课表」页显示；同步移动端标题
   const onWeek = currentTab==='week';
   const topCtrl=document.getElementById('topCtrl'); if(topCtrl) topCtrl.style.display = onWeek?'':'none';
   const topAdd=document.getElementById('topAdd'); if(topAdd) topAdd.style.display = onWeek?'inline-flex':'none';
-  const tt=document.getElementById('topTitle'); if(tt) tt.textContent = ({week:'课程安排',edit:'学员管理',stats:'月度统计',salary:'工资统计'})[currentTab]||'';
+  const tt=document.getElementById('topTitle'); if(tt) tt.textContent = ({week:'课程安排',edit:'学员管理',homework:'课程作业',stats:'月度统计',salary:'工资统计'})[currentTab]||'';
 }
 function renderWorkspaceSummary(){
   const el=document.getElementById('workspaceSummary');
@@ -3144,6 +3150,7 @@ function render(){
   renderToday(); renderHint();
   if(currentTab==='week'){ if(viewMode==='day') renderDay(); else if(viewMode==='month') renderMonth(); else renderWeek(); }
   else if(currentTab==='edit') renderEdit();
+  else if(currentTab==='homework') window.TeachingHomeworkPage.render(document.getElementById('view-homework'),courses,students);
   else if(currentTab==='salary') renderSalary();
   else renderStats();
 }
@@ -3297,7 +3304,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-12-sync-safety-v1';
+const APP_VERSION = '2026-11-12-insights-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */
@@ -3336,8 +3343,15 @@ if ('serviceWorker' in navigator) {
 <script src="./teaching-core.js?v=20261112-safety-v1"></script>
 <script src="./teaching-package-actions.js?v=20261112-package-v1"></script>
 <script src="./teaching-package-dialog.js?v=20261112-package-v1"></script>
-<script src="./teaching-sync.js?v=20261112-safety-v1"></script>
-<script src="./teaching-desktop.js?v=20261112-safety-v1"></script>
+<script src="./teaching-sync.js?v=20261112-history-v1"></script>
+<script src="./teaching-desktop.js?v=20261112-insights-v1"></script>
+<script src="./teaching-reminders.js?v=20261112-v1"></script>
+<script src="./teaching-student-insights.js?v=20261112-v1"></script>
+<script src="./teaching-student-detail.js?v=20261112-v1"></script>
+<script src="./teaching-homework-actions.js?v=20261112-v1"></script>
+<script src="./teaching-homework-model.js?v=20261112-v1"></script>
+<script src="./teaching-homework-editor.js?v=20261112-v1"></script>
+<script src="./teaching-homework.js?v=20261112-v2"></script>
 </body>
 </html>
 
