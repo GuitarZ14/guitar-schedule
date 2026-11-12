@@ -719,6 +719,7 @@
     <label id="fTrialRow" hidden><span class="lab">学员姓名</span>
       <input id="fTrialName" placeholder="输入体验课学员姓名（可不在在读名单）" maxlength="16" autocomplete="off">
     </label>
+    <label id="fInstrumentRow"><span class="lab">乐器</span><select id="fInstrument"><option value="guitar">木吉他</option><option value="electric">电吉他</option><option value="bass">电贝斯</option><option value="ukulele">尤克里里</option></select></label>
     <label><span class="lab">日期</span><input type="date" id="fDate"></label>
     <div class="twocol">
       <label><span class="lab">开始</span><input type="time" id="fStart"></label>
@@ -828,6 +829,7 @@
     <button type="button" class="modal-x" data-close="repeatModal" aria-label="关闭">×</button>
     <h3>重复排课</h3>
     <label><span class="lab">学员</span><select id="rStudent"></select></label>
+    <label><span class="lab">乐器</span><select id="rInstrument"><option value="guitar">木吉他</option><option value="electric">电吉他</option><option value="bass">电贝斯</option><option value="ukulele">尤克里里</option></select></label>
     <label><span class="lab">每周几（可多选）</span>
       <div class="wkcheck" id="rWeekdays">
         <label><input type="checkbox" value="0">周一</label>
@@ -1275,7 +1277,7 @@ function renderWeek(){
     const isToday=ds===today;
     const list=courses.filter(c=>c.date===ds && c.status!=='cancelled' && (!filterStudent||c.studentId===filterStudent)).sort((a,b)=>a.start.localeCompare(b.start));
     const dhAdd = '<button class="dhead-add" data-addday="'+ds+'" title="新增课程">+</button>';
-    const dhCopy = list.length ? '<button class="dhead-copy" data-copyday="'+ds+'" title="只复制学员和上课时间到下周">复制排课</button>' : '';
+    const dhCopy = list.length ? '<button class="dhead-copy" data-copyday="'+ds+'" title="只复制学员、乐器和上课时间到下周">复制排课</button>' : '';
     html+='<div class="daycol'+(isToday?' today':'')+'" data-date="'+ds+'"><div class="dh">'+dhAdd+'<div class="dh-date"><b>'+day.getDate()+'</b>周'+WEEKDAYS[i]+'</div>'+dhCopy+'</div>';
     if(!list.length){ html+='<div class="none">暂无课程</div>'; }
     list.forEach(c=>{ html+=courseCardHTML(c); });
@@ -2184,7 +2186,7 @@ function fillStudentSelect(selId){
 /* ===== 课程类型：常规课（默认）| 体验课 | 网课 | 上门教学 =====
    常规课 → 学员下拉，只能选在读名单，校验逻辑与原来完全一致（未做任何放宽）
    体验课 → 切换为「学员姓名」文本框，允许输入不在名单中的名字，不做名单校验；
-   网课 / 上门教学 → 选择已有学员，但不计入统计课时、工资课时或课包扣减。 */
+   网课 / 上门教学 → 选择已有学员，已上时扣学员课包，但不计入教师工资或月度教师课时。 */
 let courseFormType='regular';
 function setCourseType(t){
   courseFormType = ['regular','trial','online','home'].includes(t) ? t : 'regular';
@@ -2194,8 +2196,9 @@ function setCourseType(t){
   const triRow=document.getElementById('fTrialRow');
   if(regRow) regRow.hidden = courseFormType==='trial';
   if(triRow) triRow.hidden = courseFormType!=='trial';
+  document.getElementById("fInstrumentRow").hidden = courseFormType==="trial";
   const hint=document.getElementById('courseTypeHint');
-  if(hint) hint.textContent = (courseFormType==='online'||courseFormType==='home') ? '仅记录课程安排，不计入总课时、工资课时或学员课包扣减。' : '';
+  if(hint) hint.textContent = (courseFormType==='online'||courseFormType==='home') ? '已上课会扣减学员课包，但不计入教师工资与月度教师课时。' : '';
 }
 function fillCourseFeedback(c){
   document.getElementById('fHomework').value=c.homework||'';
@@ -2218,8 +2221,10 @@ function openCourseModal(id){
     fillCourseFeedback(c);
     setRadio('fStatus', c.status);
     document.getElementById('courseDelete').style.display='';
+    document.getElementById('courseDelete').textContent='删除已禁用';
     document.getElementById('fTrialName').value=c.trialName||'';
     setCourseType(courseKind(c));
+    document.getElementById('fInstrument').value=c.instrument||'guitar';
   }else{
     editingCourseId=null; editingCourseBaseline=null;
     document.getElementById('courseModalTitle').textContent='新增课程';
@@ -2233,6 +2238,7 @@ function openCourseModal(id){
     document.getElementById('courseDelete').style.display='none';
     document.getElementById('fTrialName').value='';
     setCourseType('regular');   // 默认「常规课」，不改变原有使用习惯
+    document.getElementById('fInstrument').value='guitar';
   }
   updateCourseDurDisplay();
   m.hidden=false;
@@ -2256,6 +2262,7 @@ function openCourseModalAsCopy(sourceId){
   document.getElementById('courseDelete').style.display='none';
   document.getElementById('fTrialName').value=src.trialName||'';
   setCourseType(courseKind(src));
+  document.getElementById('fInstrument').value=src.instrument||'guitar';
   updateCourseDurDisplay();
   document.getElementById('courseModal').hidden=false;
   document.getElementById('courseFormBody').scrollTop=0;
@@ -2289,7 +2296,7 @@ function copyDaySchedule(ds){
   list.forEach(c=>{
     const trial=isTrialCourse(c);
     if(findDuplicateCourse(c.studentId, target, c.start, c.end, null, trial?c.trialName:'') ){ skipped++; return; }
-    const copy={id:uid(),courseType:courseKind(c),date:target,start:c.start,end:c.end,status:'planned',lessonContent:'',homework:'',note:'',song:'',focus:''};
+    const copy={id:uid(),courseType:courseKind(c),instrument:c.instrument||'guitar',date:target,start:c.start,end:c.end,status:'planned',lessonContent:'',homework:'',note:'',song:'',focus:''};
     if(trial){ copy.isTrial=true; copy.trialName=c.trialName; }   // 体验课：整日复制时保留类型与姓名
     else{ copy.studentId=c.studentId; copy.courseCategory=courseKind(c); }
     courses.push(copy);
@@ -2322,6 +2329,7 @@ function saveCourse(){
     start:document.getElementById('fStart').value,
     end:document.getElementById('fEnd').value,
     lessonContent:document.getElementById('fLessonContent').value.trim(),
+    instrument:document.getElementById('fInstrument').value,
     note:document.getElementById('fNote').value.trim(),
     homework:document.getElementById('fHomework').value.trim(),
     status:getRadio('fStatus'),
@@ -2340,6 +2348,14 @@ function saveCourse(){
   if(editingCourseId){
     const c=courses.find(x=>x.id===editingCourseId);
     if(!allowOverwrite('课程',editingCourseBaseline,c)) return;
+    if(c.status!==data.status) {
+      // Keep status transitions auditable across desktop and mini-program.
+      data.attendanceUpdatedAt=new Date().toISOString();
+      data.attendanceHistory=(Array.isArray(c.attendanceHistory)?c.attendanceHistory:[]).slice(-19).concat([{
+        from:c.status,to:data.status,at:data.attendanceUpdatedAt,source:'desktop'
+      }]);
+      if(data.status!=='absent') data.leaveReason='';
+    }
     Object.assign(c,data);
     /* 类型可能被改过（常规 ↔ 体验），把另一套字段清干净，避免残留脏数据 */
     if(isTrial){ delete c.studentId; delete c.courseCategory; }
@@ -2373,6 +2389,7 @@ function openStudentModal(id){
     document.getElementById('sGift').value=g0>0?g0:'';
     const gn=document.getElementById('sGiftNone'); gn.checked=(g0===0); document.getElementById('sGift').disabled=gn.checked;
     document.getElementById('studentDelete').style.display='';
+    document.getElementById('studentDelete').textContent='删除已禁用';
   }else{
     editingStudentId=null; editingStudentBaseline=null;
     document.getElementById('studentModalTitle').textContent='新增学员';
@@ -2396,6 +2413,7 @@ function openRepeatModal(){
   document.querySelectorAll('#rWeekdays input').forEach(c=>c.checked=false);
   document.getElementById('rDayTimes').innerHTML='';
   document.getElementById('rSong').value='';
+  document.getElementById('rInstrument').value='guitar';
   document.getElementById('rFocus').value='';
   document.getElementById('rStartDate').value=todayStr();
   document.getElementById('rWeeks').value=8;
@@ -2453,6 +2471,7 @@ function generateRepeat(){
   const song=document.getElementById('rSong').value.trim();
   const focus=document.getElementById('rFocus').value.trim();
   const status=getRadio('rStatus');
+  const instrument=document.getElementById('rInstrument').value;
   let count=0, skipped=0;
   for(let d=0; d<weeks*7; d++){
     const date=addDays(from,d);
@@ -2462,7 +2481,7 @@ function generateRepeat(){
       const ds=ymd(date);
       // 重复录入校验：跳过已存在的同名学生+同时间课程
       if(findDuplicateCourse(studentId, ds, start, end, null)){ skipped++; continue; }
-      courses.push({id:uid(), studentId, date:ds, start, end, song, focus, note:'', status});
+      courses.push({id:uid(), studentId, date:ds, start, end, song, focus, note:'', status, instrument});
       count++;
     }
   }
@@ -2582,13 +2601,23 @@ function exportStuMonth(ym){
   download(ym+'-学员上课详情.csv', csv, 'text/csv');
   showToast('已导出 '+stuCount+' 名学员（'+recs.length+' 堂课）✓');
 }
+function protectConnectedTeachingBulk() {
+  // A bulk local edit becomes an automatic cloud push after teaching desktop is linked.
+  if(localStorage.getItem('gb_teaching_connection')) {
+    alert('已连接 GuitarBuddy：禁止覆盖式导入或清空教学数据。请先导出备份，进行逐条差异核对，不要使用整库恢复。');
+    return true;
+  }
+  return false;
+}
 function importJson(file){
+  if(protectConnectedTeachingBulk()) return;
   const r=new FileReader();
   r.onload=()=>{
     try{
       const d=JSON.parse(r.result);
       if(!d||!Array.isArray(d.courses)) throw 0;
       confirmDialog('导入将覆盖当前全部数据，确定继续？', ()=>{
+        if(protectConnectedTeachingBulk()) return;
         students=Array.isArray(d.students)?d.students:[];
         courses=d.courses;
         if(Array.isArray(d.extraIncome)) saveExtraIncome(d.extraIncome);
@@ -2601,7 +2630,9 @@ function importJson(file){
   r.readAsText(file);
 }
 function clearAll(){
+  if(protectConnectedTeachingBulk()) return;
   confirmDialog('将清空全部学员与课程数据，且无法恢复（请先导出备份）。确定清空？', ()=>{
+    if(protectConnectedTeachingBulk()) return;
     students=[]; courses=[]; saveExtraIncome([]); saveStudents(); saveCourses(); render();
   });
 }
@@ -3161,7 +3192,7 @@ function init(){
   document.getElementById('menuBtn').onclick=()=>{ document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebarBackdrop').classList.add('show'); };
   document.getElementById('sidebarBackdrop').onclick=closeSidebar;
   document.getElementById('btnExport').onclick=exportJson;
-  document.getElementById('btnImport').onclick=()=>document.getElementById('fileImport').click();
+  document.getElementById('btnImport').onclick=()=>{ if(!protectConnectedTeachingBulk()) document.getElementById('fileImport').click(); };
   document.getElementById('fileImport').onchange=e=>{ if(e.target.files[0]) importJson(e.target.files[0]); e.target.value=''; };
   document.getElementById('btnClear').onclick=clearAll;
   // 云端备份 / 恢复
@@ -3188,7 +3219,7 @@ function init(){
   document.getElementById('courseSave').onclick=saveCourse;
   document.getElementById('courseSaveShare').onclick=saveCourseAndShare;
   document.getElementById('courseCancel').onclick=closeCourseModal;
-  document.getElementById('courseDelete').onclick=()=>{ if(editingCourseId) confirmDialog('确定删除这条课程？',()=>{ courses=courses.filter(c=>c.id!==editingCourseId); saveCourses(); closeCourseModal(); render(); }); };
+  document.getElementById('courseDelete').onclick=()=>alert('已停止直接删除课程。关联的作业、验收及成长记录保留；未上课程可改为「取消」，已上课程请在教师小天地使用「仅隐藏周课表」。');
   /* 开始时间变动 → 自动按默认时长推算结束时间；同时监听 input，
      让在时间选择器里调数值时就实时跟着变，不必等失焦（详见 syncEndFromStart 注释）。 */
   document.getElementById('fStart').addEventListener('change', syncEndFromStart);
@@ -3235,7 +3266,7 @@ function init(){
   };
   // 勾选/取消每周几时，动态显示对应时段行
   document.querySelectorAll('#rWeekdays input').forEach(cb=>cb.onchange=syncDayTimes);
-  document.getElementById('studentDelete').onclick=()=>{ if(editingStudentId) confirmDialog('确定删除该学员？',()=>{ const id=editingStudentId; students=students.filter(s=>s.id!==id); courses=courses.filter(c=>c.studentId!==id); saveStudents(); saveCourses(); closeStudentModal(); render(); }); };
+  document.getElementById('studentDelete').onclick=()=>alert('已停止物理删除学员及其课程；请将学员调整为「停课」或「已结课」并保留课时、作业及成长档案。');
   // close modal on backdrop click (only for non-confirm modals)
   document.querySelectorAll('.modal').forEach(m=>{
     if(modalAllowsBackdropClose(m)) bindBackdropClose(m);
@@ -3266,7 +3297,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-12-package-v1';
+const APP_VERSION = '2026-11-12-sync-safety-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */
@@ -3302,11 +3333,11 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script src="./teaching-core.js?v=20261112-1"></script>
+<script src="./teaching-core.js?v=20261112-safety-v1"></script>
 <script src="./teaching-package-actions.js?v=20261112-package-v1"></script>
 <script src="./teaching-package-dialog.js?v=20261112-package-v1"></script>
-<script src="./teaching-sync.js?v=20261112-status-v1"></script>
-<script src="./teaching-desktop.js?v=20261112-package-v1"></script>
+<script src="./teaching-sync.js?v=20261112-safety-v1"></script>
+<script src="./teaching-desktop.js?v=20261112-safety-v1"></script>
 </body>
 </html>
 

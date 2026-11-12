@@ -36,7 +36,17 @@
     const api = {
       getData: () => core.clone(state.data),
       dirty: () => core.diff(state.base, state.data, state.versions).length > 0,
-      write(data) { state.data = core.normalize(data); persist(); emit(pendingConflict ? 'conflict' : 'pending', api.conflicts()); },
+      write(data) {
+        const next = core.normalize(data);
+        // Teaching records may own published homework and financial history in other collections.
+        // Do not allow legacy UI paths to stage a physical deletion for cloud sync.
+        for (const kind of ['students', 'courses']) {
+          const nextIds = new Set(next[kind].map(item => item.id));
+          if (state.data[kind].some(item => !nextIds.has(item.id)))
+            throw new Error('禁止直接删除学员或课程，请通过停课、结课、取消或隐藏保留历史');
+        }
+        state.data = next; persist(); emit(pendingConflict ? 'conflict' : 'pending', api.conflicts());
+      },
       conflicts: () => pendingConflict && core.clone(merge(state.base, state.data, pendingConflict.remote.data).conflicts),
       resolve(useLocal) {
         if (!pendingConflict) return;
@@ -75,6 +85,8 @@
             const localAtSend = core.clone(state.data);
             const sent = merged.data;
             const ops = core.diff(remote.data, sent, remote.versions);
+            if (ops.some(op => ['students','courses'].includes(op.kind) && op.data == null))
+              throw new Error('检测到待同步的物理删除记录，已阻止上传。请保留历史并从备份核对');
             const saved = ops.length ? valid(await options.request({ action: 'push', operations: ops })) : remote;
             if (ops.some(op => !core.same(op.data, saved.data[op.kind].find(x => x.id === op.id) || null))) throw new Error('云端返回结果未确认本次更改，本地修改已保留');
             // Only edits made while this request was running remain pending.

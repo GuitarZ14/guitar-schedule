@@ -47,6 +47,10 @@
     else render();
   }
   function toggleLegacy() {
+    for (const id of ['btnImport', 'btnClear']) {
+      const node = document.getElementById(id);
+      if (node) node.title = connection ? 'GuitarBuddy 已连接：整库覆盖已禁用，请使用逐条编辑或导出备份' : '';
+    }
     ['btnCloudBackup', 'btnCloudRestore', 'cloudStatus'].forEach(id => { const el = document.getElementById(id); if (el) el.hidden = !!connection; });
     const toggle = document.getElementById('remindToggle');
     if (connection && toggle) {
@@ -87,7 +91,11 @@
   function changed() {
     if (!client) { balanceStatus('disconnected'); return; }
     try { client.write(snapshot()); schedule(); }
-    catch (e) { status('本地已保存，但不能同步：' + e.message); balanceStatus('error'); }
+    catch (e) {
+      // Physical deletion is not a valid local draft: restore the last safe snapshot.
+      if (/禁止直接删除学员或课程/.test(e.message)) apply(client.getData());
+      status('本地修改未同步：' + e.message); balanceStatus('error');
+    }
   }
   function dialog(title) {
     const d = document.createElement('dialog');
