@@ -30,9 +30,16 @@
     const s = students.find(s => s.id === selectedId);
     if (!s) return '<aside class="balance-detail"><div class="empty">选择学员查看课包与记录</div></aside>';
     const b = balance(s);
+    const packageReady = !!(window.TeachingDesktopPackages && window.TeachingDesktopPackages.ready());
+    const packageHint = b.unavailable ? '课包状态尚未确认，暂不可操作' : packageReady ? '操作前核对余额，云端确认后才会显示成功' : '请先完成 GuitarBuddy 同步，再进行课包操作';
+    const packageActions = '<div class="package-quick-actions" aria-label="课包管理">' + (!b.initialized
+      ? '<button type="button" class="primary" data-package-action="init"' + (!packageReady || b.unavailable ? ' disabled' : '') + '>◇ 初始化课时</button>'
+      : '<button type="button" class="primary" data-package-action="recharge"' + (!packageReady || b.unavailable ? ' disabled' : '') + '>＋ 充值课时</button>'
+        + '<button type="button" data-package-action="adjustment"' + (!packageReady || b.unavailable ? ' disabled' : '') + '>⇄ 调整课时</button>')
+      + '</div><p class="package-quick-hint">' + esc(packageHint) + '</p>';
     let body = '';
     if (tab === 'ledger') {
-      body = b.unavailable || !b.initialized ? '<div class="empty">' + esc(b.remainingText) + (b.unavailable ? '，请检查教师端连接。' : '，请在教师小天地确认初始课时。') + '</div>'
+      body = b.unavailable || !b.initialized ? '<div class="empty">' + esc(b.remainingText) + (b.unavailable ? '，请检查教师端连接。' : '，点击上方「初始化课时」设置期初余额。') + '</div>'
         : '<div class="balance-breakdown"><span>11月1日期初 <b>' + b.openingText + '</b></span><span>充值 <b>+' + b.recharged + '</b></span><span>调整 <b>' + b.adjusted + '</b></span><span>已上扣课 <b>−' + b.deducted + '</b></span></div>'
           + '<ol class="balance-ledger">' + b.entries.map(e => '<li><div><b>' + esc(e.label) + '</b><strong class="' + (e.delta < 0 ? 'h-low' : 'h-ok') + '">' + (e.delta > 0 ? '+' : '') + e.delta + '</strong></div><time>' + esc(e.date) + '</time><p>' + esc(e.note) + '</p></li>').join('') + '</ol>';
     } else if (tab === 'courses') {
@@ -46,7 +53,8 @@
     }
     return '<aside class="balance-detail" aria-label="学员详情"><header><span class="page-kicker">STUDENT PROFILE</span><h3>' + esc(s.name) + '</h3><span>' + esc(s.level || '吉他学员') + '</span></header>'
       + window.TeachingStudentStatusView.summary(s, syncState)
-      + '<div class="balance-hero"><span>剩余课时</span><div>' + cell(b) + '</div><small>课包查询 · 充值与调整请在教师小天地操作</small></div>'
+      + '<div class="balance-hero"><span>剩余课时</span><div>' + cell(b) + '</div><small>与 GuitarBuddy 使用同一份课包流水；未确认同步时禁止修改。</small></div>'
+      + packageActions
       + '<div class="balance-tabs" role="tablist" aria-label="学员详情分类">' + [['ledger','课时流水'],['courses','课程记录'],['profile','基本资料'],['history','状态历史']].map(([key,label]) => '<button type="button" role="tab" data-balance-tab="' + key + '" aria-selected="' + (tab === key) + '">' + label + '</button>').join('') + '</div>'
       + '<div class="balance-body" role="tabpanel" aria-label="' + ({ledger:'课时流水',courses:'课程记录',profile:'基本资料',history:'状态历史'})[tab] + '">' + body + '</div></aside>';
   }
@@ -68,6 +76,9 @@
     });
     const picker = host.querySelector('[data-student-status]');
     if (picker) picker.onchange = () => { const to = picker.value; picker.value = students.find(s => s.id === selectedId)?.stuStatus || 'active'; window.TeachingStudentStatusView.open(selectedId, to); };
+    host.querySelectorAll('[data-package-action]').forEach(button => {
+      button.onclick = () => { if (!button.disabled) window.TeachingPackageDialog.open(selectedId, button.dataset.packageAction); };
+    });
     const feedback = document.getElementById('balanceLessonFeedback');
     if (feedback) feedback.onclick = () => openStudentDetail(selectedId);
   }

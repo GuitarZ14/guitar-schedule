@@ -356,3 +356,32 @@ button:disabled:hover{transform:none;box-shadow:none;}
 .status-future{padding:12px;background:var(--primary-soft);border-radius:7px;}
 .status-error{color:var(--red);}
 .status-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
+
+/* GuitarBuddy synchronized package transactions: compact right-side actions and confirmation. */
+.package-quick-actions{display:flex;gap:8px;margin:-8px 20px 0;flex-wrap:wrap;}
+.package-quick-actions button{flex:1 1 115px;min-height:38px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:12px;font-weight:600;color:var(--text-2);cursor:pointer;}
+.package-quick-actions button.primary{color:white;background:var(--primary);border-color:var(--primary);}
+.package-quick-actions button:disabled{opacity:.45;cursor:not-allowed;}
+.package-quick-hint{color:var(--muted);font-size:11px;line-height:1.6;margin:9px 20px 15px;}
+.package-dialog{width:min(490px,calc(100vw - 30px));max-height:88vh;}
+.package-dialog-header{display:flex;gap:13px;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:14px;}
+.package-dialog-header h3{margin:0 0 5px;font-size:20px;}
+.package-dialog-header p{margin:0;color:var(--muted);font-size:12px;}
+.package-icon{display:flex;align-items:center;justify-content:center;background:var(--primary-soft);color:var(--primary-d);width:40px;height:40px;flex:0 0 40px;border-radius:50%;font-size:21px;}
+.package-form label{display:block;margin:16px 0 0;font-weight:600;color:var(--text-2);}
+.package-form input,.package-form textarea{display:block;width:100%;box-sizing:border-box;margin:8px 0 0;font-family:inherit;font-weight:400;font-size:15px;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--text);}
+.package-form input:focus,.package-form textarea:focus{outline:2px solid rgba(55,126,89,.22);border-color:var(--primary);}
+.package-hint{font-size:12px;line-height:1.65;color:var(--muted);padding:10px 12px;border-radius:8px;background:var(--primary-soft);}
+.package-preview h4,.package-result h4{font-size:18px;margin:16px 0;}
+.package-preview>p{font-size:13px;color:var(--text-2);margin:12px 0;}
+.package-comparison{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--primary-soft);border-radius:8px;padding:18px 14px;margin:15px 0;font-size:14px;}
+.package-comparison b{font-size:16px;color:var(--primary-d);}
+.package-error{margin:8px 0 0;min-height:18px;color:var(--red);font-size:12px;line-height:1.6;}
+.package-result{text-align:center;padding:12px 0 7px;}
+.package-result.good h4{color:var(--primary-d);}
+.package-result.pending h4{color:var(--red);}
+.package-result-icon{display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:white;width:46px;height:46px;border-radius:50%;font-size:24px;}
+.package-result small{display:block;color:var(--muted);font-size:12px;line-height:1.7;}
+.package-result p{font-size:14px;line-height:1.65;}
+.package-actions button:disabled{opacity:.55;cursor:not-allowed;}
+@media(max-width:900px){.package-quick-actions{margin:0 16px;}.package-quick-hint{margin:8px 16px 14px;}}
