@@ -586,7 +586,7 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261112-insights-v1">
+<link rel="stylesheet" href="./workspace.css?v=20261113-homework-index-v1">
 </head>
 <body>
 <div id="toast"></div>
@@ -3304,7 +3304,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-12-insights-v1';
+const APP_VERSION = '2026-11-13-homework-index-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */
@@ -3351,7 +3351,8 @@ if ('serviceWorker' in navigator) {
 <script src="./teaching-homework-actions.js?v=20261112-v1"></script>
 <script src="./teaching-homework-model.js?v=20261112-v1"></script>
 <script src="./teaching-homework-editor.js?v=20261112-v1"></script>
-<script src="./teaching-homework.js?v=20261112-v2"></script>
+<script src="./teaching-homework-index.js?v=20261113-v1"></script>
+<script src="./teaching-homework.js?v=20261113-v3"></script>
 </body>
 </html>
 
