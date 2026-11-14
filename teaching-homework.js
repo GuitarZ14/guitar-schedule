@@ -29,7 +29,7 @@
       const filtered=source.filter(c=>{
         const day=new Date((c.date||'')+'T00:00:00');
         const recent=Number.isFinite(day.getTime()) && Math.abs(day-today)<=30*86400000;
-        return c.status!=='absent' && (range==='all'||recent) && (!date||c.date===date) && (!query||[names.get(c.studentId),c.date].some(v=>String(v||'').toLowerCase().includes(query)));
+        return c.status!=='absent' && c.status!=='cancelled' && (range==='all'||recent) && (!date||c.date===date) && (!query||[names.get(c.studentId),c.date].some(v=>String(v||'').toLowerCase().includes(query)));
       });
       const size=10; coursePage=Math.min(coursePage,Math.max(0,Math.ceil(filtered.length/size)-1));
       root.querySelector('[data-course-page]').textContent='第 '+(coursePage+1)+' / '+Math.max(1,Math.ceil(filtered.length/size))+' 页 · '+filtered.length+' 节';
@@ -43,7 +43,10 @@
       if(!selected)return;
       const course={...selected,studentName:names.get(selected.studentId)||'学员待核对'};
       const matches=rows.filter(r=>r.course.id===course.id);
-      courseDetail.innerHTML='<div class="hw-course-heading"><div><h3>'+escape(course.studentName)+'</h3><p>'+escape(course.date)+' '+escape(course.start||'')+'</p></div><button type="button" class="primary" data-create>布置作业</button></div><h4>本课作业</h4><div data-course-assignments></div><div data-course-editor></div>';
+      const published=matches.filter(r=>r.assignment&&r.assignment.lifecycle==='published');
+      const tasks=published.flatMap(r=>r.tasks||[]),approved=tasks.filter(t=>t.status==='approved').length;
+      const summary=complete&&!errors?'<div class="hw-summary"><div><span>本课作业</span><strong>'+matches.filter(r=>r.assignment).length+' 份</strong></div><div><span>已通过</span><strong>'+approved+' / '+tasks.length+' 项</strong></div><div><span>尚未通过</span><strong>'+(tasks.length-approved)+' 项</strong></div></div>':'<p class="hw-summary-note">查询尚未完整，统计暂不可用</p>';
+      courseDetail.innerHTML='<div class="hw-course-heading"><div><h3>'+escape(course.studentName)+'</h3><p>'+escape(course.date)+' '+escape(course.start||'')+'</p></div><button type="button" class="primary" data-create>布置作业</button></div>'+summary+'<h4>本课作业</h4><div data-course-assignments></div><div data-course-editor></div>';
       const assignments=courseDetail.querySelector('[data-course-assignments]'), editor=courseDetail.querySelector('[data-course-editor]');
       assignments.innerHTML=matches.length?matches.map((r,i)=>{const passed=(r.tasks||[]).filter(t=>t.status==='approved').length;return '<div class="hw-assignment"><div><strong>'+escape(r.assignment?r.assignment.title:r.error)+'</strong><p>'+escape(r.assignment?stateLabel(r.assignment):'待核对')+(r.assignment&&r.assignment.lifecycle==='published'?' · 已通过 '+passed+' / '+r.tasks.length:'')+'</p></div>'+(r.assignment?'<button type="button" data-open="'+i+'">查看</button>':'')+'</div>';}).join(''):('<p>'+(!complete?'正在核对作业…':errors?'查询不完整，请刷新后核对。':'本课暂无作业')+'</p>');
       courseDetail.querySelector('[data-create]').onclick=()=>window.TeachingHomeworkEditor.openEditor(editor,course,null,refresh);
