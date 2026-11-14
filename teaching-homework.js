@@ -29,7 +29,7 @@
       const filtered=source.filter(c=>{
         const day=new Date((c.date||'')+'T00:00:00');
         const recent=Number.isFinite(day.getTime()) && Math.abs(day-today)<=30*86400000;
-        return (range==='all'||recent) && (!date||c.date===date) && (!query||[names.get(c.studentId),c.date].some(v=>String(v||'').toLowerCase().includes(query)));
+        return c.status!=='absent' && (range==='all'||recent) && (!date||c.date===date) && (!query||[names.get(c.studentId),c.date].some(v=>String(v||'').toLowerCase().includes(query)));
       });
       const size=10; coursePage=Math.min(coursePage,Math.max(0,Math.ceil(filtered.length/size)-1));
       root.querySelector('[data-course-page]').textContent='第 '+(coursePage+1)+' / '+Math.max(1,Math.ceil(filtered.length/size))+' 页 · '+filtered.length+' 节';

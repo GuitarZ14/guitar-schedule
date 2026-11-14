@@ -131,7 +131,7 @@ test('website scripts contain verified controls, cloud gating and bumped PWA cac
  assert(read('teaching-desktop.js').includes('lastState === \'saved\''));
  assert(read('index.html').includes('./teaching-package-actions.js?v=20261112-package-v1'));
  assert(read('service-worker.js').includes('./teaching-package-dialog.js?v=20261112-package-v1'));
- assert(read('service-worker.js').includes('guitar-wb-v64-course-homework-v1'));
+ assert(read('service-worker.js').includes('guitar-wb-v65-hide-absent-v1'));
 });
 
 test('a local edit during the confirmation pull is never overwritten by a stale ledger snapshot',async()=>{
