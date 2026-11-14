@@ -18,6 +18,10 @@
     try {
       const plan=await readPlan(course.id);
       if(plan && !Array.isArray(plan.assignments)) throw new Error('该课程为历史反馈，请先在小程序核对');
+      if(!assignmentId && plan && plan.assignments.length) {
+        if(await writer.pending(course.id)){root.innerHTML='<p>本课已有作业，请先核对待确认请求。</p><div data-pending class="hw-warning"></div>';await showPending(root,course.id,onChanged);return;}
+        throw new Error('本课已有作业，请刷新后查看或编辑，避免重复布置');
+      }
       const scope=await api.scope();
       let assignment=assignmentId && plan && plan.assignments.find(a=>a.id===assignmentId);
       if(assignmentId && (!assignment || assignment.lifecycle!=='draft')) throw new Error('该作业不是可编辑草稿，请刷新');
