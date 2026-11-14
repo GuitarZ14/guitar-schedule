@@ -12,6 +12,28 @@
     }).sort((a,b) => String(b.date || '').localeCompare(String(a.date || '')) ||
       String(b.start || '').localeCompare(String(a.start || '')) || String(a.id).localeCompare(String(b.id)));
   }
+  function quickCourses(courses, names, options) {
+    const {query='', date='', range='recent', today, rows=[], complete=false}=options;
+    const needle=query.trim().toLowerCase(), dayMs=86400000;
+    const base=new Date(today+'T00:00:00').getTime();
+    const assigned=new Set(rows.filter(r=>r.assignment).map(r=>r.course.id));
+    return courses.filter(c=>{
+      const time=new Date((c.date||'')+'T00:00:00').getTime(), offset=Math.round((time-base)/dayMs);
+      const recent=Number.isFinite(offset) && offset>=-14 && offset<=14 && (c.status==='done'||c.status==='planned');
+      return c.status!=='absent' && c.status!=='cancelled' && (range==='all'||needle||date||recent) &&
+        (!date||c.date===date) && (!needle||[names.get(c.studentId),c.date].some(v=>String(v||'').toLowerCase().includes(needle)));
+    }).sort((a,b)=>{
+      const rank=c=>{
+        const offset=Math.round((new Date((c.date||'')+'T00:00:00').getTime()-base)/dayMs);
+        if(c.status==='done' && offset>=-14 && offset<=0) return complete?(assigned.has(c.id)?1:0):0;
+        if(c.status==='planned' && offset>=0 && offset<=14) return 2;
+        return 3;
+      };
+      const ar=rank(a),br=rank(b);if(ar!==br)return ar-br;
+      if(ar===2)return String(a.date||'').localeCompare(String(b.date||'')) || String(a.start||'').localeCompare(String(b.start||''));
+      return String(b.date||'').localeCompare(String(a.date||'')) || String(b.start||'').localeCompare(String(a.start||''));
+    });
+  }
   function extract(items, response) {
     if (!response || !Array.isArray(response.courses) || response.courses.length !== items.length)
       throw new Error('课程作业批量响应不完整');
@@ -72,5 +94,5 @@
     await Promise.all(Array.from({length:Math.min(2,batches.length)},()=>worker()));
     return {rows:indexed.flat().filter(Boolean),checked,total:source.length,errors};
   }
-  return {eligible,extract,scan,BATCH_SIZE};
+  return {eligible,quickCourses,extract,scan,BATCH_SIZE};
 }));
