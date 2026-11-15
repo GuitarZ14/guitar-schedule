@@ -34,6 +34,12 @@
       return String(b.date||'').localeCompare(String(a.date||'')) || String(b.start||'').localeCompare(String(a.start||''));
     });
   }
+  function reviewProgress(row) {
+    if(!row || !row.assignment || row.assignment.lifecycle!=='published' || !Array.isArray(row.tasks) || !row.tasks.length || row.tasks.some(t=>!t || !['approved','revision_requested','not_started','pending'].includes(t.status))) return {key:'unknown',label:'待核对'};
+    const total=row.tasks.length, approved=row.tasks.filter(t=>t.status==='approved').length;
+    const key=approved===total?'complete':approved>0?'partial':row.tasks.some(t=>t.status==='revision_requested')?'revision':'pending';
+    return {key,label:{complete:'全部通过',partial:'部分通过',pending:'待验收',revision:'需加强'}[key],approved,total};
+  }
   function extract(items, response) {
     if (!response || !Array.isArray(response.courses) || response.courses.length !== items.length)
       throw new Error('课程作业批量响应不完整');
@@ -94,5 +100,5 @@
     await Promise.all(Array.from({length:Math.min(2,batches.length)},()=>worker()));
     return {rows:indexed.flat().filter(Boolean),checked,total:source.length,errors};
   }
-  return {eligible,quickCourses,extract,scan,BATCH_SIZE};
+  return {eligible,quickCourses,reviewProgress,extract,scan,BATCH_SIZE};
 }));
