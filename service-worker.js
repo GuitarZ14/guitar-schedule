@@ -3,7 +3,7 @@
  *       JSONBin 备份接口始终走网络（不缓存，避免脏数据）。
  * 更新：改 CACHE 版本号即可让旧缓存失效。
  */
-const CACHE = 'guitar-wb-v70-review-progress-v1';
+const CACHE = 'guitar-wb-v71-teacher-parity-v1';
 
 // 应用外壳（缓存这些即可离线运行；任意文件缺失也不阻断安装）
 const SHELL = [
@@ -17,16 +17,16 @@ const SHELL = [
   './teaching-package-actions.js?v=20261112-package-v1',
   './teaching-package-dialog.js?v=20261112-package-v1',
   './teaching-sync.js?v=20261112-history-v1',
-  './teaching-desktop.js?v=20261112-insights-v1',
+  './teaching-desktop.js?v=20261115-parity-v1',
   './teaching-reminders.js?v=20261112-v1',
   './teaching-student-insights.js?v=20261112-v1',
   './teaching-student-detail.js?v=20261112-v1',
-  './teaching-homework-actions.js?v=20261112-v1',
+  './teaching-homework-actions.js?v=20261115-parity-v1',
   './teaching-homework-model.js?v=20261112-v1',
-  './teaching-homework-editor.js?v=20261115-self-v1',
+  './teaching-homework-editor.js?v=20261115-parity-v1',
    './teaching-homework-index.js?v=20261115-progress-v1',
-  './teaching-homework.js?v=20261115-progress-v1',
-   './workspace.css?v=20261115-progress-v1',
+  './teaching-homework.js?v=20261115-parity-v1',
+   './workspace.css?v=20261115-parity-v1',
   './manifest.webmanifest',
   './icon.svg',
   './icons/icon-16.png',

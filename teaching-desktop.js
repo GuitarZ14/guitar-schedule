@@ -166,7 +166,7 @@
     },
     async request(input, expectedWorkspaceId) {
       if (!this.ready()) throw new Error('请先连接 GuitarBuddy 并完成同步');
-      if (!input || !['teacherCoursePlan', 'teacherCoursePlans', 'teacherSheetCatalog', 'teacherPracticeState', 'teacherBindingInfo', 'saveMixedDraft', 'publishMixed', 'reviewMixed', 'assessMixed'].includes(input.action)) throw new Error('该作业操作暂未开放');
+      if (!input || !['teacherCoursePlan', 'teacherCoursePlans', 'teacherSheetCatalog', 'teacherPracticeState', 'teacherBindingInfo', 'saveMixedDraft', 'publishMixed', 'reviewMixed', 'assessMixed', 'renameMixed', 'editMixedTask', 'revokeMixed', 'updateMixedAssessment', 'deleteMixedAssessment'].includes(input.action)) throw new Error('该作业操作暂未开放');
       const selected=connection, controller=new AbortController(), timer=setTimeout(()=>controller.abort(),15000);
       try {
         const result=await request({ action: 'desktopHomework', request: input, ...(expectedWorkspaceId ? {expectedWorkspaceId} : {}) },selected,controller.signal);
