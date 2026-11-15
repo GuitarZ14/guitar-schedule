@@ -3,7 +3,7 @@
   else root.TeachingHomeworkActions = factory();
 }(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
-  const accepted = new Set(['saveMixedDraft', 'publishMixed', 'reviewMixed', 'assessMixed']);
+  const accepted = new Set(['saveMixedDraft', 'publishMixed', 'reviewMixed', 'assessMixed', 'renameMixed', 'editMixedTask', 'revokeMixed', 'updateMixedAssessment', 'deleteMixedAssessment']);
   const rejected = new Set(['INVALID','FORBIDDEN','UNAUTHORIZED','NOT_FOUND','CONFLICT','CAPACITY','DATA_INVALID','RATE_LIMITED']);
   function create(options) {
     let busy = false;

@@ -13,13 +13,13 @@
     const own=++generation;
     root.innerHTML='<div class="hw-toolbar"><nav class="hw-tabs" aria-label="作业视图"><button type="button" data-tab="courses" aria-pressed="true">按课程管理</button><button type="button" data-tab="all" aria-pressed="false">全部作业</button><button type="button" data-tab="anomalies" aria-pressed="false">异常记录</button></nav><div><input type="search" data-search placeholder="搜索学员、日期或作业" aria-label="搜索学员、日期或作业"><button type="button" data-refresh>刷新</button></div></div>'+
       '<div class="hw-status" data-status aria-live="polite">准备读取课程作业…</div><div data-course-view class="hw-course-layout"><section class="hw-course-panel"><div class="hw-course-heading"><h3>快速选课</h3><select data-range aria-label="课程范围"><option value="recent">近期课程</option><option value="all">全部课程</option></select></div><input type="search" data-course-search placeholder="搜索学员姓名或课程日期" aria-label="搜索学员姓名或课程日期"><label class="hw-date">课程日期 <input type="date" data-date></label><div data-courses class="hw-course-scroll"></div><div class="hw-pages"><span data-course-page></span></div></section><section class="hw-detail" data-course-detail>选择一节课程查看作业</section></div>'+
-      '<div data-all-view hidden><div class="hw-progress-filters" role="group" aria-label="筛选验收进度"><button type="button" data-progress-filter="all" aria-pressed="true">全部</button><button type="button" data-progress-filter="pending" aria-pressed="false">待验收</button><button type="button" data-progress-filter="revision" aria-pressed="false">需加强</button><button type="button" data-progress-filter="partial" aria-pressed="false">部分通过</button><button type="button" data-progress-filter="complete" aria-pressed="false">全部通过</button></div><div class="hw-layout"><div class="hw-list" role="status">正在读取作业…</div><aside class="hw-detail" data-all-detail>选择一条作业查看详情</aside></div><div class="hw-pages"><button type="button" data-prev>上一页</button><span data-page>第 1 页</span><button type="button" data-next>下一页</button></div></div><div class="hw-detail" data-anomalies hidden>异常记录请前往 GuitarBuddy 小程序的「教师小天地 → 异常记录」查看。</div>';
+      '<div data-all-view hidden><label class="hw-assignment-filter">作业状态 <select data-lifecycle-filter><option value="all">全部状态</option><option value="published">已发布</option><option value="draft">草稿</option><option value="withdrawn">已撤回</option><option value="history">历史或待核对</option></select></label><div class="hw-progress-filters" role="group" aria-label="筛选验收进度"><button type="button" data-progress-filter="all" aria-pressed="true">全部</button><button type="button" data-progress-filter="pending" aria-pressed="false">待验收</button><button type="button" data-progress-filter="revision" aria-pressed="false">需加强</button><button type="button" data-progress-filter="partial" aria-pressed="false">部分通过</button><button type="button" data-progress-filter="complete" aria-pressed="false">全部通过</button></div><div class="hw-layout"><div class="hw-list" role="status">正在读取作业…</div><aside class="hw-detail" data-all-detail>选择一条作业查看详情</aside></div><div class="hw-pages"><button type="button" data-prev>上一页</button><span data-page>第 1 页</span><button type="button" data-next>下一页</button></div></div><div class="hw-detail" data-anomalies hidden>异常记录请前往 GuitarBuddy 小程序的「教师小天地 → 异常记录」查看。</div>';
     const list=root.querySelector('.hw-list'),detail=root.querySelector('[data-all-detail]');
     const courseDetail=root.querySelector('[data-course-detail]');
     const status=root.querySelector('[data-status]'),search=root.querySelector('[data-search]');
     const prev=root.querySelector('[data-prev]'),next=root.querySelector('[data-next]');
     const showPage=root.querySelector('[data-page]');
-    let rows=[],checked=0,total=source.length,errors=0,complete=false,query='',progressFilter='all',courseQuery='',selected=null,tab='courses';
+    let rows=[],checked=0,total=source.length,errors=0,complete=false,query='',progressFilter='all',lifecycleFilter='all',courseQuery='',selected=null,tab='courses';
     const alive=()=>own===generation&&active&&!root.hidden;
     const refresh=()=>{active=false;render(root,allCourses,students);};
     root.querySelector('[data-refresh]').onclick=refresh;
@@ -48,13 +48,13 @@
       const published=matches.filter(r=>r.assignment&&r.assignment.lifecycle==='published');
       const tasks=published.flatMap(r=>r.tasks||[]),approved=tasks.filter(t=>t.status==='approved').length;
       const summary=!matches.some(r=>r.error)?'<div class="hw-summary"><div><span>本课作业</span><strong>'+matches.filter(r=>r.assignment).length+' 份</strong></div><div><span>已通过</span><strong>'+approved+' / '+tasks.length+' 项</strong></div><div><span>尚未通过</span><strong>'+(tasks.length-approved)+' 项</strong></div></div>':'<p class="hw-summary-note">查询尚未完整，统计暂不可用</p>';
-      courseDetail.innerHTML='<div class="hw-course-heading"><div><h3>'+escape(course.studentName)+'</h3><p>'+escape(course.date)+' '+escape(course.start||'')+'</p><p>课程内容：'+escape(course.lessonContent||'暂无课程内容')+'</p></div>'+(!matches.length?'<button type="button" class="primary" data-create>布置作业</button>':'')+'</div>'+summary+'<h4>本课作业</h4><div data-course-assignments></div><div data-course-editor></div>';
+      courseDetail.innerHTML='<div class="hw-course-heading"><div><h3>'+escape(course.studentName)+'</h3><p>'+escape(course.date)+' '+escape(course.start||'')+'</p><p>课程内容：'+escape(course.lessonContent||'暂无课程内容')+'</p></div>'+(!matches.some(r=>r.error)?'<button type="button" class="primary" data-create>'+(matches.some(r=>r.assignment)?'再布置一份':'布置作业')+'</button>':'')+'</div>'+summary+'<h4>本课作业</h4><div data-course-assignments></div><div data-course-editor></div>';
       const assignments=courseDetail.querySelector('[data-course-assignments]'), editor=courseDetail.querySelector('[data-course-editor]');
       assignments.innerHTML=matches.length?matches.map((r,i)=>{const passed=(r.tasks||[]).filter(t=>t.status==='approved').length;return '<div class="hw-assignment"><div><strong>'+escape(r.assignment?r.assignment.title:r.error)+'</strong><p>'+escape(r.assignment?stateLabel(r.assignment):'待核对')+(r.assignment&&r.assignment.lifecycle==='published'?' · 已通过 '+passed+' / '+r.tasks.length:'')+'</p></div>'+(r.assignment?'<button type="button" data-open="'+i+'">'+(r.assignment.lifecycle==='draft'?'编辑':'查看')+'</button>':'')+'</div>';}).join(''):'<p>本课暂无作业</p>';
       const create=courseDetail.querySelector('[data-create]');if(create)create.onclick=()=>window.TeachingHomeworkEditor.openEditor(editor,course,null,refresh);
       assignments.querySelectorAll('[data-open]').forEach(button=>button.onclick=async()=>{
         const row=matches[Number(button.dataset.open)],requestId=++detailGeneration;
-        const open=async()=>{try{editor.textContent='正在读取作业详情…';const response=await window.TeachingDesktopHomework.request({action:'teacherCoursePlan',courseId:course.id});if(!alive()||requestId!==detailGeneration)return;const plan=response.plan,assignment=plan&&Array.isArray(plan.assignments)&&plan.assignments.find(a=>a.id===row.assignment.id);if(!assignment)throw new Error('作业已变化，请刷新列表');if(assignment.lifecycle==='draft')await window.TeachingHomeworkEditor.openEditor(editor,course,assignment.id,refresh);else if(assignment.lifecycle==='published')await window.TeachingHomeworkEditor.showReview(editor,course,plan,assignment,open);else editor.textContent='该作业已撤回，请在小程序查看历史记录。';}catch(e){if(alive()&&requestId===detailGeneration)editor.textContent='读取失败：'+e.message;}};await open();
+        const open=async()=>{try{editor.textContent='正在读取作业详情…';const response=await window.TeachingDesktopHomework.request({action:'teacherCoursePlan',courseId:course.id});if(!alive()||requestId!==detailGeneration)return;const plan=response.plan,assignment=plan&&Array.isArray(plan.assignments)&&plan.assignments.find(a=>a.id===row.assignment.id);if(!assignment)throw new Error('作业已变化，请刷新列表');if(assignment.lifecycle==='draft')await window.TeachingHomeworkEditor.openEditor(editor,course,assignment.id,refresh);else if(assignment.lifecycle==='published')await window.TeachingHomeworkEditor.showReview(editor,course,plan,assignment,open);else window.TeachingHomeworkEditor.showWithdrawn(editor,course,plan,assignment);}catch(e){if(alive()&&requestId===detailGeneration)editor.textContent='读取失败：'+e.message;}};await open();
       });
     }
     root.querySelectorAll('[data-tab]').forEach(button=>button.onclick=()=>{tab=button.dataset.tab;root.querySelectorAll('[data-tab]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));root.querySelector('[data-course-view]').hidden=tab!=='courses';root.querySelector('[data-all-view]').hidden=tab!=='all';root.querySelector('[data-anomalies]').hidden=tab!=='anomalies';});
@@ -69,9 +69,10 @@
       return '<div class="hw-progress hw-progress-'+p.key+'"><div><span class="hw-progress-label">'+(p.key==='complete'?'✓ ':p.key==='partial'?'◐ ':'○ ')+p.label+'</span><span>'+p.approved+' / '+p.total+'</span></div><div class="hw-progress-track" aria-hidden="true"><i style="width:'+Math.round(p.approved/p.total*100)+'%"></i></div></div>';
     }
     root.querySelectorAll('[data-progress-filter]').forEach(button=>button.onclick=()=>{progressFilter=button.dataset.progressFilter;root.querySelectorAll('[data-progress-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));page=0;showRows();});
+    root.querySelector('[data-lifecycle-filter]').onchange=event=>{lifecycleFilter=event.target.value;page=0;showRows();};
     function showRows() {
       if(!alive())return;
-      const filtered=rows.filter(r=>(progressFilter==='all'||progressFor(r).key===progressFilter) && (!query ||
+      const filtered=rows.filter(r=>(lifecycleFilter==='all'||(lifecycleFilter==='history'?!r.assignment:r.assignment&&r.assignment.lifecycle===lifecycleFilter)) && (progressFilter==='all'||progressFor(r).key===progressFilter) && (!query ||
         [names.get(r.course.studentId),r.course.date,r.assignment&&r.assignment.title,r.error].some(v=>String(v||'').toLowerCase().includes(query))));
       page=Math.min(page,Math.max(0,Math.ceil(filtered.length/limit)-1));
       const sliced=filtered.slice(page*limit,(page+1)*limit);
@@ -81,7 +82,7 @@
         (errors?' · '+errors+' 批查询失败，结果不完整':'');
       status.classList.toggle('hw-status-warning',errors>0);
       if(!sliced.length) {
-        list.textContent=query||progressFilter!=='all'?'没有匹配的作业':!complete?'正在检查全部课程，请不要把当前空列表当作没有作业…':
+        list.textContent=query||progressFilter!=='all'||lifecycleFilter!=='all'?'没有匹配的作业':!complete?'正在检查全部课程，请不要把当前空列表当作没有作业…':
           errors?'部分课程未能读取，结果不完整，请稍后刷新。':
           '已检查全部 '+total+' 节课程，未找到与这些课程关联的作业；若小程序仍有作业，请核对完整作业索引。';
         return;
@@ -116,7 +117,7 @@
             const course={...row.course,studentName:names.get(row.course.studentId)||'学员待核对'};
             if(assignment.lifecycle==='draft')await window.TeachingHomeworkEditor.openEditor(detail,course,assignment.id,refresh);
             else if(assignment.lifecycle==='published')await window.TeachingHomeworkEditor.showReview(detail,course,plan,assignment,openDetail);
-            else detail.textContent='该作业已撤回，请在小程序查看历史记录。';
+            else window.TeachingHomeworkEditor.showWithdrawn(detail,course,plan,assignment);
           }catch(e){if(alive()&&requestId===detailGeneration)detail.textContent='读取失败：'+e.message;}
         };
         await openDetail();
