@@ -83,21 +83,39 @@
   }
   async function showReview(root,course,plan,assignment,onChanged) {
     const progress=plan.publishedProgress && plan.publishedProgress.assignments.find(a=>a.id===assignment.id),tasks=progress?progress.tasks:[];
-    root.innerHTML='<div class="hw-review-head"><div><h3>'+esc(assignment.title)+'</h3><p>'+esc(course.studentName)+' · '+esc(course.date)+' · 已发布</p></div><p data-practice>正在读取学员练习进度…</p></div><div data-pending class="hw-warning"></div><div class="hw-review-title"><h4>练习任务（'+tasks.length+' 项）</h4><label>筛选 <select data-task-filter aria-label="筛选练习任务"><option value="all">全部任务</option><option value="pending">待验收</option><option value="approved">已通过</option><option value="revision_requested">需加强</option></select></label></div><div class="hw-task-list">'+tasks.map((t,i)=>'<div class="hw-task-row" data-task-row="'+i+'"><div><strong>'+esc(t.contentText||('任务 '+(i+1)))+'</strong><small data-practice-task="'+i+'"></small>'+(t.acceptanceCriteria?'<p>验收标准：'+esc(t.acceptanceCriteria)+'</p>':'')+'</div><span class="hw-task-status">'+esc(t.status==='approved'?'已通过':t.status==='revision_requested'?'需加强':'待验收')+'</span><button type="button" data-task="'+i+'">'+(t.status==='approved'?'查看':'验收')+'</button></div>').join('')+'</div><div data-review></div><div class="hw-review-panels"><section><h4>综合评价（学员可见）</h4><textarea name="overall" maxlength="300" placeholder="填写给学员的练习建议"></textarea><button type="button" class="primary" data-overall>提交综合评价</button></section><section><h4>验收历史</h4><ul>'+((plan.reviews||[]).filter(r=>r.assignmentId===assignment.id).map(r=>'<li><span>'+esc(r.result==='approved'?'通过':'需加强')+(r.revokedAt?'（已撤销）':'')+' '+esc(r.comment||'')+'</span></li>').join('')||'<li>暂无验收记录</li>')+'</ul></section></div><div role="status" data-message></div>';
+    root.innerHTML='<div class="hw-review-head"><div><h3>'+esc(assignment.title)+'</h3><p>'+esc(course.studentName)+' · '+esc(course.date)+' · 已发布</p></div><p data-practice>正在读取学员练习进度…</p></div><div data-pending class="hw-warning"></div><div class="hw-review-title"><h4>练习任务（'+tasks.length+' 项）</h4><label>筛选 <select data-task-filter aria-label="筛选练习任务"><option value="all">全部任务</option><option value="pending">待验收</option><option value="approved">已通过</option><option value="revision_requested">需加强</option></select></label></div><div class="hw-task-list">'+tasks.map((t,i)=>'<div class="hw-task-row" data-task-row="'+i+'"><div><strong>'+esc(t.contentText||('任务 '+(i+1)))+'</strong><div class="hw-self-practice" data-practice-task="'+i+'">正在读取学员自评…</div>'+(t.acceptanceCriteria?'<p>验收标准：'+esc(t.acceptanceCriteria)+'</p>':'')+'</div><span class="hw-task-status">'+esc(t.status==='approved'?'已通过':t.status==='revision_requested'?'需加强':'待验收')+'</span><button type="button" data-task="'+i+'">'+(t.status==='approved'?'查看':'验收')+'</button></div>').join('')+'</div><div data-review></div><div class="hw-review-panels"><section><h4>综合评价（学员可见）</h4><textarea name="overall" maxlength="300" placeholder="填写给学员的练习建议"></textarea><button type="button" class="primary" data-overall>提交综合评价</button></section><section><h4>验收历史</h4><ul>'+((plan.reviews||[]).filter(r=>r.assignmentId===assignment.id).map(r=>'<li><span>'+esc(r.result==='approved'?'通过':'需加强')+(r.revokedAt?'（已撤销）':'')+' '+esc(r.comment||'')+'</span></li>').join('')||'<li>暂无验收记录</li>')+'</ul></section></div><div role="status" data-message></div>';
     root.querySelector('[data-task-filter]').onchange=event=>{const filter=event.target.value;root.querySelectorAll('[data-task-row]').forEach(row=>{const task=tasks[Number(row.dataset.taskRow)];row.hidden=filter!=='all' && (filter==='pending'?(task.status==='approved'||task.status==='revision_requested'):task.status!==filter);});};
     const message=root.querySelector('[data-message]');
     const assessmentList=(plan.assessments||[]).filter(item=>item.assignmentId===assignment.id && !item.deletedAt);
     if(assessmentList.length){const title=document.createElement('h4'),list=document.createElement('ul');title.textContent='综合评价历史';assessmentList.forEach(item=>{const li=document.createElement('li');li.textContent=item.comment||'';list.append(li);});message.before(title,list);}
     const refresh=()=>onChanged(course,assignment.id);
     const practiceSlot=root.querySelector('[data-practice]');
-    api.request({action:'teacherPracticeState',courseId:course.id,planId:plan.id}).then(data=>{
+    const readPractice=async()=>{
       if(!practiceSlot.isConnected)return;
-      if(data.planId!==plan.id||data.courseId!==course.id||data.revision!==plan.revision||!Array.isArray(data.marks)) throw new Error('版本已变化');
-      const marks=data.marks.filter(m=>m.assignmentId===assignment.id && tasks.some(t=>t.id===m.taskId && t.version===m.version));
-      if(marks.length!==tasks.length || new Set(marks.map(m=>m.taskId)).size!==tasks.length)throw new Error('练习状态不完整');
-      practiceSlot.textContent='学员练习进度：'+marks.filter(m=>m.checked).length+' / '+tasks.length;
-      tasks.forEach((task,i)=>{const mark=marks.find(m=>m.taskId===task.id && m.version===task.version),node=root.querySelector('[data-practice-task="'+i+'"]');if(node)node.textContent=mark && mark.checked?' · 已标记练习':' · 未标记练习';});
-    }).catch(()=>{if(practiceSlot.isConnected)practiceSlot.textContent='学员练习进度暂不可读取，请稍后重试';});
+      practiceSlot.textContent='正在读取学员自评…';
+      root.querySelectorAll('[data-practice-task]').forEach(node=>{node.className='hw-self-practice';node.textContent='正在读取学员自评…';});
+      try {
+        const data=await api.request({action:'teacherPracticeState',courseId:course.id,planId:plan.id});
+        if(!practiceSlot.isConnected)return;
+        if(data.planId!==plan.id||data.courseId!==course.id||data.revision!==plan.revision||!Array.isArray(data.marks)) throw new Error('版本已变化');
+        const marks=data.marks.filter(m=>m.assignmentId===assignment.id && tasks.some(t=>t.id===m.taskId && t.version===m.version));
+        if(marks.length!==tasks.length || new Set(marks.map(m=>m.taskId)).size!==tasks.length || marks.some(m=>typeof m.checked!=='boolean'))throw new Error('练习状态不完整');
+        practiceSlot.textContent='学员自评完成：'+marks.filter(m=>m.checked).length+' / '+tasks.length+' 项 · 教师验收另行记录';
+        tasks.forEach((task,i)=>{
+          const mark=marks.find(m=>m.taskId===task.id && m.version===task.version),node=root.querySelector('[data-practice-task="'+i+'"]');
+          if(!node)return;
+          node.classList.toggle('is-checked',mark.checked);
+          const when=mark.checked && Number.isFinite(mark.checkedAt) && mark.checkedAt>0?new Date(mark.checkedAt):null;
+          node.textContent=mark.checked?'学员已自评完成'+(when&&!Number.isNaN(when.getTime())?' · '+when.toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):''):'学员尚未标记练习';
+        });
+      } catch(_){
+        if(!practiceSlot.isConnected)return;
+        practiceSlot.textContent='学员自评暂时无法读取，不影响教师验收。 ';
+        root.querySelectorAll('[data-practice-task]').forEach(node=>{node.textContent='学员自评状态未知';});
+        const retry=document.createElement('button');retry.type='button';retry.textContent='重新读取';retry.onclick=readPractice;practiceSlot.append(retry);
+      }
+    };
+    readPractice();
     const submit=async payload=>{try{message.textContent='正在提交…';await writer.submit({...payload,courseId:course.id,assignmentId:assignment.id,expectedRevision:plan.revision});await refresh();}catch(e){message.textContent=e.message;await showPending(root,course.id,refresh).catch(()=>{});}};
     root.querySelector('[data-overall]').onclick=()=>{const comment=value(root,'overall').trim();if(!comment)return message.textContent='请填写综合评价';submit({action:'assessMixed',comment});};
     root.querySelectorAll('[data-task]').forEach(button=>button.onclick=()=>{
