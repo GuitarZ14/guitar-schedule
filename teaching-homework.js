@@ -13,13 +13,13 @@
     const own=++generation;
     root.innerHTML='<div class="hw-toolbar"><nav class="hw-tabs" aria-label="作业视图"><button type="button" data-tab="courses" aria-pressed="true">按课程管理</button><button type="button" data-tab="all" aria-pressed="false">全部作业</button><button type="button" data-tab="anomalies" aria-pressed="false">异常记录</button></nav><div><input type="search" data-search placeholder="搜索学员、日期或作业" aria-label="搜索学员、日期或作业"><button type="button" data-refresh>刷新</button></div></div>'+
       '<div class="hw-status" data-status aria-live="polite">准备读取课程作业…</div><div data-course-view class="hw-course-layout"><section class="hw-course-panel"><div class="hw-course-heading"><h3>快速选课</h3><select data-range aria-label="课程范围"><option value="recent">近期课程</option><option value="all">全部课程</option></select></div><input type="search" data-course-search placeholder="搜索学员姓名或课程日期" aria-label="搜索学员姓名或课程日期"><label class="hw-date">课程日期 <input type="date" data-date></label><div data-courses class="hw-course-scroll"></div><div class="hw-pages"><span data-course-page></span></div></section><section class="hw-detail" data-course-detail>选择一节课程查看作业</section></div>'+
-      '<div data-all-view hidden><div class="hw-layout"><div class="hw-list" role="status">正在读取作业…</div><aside class="hw-detail" data-all-detail>选择一条作业查看详情</aside></div><div class="hw-pages"><button type="button" data-prev>上一页</button><span data-page>第 1 页</span><button type="button" data-next>下一页</button></div></div><div class="hw-detail" data-anomalies hidden>异常记录请前往 GuitarBuddy 小程序的「教师小天地 → 异常记录」查看。</div>';
+      '<div data-all-view hidden><div class="hw-progress-filters" role="group" aria-label="筛选验收进度"><button type="button" data-progress-filter="all" aria-pressed="true">全部</button><button type="button" data-progress-filter="pending" aria-pressed="false">待验收</button><button type="button" data-progress-filter="revision" aria-pressed="false">需加强</button><button type="button" data-progress-filter="partial" aria-pressed="false">部分通过</button><button type="button" data-progress-filter="complete" aria-pressed="false">全部通过</button></div><div class="hw-layout"><div class="hw-list" role="status">正在读取作业…</div><aside class="hw-detail" data-all-detail>选择一条作业查看详情</aside></div><div class="hw-pages"><button type="button" data-prev>上一页</button><span data-page>第 1 页</span><button type="button" data-next>下一页</button></div></div><div class="hw-detail" data-anomalies hidden>异常记录请前往 GuitarBuddy 小程序的「教师小天地 → 异常记录」查看。</div>';
     const list=root.querySelector('.hw-list'),detail=root.querySelector('[data-all-detail]');
     const courseDetail=root.querySelector('[data-course-detail]');
     const status=root.querySelector('[data-status]'),search=root.querySelector('[data-search]');
     const prev=root.querySelector('[data-prev]'),next=root.querySelector('[data-next]');
     const showPage=root.querySelector('[data-page]');
-    let rows=[],checked=0,total=source.length,errors=0,complete=false,query='',courseQuery='',selected=null,tab='courses';
+    let rows=[],checked=0,total=source.length,errors=0,complete=false,query='',progressFilter='all',courseQuery='',selected=null,tab='courses';
     const alive=()=>own===generation&&active&&!root.hidden;
     const refresh=()=>{active=false;render(root,allCourses,students);};
     root.querySelector('[data-refresh]').onclick=refresh;
@@ -62,10 +62,17 @@
     root.querySelector('[data-date]').onchange=courseRows;
     root.querySelector('[data-course-search]').oninput=event=>{courseQuery=event.target.value.trim().toLowerCase();courseRows();};
     courseRows();
+    const progressFor=window.TeachingHomeworkIndex.reviewProgress;
+    function progressMarkup(row) {
+      const p=progressFor(row);
+      if(p.key==='unknown')return '<span class="hw-progress-unknown">'+(row.assignment && row.assignment.lifecycle!=='published'?'—':'待核对')+'</span>';
+      return '<div class="hw-progress hw-progress-'+p.key+'"><div><span class="hw-progress-label">'+(p.key==='complete'?'✓ ':p.key==='partial'?'◐ ':'○ ')+p.label+'</span><span>'+p.approved+' / '+p.total+'</span></div><div class="hw-progress-track" aria-hidden="true"><i style="width:'+Math.round(p.approved/p.total*100)+'%"></i></div></div>';
+    }
+    root.querySelectorAll('[data-progress-filter]').forEach(button=>button.onclick=()=>{progressFilter=button.dataset.progressFilter;root.querySelectorAll('[data-progress-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));page=0;showRows();});
     function showRows() {
       if(!alive())return;
-      const filtered=rows.filter(r=>!query ||
-        [names.get(r.course.studentId),r.course.date,r.assignment&&r.assignment.title,r.error].some(v=>String(v||'').toLowerCase().includes(query)));
+      const filtered=rows.filter(r=>(progressFilter==='all'||progressFor(r).key===progressFilter) && (!query ||
+        [names.get(r.course.studentId),r.course.date,r.assignment&&r.assignment.title,r.error].some(v=>String(v||'').toLowerCase().includes(query))));
       page=Math.min(page,Math.max(0,Math.ceil(filtered.length/limit)-1));
       const sliced=filtered.slice(page*limit,(page+1)*limit);
       prev.disabled=page===0;next.disabled=(page+1)*limit>=filtered.length;
@@ -74,12 +81,12 @@
         (errors?' · '+errors+' 批查询失败，结果不完整':'');
       status.classList.toggle('hw-status-warning',errors>0);
       if(!sliced.length) {
-        list.textContent=query?'没有匹配的作业':!complete?'正在检查全部课程，请不要把当前空列表当作没有作业…':
+        list.textContent=query||progressFilter!=='all'?'没有匹配的作业':!complete?'正在检查全部课程，请不要把当前空列表当作没有作业…':
           errors?'部分课程未能读取，结果不完整，请稍后刷新。':
           '已检查全部 '+total+' 节课程，未找到与这些课程关联的作业；若小程序仍有作业，请核对完整作业索引。';
         return;
       }
-      list.innerHTML='<table><thead><tr><th>学员</th><th>课程日期</th><th>课程作业</th><th>类型</th><th>已通过</th><th>待验收</th><th>状态</th><th>操作</th></tr></thead><tbody>'+
+      list.innerHTML='<table><thead><tr><th>学员</th><th>课程日期</th><th>课程作业</th><th>类型</th><th>验收进度</th><th>尚未通过</th><th>状态</th><th>操作</th></tr></thead><tbody>'+
         sliced.map((r,i)=>{
           const approved=r.tasks?r.tasks.filter(t=>t.status==='approved').length:0;
           const published=r.assignment&&r.assignment.lifecycle==='published';
@@ -87,8 +94,8 @@
             '<td>'+escape(r.course.date)+'</td>'+
             '<td>'+escape(r.assignment?r.assignment.title:r.error)+'</td>'+
             '<td>'+escape(r.assignment?({staged:'阶段作业',single:'单项任务',free:'自由练习'}[r.assignment.mode]||'作业'):'—')+'</td>'+
-            '<td>'+(published?approved+' / '+r.tasks.length:'—')+'</td>'+
-            '<td>'+(published?r.tasks.length-approved:'—')+'</td>'+
+            '<td>'+progressMarkup(r)+'</td>'+
+            '<td>'+(published&&progressFor(r).key!=='unknown'?r.tasks.length-approved:'—')+'</td>'+
             '<td>'+escape(r.assignment?stateLabel(r.assignment):'待核对')+'</td>'+
             '<td><button type="button" data-index="'+i+'" '+(!r.assignment?'disabled':'')+'>查看</button></td></tr>';
         }).join('')+'</tbody></table>';
@@ -104,8 +111,7 @@
             if(!assignment)throw new Error('作业已变化，请刷新列表');
             const progress=plan.publishedProgress&&Array.isArray(plan.publishedProgress.assignments)&&plan.publishedProgress.assignments.find(item=>item.id===assignment.id);
             if(assignment.lifecycle==='published'&&progress&&Array.isArray(progress.tasks)) {
-              const passed=progress.tasks.filter(task=>task.status==='approved').length,cells=button.closest('tr').cells;
-              if(cells){cells[4].textContent=passed+' / '+progress.tasks.length;cells[5].textContent=String(progress.tasks.length-passed);}
+              row.assignment=assignment;row.tasks=progress.tasks;showRows();
             }
             const course={...row.course,studentName:names.get(row.course.studentId)||'学员待核对'};
             if(assignment.lifecycle==='draft')await window.TeachingHomeworkEditor.openEditor(detail,course,assignment.id,refresh);
