@@ -1212,8 +1212,12 @@ function renderToday(){
     overdue.forEach(c=>html+=renderItem(c,true));
     html+='</details>';
   }
+  const clock=new Date().toTimeString().slice(0,5);
+  const pendingRecords=courses.filter(c=>c&&c.id&&c.status==='done'&&c.date===today&&c.end&&c.end<=clock&&(c.isTrial||students.some(s=>s.id===c.studentId))&&!String((c.lessonContentExplicit?c.lessonContent:c.lessonContent||c.content)||'').trim()).sort((a,b)=>b.end.localeCompare(a.end));
+  if(pendingRecords.length) html+='<details class="overdue-list"><summary>待填写课程记录（'+pendingRecords.length+'）</summary>'+pendingRecords.map(c=>'<div class="titem"><div class="when">'+esc(c.start)+' – '+esc(c.end)+'</div><div class="who"><b>'+esc(courseWho(c))+'</b><span>上课内容尚未填写</span></div><button type="button" data-record="'+esc(c.id)+'">填写记录</button></div>').join('')+'</details>';
   html+='</div>';
   el.innerHTML=html;
+  el.querySelectorAll('[data-record]').forEach(b=>b.onclick=()=>openCourseModal(b.dataset.record));
   // 完成
   el.querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>{
     const c=courses.find(x=>x.id===b.dataset.done); if(c){ c.status='done'; saveCourses(); render(); }
