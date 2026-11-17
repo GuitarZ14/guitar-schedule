@@ -182,5 +182,31 @@
     const overtime = Math.max(0, salaryCount - 66) * 90;
     return { rows: [...map.values()], minutes, hours: Number((minutes / 60).toFixed(2)), count, salaryCount, onlineCount, homeCount, trialCount, standardCount: 66, extra, base: 5500, overtime, salary: 5500 + overtime + extra };
   }
-  return { KINDS, STATUS, INSTRUMENTS, INSTRUMENT_NAMES, clone, same, key, empty, dateValid, dateString, addDays, monday, duration, validate, normalize, diff, merge, apply, name, content, isRegularCourse, usesStudentPackage, monthReport };
+  function utf8Bytes(str) {
+    if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(str).length;
+    if (typeof Buffer !== 'undefined' && typeof Buffer.byteLength === 'function') return Buffer.byteLength(str, 'utf8');
+    let bytes = 0;
+    for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); bytes += c < 0x80 ? 1 : c < 0x800 ? 2 : 3; }
+    return bytes;
+  }
+  // 容量可视性（只读指标，不提高上限、不裁切旧流水）：
+  // 工作区单文档字节上限 800000，课包手工流水单学员上限 120。
+  // workspaceBytes 为 data 的 UTF-8 字节近似（不含 versions/revision 元数据），用于趋势与告警。
+  function capacityReport(data) {
+    const snapshot = data || empty();
+    const workspaceBytes = utf8Bytes(JSON.stringify(snapshot));
+    const entryCounts = (snapshot.students || []).map(s => ((s.lessonAccount && s.lessonAccount.entries) || []).length);
+    const entriesTotal = entryCounts.reduce((n, x) => n + x, 0);
+    const maxStudentEntries = entryCounts.length ? Math.max.apply(null, entryCounts) : 0;
+    return {
+      workspaceBytes, workspaceMax: 800000,
+      workspacePercent: Math.round(workspaceBytes / 800000 * 1000) / 10,
+      entriesTotal, entriesMax: 120, maxStudentEntries,
+      nearWorkspace: workspaceBytes >= 800000 * 0.7,
+      overWorkspace: workspaceBytes > 800000,
+      nearEntries: maxStudentEntries >= 120 * 0.7,
+      overEntries: maxStudentEntries >= 120,
+    };
+  }
+  return { KINDS, STATUS, INSTRUMENTS, INSTRUMENT_NAMES, clone, same, key, empty, dateValid, dateString, addDays, monday, duration, validate, normalize, diff, merge, apply, name, content, isRegularCourse, usesStudentPackage, monthReport, capacityReport };
 }));

@@ -1743,6 +1743,15 @@ function renderStats(){
     html+='</tbody></table></div>';
   }
   html+='</section></div>';
+  const cap=((typeof window!=='undefined'&&window.TeachingCore&&window.TeachingCore.capacityReport)?window.TeachingCore.capacityReport({students,courses,extraIncome:loadExtraIncome()}):null);
+  if(cap){
+    const capDanger=cap.overWorkspace||cap.overEntries, capWarn=cap.nearWorkspace||cap.nearEntries;
+    html+='<section class="panel capacity-panel" aria-label="数据容量"><h2>数据容量</h2>'
+      +'<div class="capacity-row"><div class="capacity-label"><span>工作区用量</span><b>'+Math.round(cap.workspaceBytes/1024)+' / 781 KB</b></div><div class="capacity-track" aria-hidden="true"><i style="width:'+Math.min(100,cap.workspacePercent)+'%"></i></div><small>'+cap.workspacePercent+'%</small></div>'
+      +'<div class="capacity-row"><div class="capacity-label"><span>课包流水（单学员最多）</span><b>'+cap.maxStudentEntries+' / 120 条</b></div><small>全部学员共 '+cap.entriesTotal+' 条</small></div>'
+      +(capDanger||capWarn?'<p class="capacity-warn" role="status">'+(capDanger?'已接近或达到容量上限：':capWarn?'容量接近阈值（≥70%）：':'')+'请先导出 JSON/CSV 备份，避免新增记录被拒绝或无法保存。</p>':'')
+      +'</section>';
+  }
   const v=document.getElementById('view-stats'); v.innerHTML=html;
   document.getElementById('monthPick').onchange=e=>{ currentMonth=e.target.value||ymStr(new Date()); render(); };
   document.getElementById('expCsv').onclick=()=>exportCsv(ym,map,totalCount,totalMin);
