@@ -20,11 +20,33 @@
 
   function status(text) { label.textContent = text; }
   function balanceStatus(state) { lastState = state; if(state==='saved')lastSavedAt=Date.now(); window.dispatchEvent(new CustomEvent('teaching-sync-state', { detail: { state } })); }
+  // Ordinary schedule sync has no caller-supplied abort, so apply a bounded
+  // timeout here. A timeout is an *unknown result*, never a confirmed rejection:
+  // the local draft is kept and the next sync re-verifies (requestId idempotency
+  // plus expectedRevision concurrency guard prevent duplicate billing/scheduling).
+  const SYNC_TIMEOUT_MS = 30000;
   async function request(input, config = connection, signal) {
-    const response = await fetch(config.endpoint, { method: 'POST', headers: { Authorization: 'Bearer ' + config.token, 'Content-Type': 'application/json' }, body: JSON.stringify(input), cache: 'no-store', signal });
-    const result = await response.json();
-    if (!response.ok || !result.ok) { const e = new Error(result.error || '同步服务请求失败'); e.code = result.code; throw e; }
-    return result;
+    let controller = null, timer = null, effectiveSignal = signal;
+    if (!signal) {
+      controller = new AbortController();
+      timer = setTimeout(() => controller.abort(), SYNC_TIMEOUT_MS);
+      effectiveSignal = controller.signal;
+    }
+    try {
+      const response = await fetch(config.endpoint, { method: 'POST', headers: { Authorization: 'Bearer ' + config.token, 'Content-Type': 'application/json' }, body: JSON.stringify(input), cache: 'no-store', signal: effectiveSignal });
+      const result = await response.json();
+      if (!response.ok || !result.ok) { const e = new Error(result.error || '同步服务请求失败'); e.code = result.code; throw e; }
+      return result;
+    } catch (e) {
+      if (e && e.name === 'AbortError' && controller && !signal) {
+        const t = new Error('同步请求超时，结果未知，本地修改已保留；请检查网络后重试');
+        t.code = 'TIMEOUT';
+        throw t;
+      }
+      throw e;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
   }
   let composing = false, deferredRender = false;
   document.addEventListener('compositionstart', () => { composing = true; }, true);
