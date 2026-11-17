@@ -55,14 +55,14 @@
  function mountReminder(target,students,courses,syncState,today){
   reminderNode=target;
   const ready=!!api && api.ready() && syncState==='saved';
-  const key=JSON.stringify(courses.map(c=>[c.id,c.studentId,c.date,c.status,c.isTrial,c.hiddenFromTimetable]));
+  const key=JSON.stringify(courses.map(c=>[c.id,c.studentId,c.date,c.status,c.isTrial,c.hiddenFromSchedule]));
   if(key!==reminderKey){reminderKey=key;reminderEpoch++;reminderState=null;}
   let balances;
   try{balances=window.TeachingReminders.balances({fresh:ready,syncState,students,courses,today},window.TeachingLessonBalance.statement);}catch(_){balances={available:false};}
   if(!balances.available){target.textContent='提醒待同步：请连接 GuitarBuddy 并完成同步。';return;}
   const date=new Date(today+'T12:00:00');date.setDate(date.getDate()+6);
   const end=date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');
-  const upcoming=courses.filter(c=>c && c.date>=today && c.date<=end && c.status==='planned' && !c.hiddenFromTimetable).length;
+  const upcoming=courses.filter(c=>c && c.date>=today && c.date<=end && c.status==='planned' && !c.hiddenFromSchedule).length;
   const debt=balances.unknown.length?'待核对':balances.low.length,uninitialized=balances.unknown.length?'待核对':balances.uninitialized.length;
   const expired=reminderState && reminderState.checkedAt && Date.now()-reminderState.checkedAt>60000;
   const pending=expired?'待重新核对':reminderState && reminderState.pending!=null?reminderState.pending:'待读取';

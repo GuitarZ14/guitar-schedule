@@ -586,7 +586,7 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261115-parity-v1">
+<link rel="stylesheet" href="./workspace.css?v=20261117-schedule-v1">
 </head>
 <body>
 <div id="toast"></div>
@@ -746,6 +746,7 @@
     </div>
     <div class="sheet-actions course-actions">
       <button type="button" id="courseDelete" class="danger">删除</button>
+      <button type="button" id="courseScheduleVisibility" hidden>仅隐藏周课表</button>
       <span class="spacer"></span>
       <button type="button" id="courseSave">保存</button>
       <button type="button" id="courseSaveShare" class="primary">保存并生成分享图</button>
@@ -1279,7 +1280,7 @@ function renderWeek(){
     const day=addDays(mon,i);
     const ds=ymd(day);
     const isToday=ds===today;
-    const list=courses.filter(c=>c.date===ds && c.status!=='cancelled' && (!filterStudent||c.studentId===filterStudent)).sort((a,b)=>a.start.localeCompare(b.start));
+    const list=courses.filter(c=>c.date===ds && c.status!=='cancelled' && !c.hiddenFromSchedule && (!filterStudent||c.studentId===filterStudent)).sort((a,b)=>a.start.localeCompare(b.start));
     const dhAdd = '<button class="dhead-add" data-addday="'+ds+'" title="新增课程">+</button>';
     const dhCopy = list.length ? '<button class="dhead-copy" data-copyday="'+ds+'" title="只复制学员、乐器和上课时间到下周">复制排课</button>' : '';
     html+='<div class="daycol'+(isToday?' today':'')+'" data-date="'+ds+'"><div class="dh">'+dhAdd+'<div class="dh-date"><b>'+day.getDate()+'</b>周'+WEEKDAYS[i]+'</div>'+dhCopy+'</div>';
@@ -1287,7 +1288,8 @@ function renderWeek(){
     list.forEach(c=>{ html+=courseCardHTML(c); });
     html+='</div>';
   }
-  html+='</div></div>';
+  const hidden=courses.filter(c=>c.date>=weekStart && c.date<=ymd(sun) && c.status!=='cancelled' && c.hiddenFromSchedule && (!filterStudent||c.studentId===filterStudent));
+  html+='</div>'+(hidden.length?'<details class="schedule-hidden"><summary>已隐藏的周课表课程（'+hidden.length+'）</summary>'+hidden.map(c=>'<button type="button" data-open-hidden="'+esc(c.id)+'">'+esc(c.date+' '+c.start+' · '+courseWho(c))+' · 查看 / 恢复</button>').join('')+'</details>':'')+'</div>';
 
   const v=document.getElementById('view-week'); v.innerHTML=html;
   // 点击日期列空白区 → 记住该日期，新增课程时自动填入（表头与课程卡片不触发，避免误触）
@@ -1301,6 +1303,7 @@ function renderWeek(){
     };
   });
   v.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>openCourseModal(el.dataset.edit));
+  v.querySelectorAll('[data-open-hidden]').forEach(el=>el.onclick=()=>openCourseModal(el.dataset.openHidden));
   v.querySelectorAll('[data-addday]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); lastClickedDate=b.dataset.addday; openCourseModal(null); });
   v.querySelectorAll('[data-copyday]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); openCopyDayModal(b.dataset.copyday); });
   document.getElementById('addRepeat').onclick=openRepeatModal;
@@ -2235,6 +2238,7 @@ function openCourseModal(id){
     setRadio('fStatus', c.status);
     document.getElementById('courseDelete').style.display='';
     document.getElementById('courseDelete').textContent='删除已禁用';
+    const visibility=document.getElementById('courseScheduleVisibility');visibility.hidden=!['done','absent'].includes(c.status);visibility.textContent=c.hiddenFromSchedule?'恢复周课表显示':'仅隐藏周课表';
     document.getElementById('fTrialName').value=c.trialName||'';
     setCourseType(courseKind(c));
     document.getElementById('fInstrument').value=c.instrument||'guitar';
@@ -2249,6 +2253,7 @@ function openCourseModal(id){
     fillCourseFeedback({});
     setRadio('fStatus', 'planned');
     document.getElementById('courseDelete').style.display='none';
+    document.getElementById('courseScheduleVisibility').hidden=true;
     document.getElementById('fTrialName').value='';
     setCourseType('regular');   // 默认「常规课」，不改变原有使用习惯
     document.getElementById('fInstrument').value='guitar';
@@ -2273,6 +2278,7 @@ function openCourseModalAsCopy(sourceId){
   fillCourseFeedback(src);
   setRadio('fStatus', src.status);
   document.getElementById('courseDelete').style.display='none';
+  document.getElementById('courseScheduleVisibility').hidden=true;
   document.getElementById('fTrialName').value=src.trialName||'';
   setCourseType(courseKind(src));
   document.getElementById('fInstrument').value=src.instrument||'guitar';
@@ -3235,7 +3241,18 @@ function init(){
   document.getElementById('courseSave').onclick=saveCourse;
   document.getElementById('courseSaveShare').onclick=saveCourseAndShare;
   document.getElementById('courseCancel').onclick=closeCourseModal;
-  document.getElementById('courseDelete').onclick=()=>alert('已停止直接删除课程。关联的作业、验收及成长记录保留；未上课程可改为「取消」，已上课程请在教师小天地使用「仅隐藏周课表」。');
+  document.getElementById('courseScheduleVisibility').onclick=()=>{
+    const c=courses.find(x=>x.id===editingCourseId);
+    if(!c || !['done','absent'].includes(c.status)){alert('仅已上或请假课程支持隐藏，请刷新核对。');return;}
+    if(!editingCourseBaseline || !window.TeachingCore.same(c,editingCourseBaseline)){alert('课程已在其他设备发生变化，请保留表单内容并刷新核对。');return;}
+    if(localStorage.getItem('gb_teaching_connection') && (!window.TeachingDesktopHomework || !window.TeachingDesktopHomework.ready())){alert('请先完成教师端同步，再修改周课表显示。');return;}
+    const hide=!c.hiddenFromSchedule;
+    if(!confirm(hide?'仅隐藏这节课的周课表卡片？课程、作业、课时与验收记录均保留。':'恢复这节课在周课表的显示？'))return;
+    c.hiddenFromSchedule=hide;c.hiddenFromScheduleAt=new Date().toISOString();
+    editingCourseBaseline=snapshotEditable(c);saveCourses();render();
+    document.getElementById('courseScheduleVisibility').textContent=hide?'恢复周课表显示':'仅隐藏周课表';
+  };
+  document.getElementById('courseDelete').onclick=()=>alert('已停止直接删除课程。关联的作业、验收及成长记录保留；未上课程可改为「取消」，已上课程可使用「仅隐藏周课表」。');
   /* 开始时间变动 → 自动按默认时长推算结束时间；同时监听 input，
      让在时间选择器里调数值时就实时跟着变，不必等失焦（详见 syncEndFromStart 注释）。 */
   document.getElementById('fStart').addEventListener('change', syncEndFromStart);
@@ -3356,7 +3373,7 @@ if ('serviceWorker' in navigator) {
 <script src="./teaching-desktop.js?v=20261115-parity-v1"></script>
 <script src="./teaching-reminders.js?v=20261112-v1"></script>
 <script src="./teaching-student-insights.js?v=20261112-v1"></script>
-<script src="./teaching-student-detail.js?v=20261112-v1"></script>
+<script src="./teaching-student-detail.js?v=20261117-schedule-v1"></script>
 <script src="./teaching-homework-actions.js?v=20261115-parity-v1"></script>
 <script src="./teaching-homework-model.js?v=20261112-v1"></script>
 <script src="./teaching-homework-editor.js?v=20261115-parity-v1"></script>
