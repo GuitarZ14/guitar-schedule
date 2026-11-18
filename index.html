@@ -586,7 +586,7 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261117-schedule-v1">
+<link rel="stylesheet" href="./workspace.css?v=20261118-student-search-v1">
 </head>
 <body>
 <div id="toast"></div>
@@ -1402,16 +1402,6 @@ function renderEdit(){
     +'<button class="tbtn" id="expStuMonth" title="导出'+mLabel+'全部学员的已上日期（每堂课一行）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>导出'+mLabel+'上课详情</button>'
     +'<button class="primary" id="addStudent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>新增学员</button></div>';
 
-  /* 空数据状态（无任何学员） */
-  if(!students.length){
-    html+='<div class="empty">还没有学员，点上方「新增学员」添加。</div></div><div id="balanceDetail"></div></div>';
-    const v=document.getElementById('view-edit'); v.innerHTML=html;
-    document.getElementById('addStudent').onclick=()=>openStudentModal(null);
-    document.getElementById('expStuMonth').onclick=()=>exportStuMonth(ym);
-    window.TeachingBalanceView.bind();
-    return;
-  }
-
   /* 月份行：与月度统计页同款交互；选中历史/未来月份时出现「回本月」 */
   const isCurMonth=(ym===today.slice(0,7));
   html+='<div class="student-controls"><div class="weeknav stu-monthbar"><label class="range" for="stuMonthPick">月份</label>'
@@ -1421,7 +1411,7 @@ function renderEdit(){
 
   /* 工具栏：搜索 + 类型筛选 + 状态筛选 */
   html+='<div class="stu-toolbar">'
-    +'<input id="stuSearch" type="search" aria-label="搜索学员姓名" placeholder="搜索姓名" value="'+esc(stuSearch)+'">'
+    +'<label class="stu-search-label" for="stuSearch">搜索学员</label><input id="stuSearch" type="search" placeholder="输入姓名，实时筛选" value="'+esc(stuSearch)+'">'
     +'<select id="stuTypeFilter" aria-label="课程类型筛选"><option value="">全部类型</option>'
     +levels.map(l=>'<option value="'+esc(l)+'"'+(l===stuTypeFilter?' selected':'')+'>'+esc(l)+'</option>').join('')
     +'</select>'
@@ -1470,7 +1460,7 @@ function renderEdit(){
     +'</tr></thead><tbody>';
 
   if(!rows.length){
-    html+='<tr><td colspan="8" class="stu-nomatch">没有匹配的学员<button id="stuClearFilter" class="tbtn">清除搜索与筛选</button></td></tr>';
+    html+=students.length?'<tr><td colspan="8" class="stu-nomatch">没有匹配的学员<button id="stuClearFilter" class="tbtn">清除搜索与筛选</button></td></tr>':'<tr><td colspan="8" class="stu-nomatch">还没有学员，点上方「新增学员」添加。</td></tr>';
   }else{
     pageRows.forEach(r=>{
       const st=STU_STATUS[r.s.stuStatus]||STU_STATUS.active;

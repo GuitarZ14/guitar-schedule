@@ -212,7 +212,9 @@ button.primary{background:var(--primary);}
 .stu-monthbar .range,.report-controls .range{margin:0;font-size:12px;font-weight:400;color:var(--muted);}
 .stu-monthbar input[type=month],.report-controls input[type=month]{width:162px;padding:7px 10px;font-size:14px;min-height:36px;background:#fff;border-color:var(--glass-border);}
 .stu-toolbar{margin:0;flex:1;gap:8px;}
-.stu-toolbar input[type=search]{min-width:150px;padding:8px 12px;font-size:13px;min-height:36px;}
+.stu-search-label{align-self:center;white-space:nowrap;font-size:13px;font-weight:600;color:var(--text);}
+.stu-toolbar input[type=search]{min-width:180px;padding:8px 12px;font-size:14px;min-height:44px;background:#fff;border:1px solid #9aaca2;}
+.stu-toolbar input[type=search]:focus{outline:2px solid var(--primary);outline-offset:1px;}
 .stu-toolbar select{font-size:12px;padding:7px 9px;max-width:150px;min-height:36px;}
 .stu-table-wrap{border:0;border-radius:0;overflow-x:auto;}
 .stu-table{min-width:1040px;font-size:12px;}
