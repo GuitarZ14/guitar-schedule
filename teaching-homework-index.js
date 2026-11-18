@@ -84,14 +84,31 @@
       while(next<batches.length) {
         if (shouldContinue && !shouldContinue()) return;
         const index=next++, batch=batches[index];
-        try {
-          const response=await request({action:'teacherCoursePlans',courseIds:batch.map(c=>c.id)});
-          if (shouldContinue && !shouldContinue()) return;
-          indexed[index]=extract(batch,response);
-        } catch(error) {
-          indexed[index]=[{course:batch[0],error:'第 '+(index+1)+' 批读取失败：'+(error && error.message || '未知错误'),batchFailure:true}];
-          errors++;
+        // Retry only these read requests. Split slow batches within a fixed
+        // budget; never retry authorization/contract failures or any writes.
+        let recoveryBudget = 6;
+        async function readBatch(items) {
+          if (shouldContinue && !shouldContinue()) return [];
+          try {
+            const response=await request({action:'teacherCoursePlans',courseIds:items.map(c=>c.id)});
+            if (shouldContinue && !shouldContinue()) return [];
+            return extract(items,response);
+          } catch(error) {
+            if (shouldContinue && !shouldContinue()) return [];
+            const code=error && error.code || '';
+            const transient=['TIMEOUT','UNAVAILABLE'].includes(code) ||
+              (!code && /timeout|timed out|超时|Failed to fetch|NetworkError/i.test(error && error.message || ''));
+            if (transient && items.length>1 && recoveryBudget>=2) {
+              recoveryBudget-=2;
+              const middle=Math.ceil(items.length/2);
+              return (await readBatch(items.slice(0,middle))).concat(await readBatch(items.slice(middle)));
+            }
+            return [{course:items[0],error:'第 '+(index+1)+' 批读取失败'+(code?' ['+code+']':'')+'：'+
+              (error && error.message || '未知错误'),batchFailure:true}];
+          }
         }
+        indexed[index]=await readBatch(batch);
+        errors+=indexed[index].filter(row=>row.batchFailure).length;
         checked+=batch.length;
         if (onProgress) onProgress({checked,total:source.length,found:indexed.flat().filter(x=>x && x.assignment).length,errors,
           rows:indexed.flat().filter(Boolean)});

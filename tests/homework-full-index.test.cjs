@@ -71,6 +71,6 @@ test('page now scans all assignments and PWA assets have a fresh version',()=>{
  assert(html.includes('正在检查全部课程'));
  assert(html.includes('部分课程未能读取'));
  assert(!html.includes('courses.slice(page * 28'));
- assert(index.includes('./teaching-homework-index.js?v=20261115-progress-v1'));
- assert(cache.includes('guitar-wb-v73-record-todo-v1'));
+ assert(index.includes('./teaching-homework-index.js?v=20261118-batch-recovery-v1'));
+ assert(cache.includes('guitar-wb-v74-batch-recovery-v1'));
 });

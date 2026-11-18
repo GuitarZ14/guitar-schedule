@@ -187,6 +187,15 @@
       return result.workspaceId;
     },
     async request(input, expectedWorkspaceId) {
+      // A background pull temporarily reports syncing. Wait for that pull rather
+      // than rejecting queued read batches; keep the same connection and gates.
+      const beforeSync = connection;
+      if (input && input.action === 'teacherCoursePlans' && !this.ready() &&
+          client && connection && !client.dirty() && !client.conflicts() &&
+          (lastState === 'syncing' || lastState === 'saved')) {
+        await flush();
+        if (connection !== beforeSync) throw new Error('教师连接已变化，请重新核对结果');
+      }
       if (!this.ready()) throw new Error('请先连接 GuitarBuddy 并完成同步');
       if (!input || !['teacherCoursePlan', 'teacherCoursePlans', 'teacherSheetCatalog', 'teacherPracticeState', 'teacherBindingInfo', 'teacherKnowledgeCatalog', 'teacherSheetInteractiveEntry', 'saveMixedDraft', 'publishMixed', 'reviewMixed', 'assessMixed', 'renameMixed', 'editMixedTask', 'revokeMixed', 'updateMixedAssessment', 'deleteMixedAssessment', 'withdrawMixed', 'linkMixedKnowledge', 'saveLegacyCandidate', 'publishLegacyCandidate'].includes(input.action)) throw new Error('该作业操作暂未开放');
       const selected=connection, controller=new AbortController(), timer=setTimeout(()=>controller.abort(),15000);
@@ -195,7 +204,7 @@
         if (selected!==connection) throw new Error('教师连接已变化，请重新核对结果');
         return result;
       } catch(error) {
-        if(error.name==='AbortError') throw new Error('请求超时');
+        if(error.name==='AbortError') { const timeout = new Error('请求超时'); timeout.code = 'TIMEOUT'; throw timeout; }
         throw error;
       } finally { clearTimeout(timer); }
     },
