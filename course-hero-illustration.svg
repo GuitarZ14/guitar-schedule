@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 370 182" role="img" aria-label="吉他、盆栽和书">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff7e9"/><stop offset="1" stop-color="#f1ebdf"/></linearGradient><linearGradient id="wood" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fed58f"/><stop offset=".6" stop-color="#f1b453"/><stop offset="1" stop-color="#c8883c"/></linearGradient><linearGradient id="book" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d6b080"/><stop offset="1" stop-color="#b68c60"/></linearGradient></defs>
+<path d="M15 166c-7-18 25-64 53-64 24 0 30 23 53 15 28-10 29-52 69-52 30 0 27 29 58 27 31-2 31-45 69-41 19 2 32 29 42 53v67Z" fill="url(#bg)" opacity=".7"/>
+<ellipse cx="210" cy="168" rx="148" ry="9" fill="#dfd8c9" opacity=".53"/>
+<!-- books -->
+<g stroke="#ae7953" stroke-linejoin="round">
+<path d="M255 149h97l-7 17h-97z" fill="#75936c" stroke-width="2"/>
+<path d="M266 137h87l-3 14h-96z" fill="#f9edda" stroke-width="1.6"/>
+<path d="M253 137h99l-4 6h-98z" fill="#d3aa73" stroke-width="2"/>
+<path d="M273 119h76l7 18h-89z" fill="#d8a768" stroke-width="2"/>
+<path d="M277 123h75l3 10h-81z" fill="#fff3da" stroke-width="1"/>
+<path d="M264 101h85l-2 18h-85z" fill="url(#book)" stroke-width="2"/>
+<path d="M270 105h81l-3 10h-78z" fill="#fff5e1" stroke-width="1"/>
+<path d="M274 82h72l2 19h-85z" fill="#7b9a79" stroke-width="2"/>
+<path d="M280 87h67v8h-68z" fill="#fff4dc" stroke-width="1"/>
+</g>
+<g fill="none" stroke="#e4ceb3" stroke-width="1.2"><path d="M283 91h61M275 111h64M280 129h64M263 156h73"/></g>
+<!-- plant -->
+<g stroke-linecap="round" stroke-linejoin="round">
+<path d="M72 138c-9-20-8-40-9-63m10 63c5-19 15-30 28-48m-29 48c-13-18-27-26-39-34" stroke="#718f62" stroke-width="3" fill="none"/>
+<path d="M64 89c-19-6-20-28-10-34 16 4 20 18 10 34ZM74 103c4-23 22-28 28-19-3 17-14 23-28 19ZM51 122c-22 2-30-10-27-20 16-4 26 4 27 20ZM90 115c-1-17 13-28 26-24 1 16-10 25-26 24ZM70 80c-4-14 1-24 15-30 7 12 2 26-15 30Z" fill="#91ad7b" stroke="#77906b" stroke-width="1.5"/>
+<path d="M47 133h50l-7 32H56z" fill="#d8ae80" stroke="#b18a68" stroke-width="2"/>
+<path d="M45 131h54v7H45z" fill="#ead2af" stroke="#b18a68" stroke-width="1.5"/>
+<path d="M57 163h31" stroke="#9b7a60" stroke-width="1.5"/>
+</g>
+<!-- guitar neck behind body -->
+<g transform="rotate(22 220 110)" stroke-linejoin="round">
+<path d="M202 103 203 17c-7-18-3-30 7-30s14 12 9 30l4 86z" fill="#9b6539" stroke="#784b32" stroke-width="2"/>
+<path d="M206 102 207 18c-3-16-1-25 3-25 5 0 7 9 6 25l3 85z" fill="#a97949"/>
+<g fill="#c9aa77" stroke="#b58d5b" stroke-width=".5"><circle cx="199" cy="4" r="3"/><circle cx="220" cy="4" r="3"/><circle cx="198" cy="13" r="3"/><circle cx="222" cy="13" r="3"/><circle cx="199" cy="22" r="3"/><circle cx="221" cy="22" r="3"/></g>
+<g stroke="#d5c1a3" stroke-width="1.2"><path d="M205 29h15M205 38h16M205 47h16M205 56h16M205 65h16M205 74h16M205 83h17M205 92h17"/></g>
+<!-- guitar body -->
+<path d="M193 99c-8-14-34-22-52-9-18 13-20 31-7 45-17 21-8 44 9 50 21 8 42-6 47-18 8 11 30 21 47 12 25-12 31-40 15-57-10-12-14-15-12-31 1-17-22-21-34-8-5 5-9 11-13 16Z" fill="#ba7b36" stroke="#99642e" stroke-width="2"/>
+<path d="M188 93c-7-11-31-15-47-4-16 11-18 27-6 41-16 19-7 37 8 43 20 8 38-8 44-20 8 11 29 20 45 11 23-11 28-32 13-48-11-12-13-15-11-28 1-17-20-19-32-8-6 6-9 10-14 13Z" fill="url(#wood)" stroke="#d69a50" stroke-width="1.5"/>
+<ellipse cx="197" cy="112" rx="17" ry="18" fill="#9b6331" stroke="#dba363" stroke-width="4"/>
+<ellipse cx="197" cy="112" rx="12" ry="13" fill="#4d3528" stroke="#744b2e" stroke-width="1.5"/>
+<path d="M185 147h34v9h-34z" fill="#81522f" rx="2"/>
+<path d="M185 147h34" stroke="#e8ca91" stroke-width="2"/>
+<g stroke="#f4e4bd" stroke-width=".85"><path d="M206 7 188 153M208 7 194 153M210 7 200 153M212 7 206 153M214 7 212 153M216 7 218 153"/></g>
+<g fill="#f2e9d5"><circle cx="188" cy="152" r="1.5"/><circle cx="194" cy="152" r="1.5"/><circle cx="200" cy="152" r="1.5"/><circle cx="206" cy="152" r="1.5"/><circle cx="212" cy="152" r="1.5"/><circle cx="218" cy="152" r="1.5"/></g>
+</g>
+<path d="M346 64q4-6 8-7M118 70q-6-7-10-6" fill="none" stroke="#d3bc8f" stroke-width="2" stroke-linecap="round"/>
+</svg>

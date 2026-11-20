@@ -19,10 +19,39 @@
     return JSON.stringify({fields:ids.map(id=>byId(id)?.value||''),type:courseFormType,status:getRadio('fStatus')});
   };
   function hasUnsavedCourseChanges(){return openedSignature!==signature();}
+  function refreshOverview(){
+    const kind=typeof courseFormType==='string'?courseFormType:'regular';
+    const rawDate=byId('fDate')?.value||'',start=byId('fStart')?.value||'',end=byId('fEnd')?.value||'';
+    const name=kind==='trial'?(byId('fTrialName')?.value||'体验课学员'):
+      (byId('fStudent')?.selectedOptions?.[0]?.textContent||'未选择学员');
+    const status=getRadio('fStatus');
+    const statuses={planned:'待上课',done:'已上课',absent:'已请假',cancelled:'已取消'};
+    const type=kind==='trial'?'体验课':'常规课';
+    const method={regular:'线下授课',trial:'线下体验',online:'网课',home:'上门教学'}[kind]||'线下授课';
+    const [sh,sm]=(start||'0:0').split(':').map(Number),[eh,em]=(end||'0:0').split(':').map(Number);
+    const mins=start&&end?(eh*60+em)-(sh*60+sm):0;
+    const duration=mins>0?mins+' 分钟':'待填写';
+    const header=byId('courseWorkspaceContext');
+    let weekday='';
+    if(/^\d{4}-\d{2}-\d{2}$/.test(rawDate)){
+      const day=new Date(rawDate+'T00:00:00').getDay();
+      weekday='（周'+'日一二三四五六'[day]+'）';
+    }
+    if(header)header.textContent=(name||'未选择学员')+'  ·  '+(rawDate.replace(/-/g,'/')||'未定日期')+weekday+
+      '  ·  '+(start||'--:--')+' – '+(end||'--:--')+'（'+duration+'）  ·  '+method;
+    const values={cwOverviewStatus:statuses[status]||'待确认',cwOverviewType:type,cwOverviewMode:method,cwOverviewDuration:duration};
+    for(const [id,display] of Object.entries(values)){
+      const el=byId(id);if(el)el.textContent=display;
+    }
+    const switcher=byId('cwStatusDetail');
+    if(switcher)switcher.dataset.status=status;
+    const display=byId('courseDurDisplay');
+    if(display)display.textContent=duration;
+  }
   function context(){
     const c=courseFor(),target=byId('courseWorkspaceContext');
     if(!target)return;
-    target.textContent=c?courseName(c)+' · '+(c.date||'')+' · '+(c.start||'')+'–'+(c.end||'')+' · '+typeName(c):'先保存课程，再布置结构化作业';
+    refreshOverview();
     const sequence=c?courses.filter(x=>x.studentId&&x.studentId===c.studentId&&!(x.isTrial)).sort((a,b)=>
       String(a.date||'').localeCompare(String(b.date||''))||
       String(a.start||'').localeCompare(String(b.start||''))||
@@ -180,6 +209,16 @@
     document.querySelectorAll('[data-course-tab]').forEach(btn=>btn.addEventListener('click',()=>show(btn.dataset.courseTab)));
     byId('coursePrev')?.addEventListener('click',()=>navigate(-1));
     byId('courseNext')?.addEventListener('click',()=>navigate(1));
+    const modal=byId('courseModal');
+    if(modal){
+      const update=event=>{
+        if(event.target.closest('#courseInfoPanel'))refreshOverview();
+        if(event.target.matches('input[name="fStatus"]'))byId('cwStatusDetail').open=false;
+      };
+      modal.addEventListener('input',update);
+      modal.addEventListener('change',update);
+      byId('fCourseType')?.addEventListener('click',refreshOverview);
+    }
   }
   window.TeachingCourseWorkspace={init,open,close,show,hasUnsavedCourseChanges};
   init();

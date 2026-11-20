@@ -587,7 +587,7 @@
   }
 </style>
 <link rel="stylesheet" href="./workspace.css?v=20261118-student-search-v1">
-<link rel="stylesheet" href="./teaching-course-workspace.css?v=20261120-course-homework-v1">
+<link rel="stylesheet" href="./teaching-course-workspace.css?v=20261120-course-polish-v2">
 </head>
 <body>
 <div id="toast"></div>
@@ -707,53 +707,114 @@
   <div class="sheet course-workspace-sheet" role="dialog" aria-modal="true" aria-labelledby="courseModalTitle">
     <button type="button" class="modal-x" id="courseCancel" aria-label="关闭">×</button>
     <header class="course-workspace-head">
-      <div><h3 id="courseModalTitle">新增课程</h3><div class="course-workspace-context" id="courseWorkspaceContext"></div></div>
-      <div class="course-workspace-nav"><button type="button" id="coursePrev">上一节</button><button type="button" id="courseNext">下一节</button></div>
+      <div class="cw-hero-title-row">
+        <span class="cw-title-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none"><rect x="6" y="6" width="17" height="22" rx="2.5" stroke="currentColor" stroke-width="2.4"/><path d="M11 12h7M11 17h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M18 23 28 10l-4-3-10 13-.5 5z" fill="#79a784" stroke="currentColor" stroke-width="1.7"/></svg>
+        </span>
+        <h3 id="courseModalTitle">编辑课程</h3>
+      </div>
+      <div class="course-workspace-nav">
+        <button type="button" id="coursePrev"><span aria-hidden="true">‹</span> 上一节</button>
+        <button type="button" id="courseNext">下一节 <span aria-hidden="true">›</span></button>
+      </div>
+      <div class="cw-hero-context">
+        <span class="cw-cat-avatar" aria-hidden="true">
+          <svg viewBox="0 0 54 54" fill="none"><circle cx="27" cy="27" r="24" fill="#FFE5C1"/><path d="M11 22 13 10 22 16M43 22 41 10 32 16" fill="#F7A64D" stroke="#9B6634" stroke-width="1.8" stroke-linejoin="round"/><ellipse cx="27" cy="29" rx="19" ry="17" fill="#F6B45F" stroke="#9B6634" stroke-width="1.5"/><path d="M13 29c4-4 7-2 10 0M41 29c-4-4-7-2-10 0" stroke="#FFDB9A" stroke-width="5" stroke-linecap="round"/><ellipse cx="27" cy="34" rx="10" ry="7" fill="#FFF5E9"/><circle cx="20" cy="28" r="2" fill="#71452B"/><circle cx="34" cy="28" r="2" fill="#71452B"/><path d="m25 33 2 2 2-2M27 35v3m0 0-4 2m4-2 4 2" stroke="#71452B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 35 4 34M12 39 6 41M42 35l8-1M42 39l6 2" stroke="#9B6634" stroke-width="1.1"/></svg>
+        </span>
+        <span class="course-workspace-context" id="courseWorkspaceContext"></span>
+      </div>
+      <nav class="course-workspace-tabs" aria-label="课程与作业">
+        <button type="button" data-course-tab="course" aria-pressed="true"><span class="cw-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C9.6 4.5 6.7 4 3 4v14c3.9-.1 6.7.5 9 2.2 2.3-1.7 5.1-2.3 9-2.2V4c-3.8 0-6.6.5-9 2.5Z"/><path d="M12 6.5v13.7"/></svg></span>课程信息</button>
+        <button type="button" data-course-tab="homework" aria-pressed="false"><span class="cw-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="15" height="16" rx="2"/><path d="M8 10h5M8 14h4M14 15 20.5 8.5l-2-2L12 13l-.8 3z"/></svg></span>布置作业</button>
+        <button type="button" data-course-tab="progress" aria-pressed="false"><span class="cw-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M6 20V12h4v8M13 20V5h4v15M19 20v-9h2v9"/></svg></span>进度与验收</button>
+      </nav>
+      <img class="cw-hero-illustration" src="./course-hero-illustration.svg" alt="" aria-hidden="true">
     </header>
-    <nav class="course-workspace-tabs" aria-label="课程与作业">
-      <button type="button" data-course-tab="course" aria-pressed="true">课程信息</button>
-      <button type="button" data-course-tab="homework" aria-pressed="false">布置作业</button>
-      <button type="button" data-course-tab="progress" aria-pressed="false">进度与验收</button>
-    </nav>
-    <div class="course-workspace-scroll" id="courseWorkspaceScroll"><section id="courseInfoPanel">
-    <div class="course-form-body" id="courseFormBody">
-    <label><span class="lab">课程类型</span>
-      <div class="seg" id="fCourseType">
-        <button type="button" class="seg-btn on" data-type="regular">常规课</button>
-        <button type="button" class="seg-btn" data-type="trial">体验课</button>
-        <button type="button" class="seg-btn" data-type="online">网课</button>
-        <button type="button" class="seg-btn" data-type="home">上门教学</button>
-      </div>
-      <span class="course-type-hint" id="courseTypeHint" aria-live="polite"></span>
-    </label>
-    <label id="fStudentRow"><span class="lab">学员</span>
-      <select id="fStudent"></select>
-      <button type="button" class="inlinenew" id="newStudentQuick">+ 新建学员</button>
-    </label>
-    <label id="fTrialRow" hidden><span class="lab">学员姓名</span>
-      <input id="fTrialName" placeholder="输入体验课学员姓名（可不在在读名单）" maxlength="16" autocomplete="off">
-    </label>
-    <label id="fInstrumentRow"><span class="lab">乐器</span><select id="fInstrument"><option value="guitar">木吉他</option><option value="electric">电吉他</option><option value="bass">电贝斯</option><option value="ukulele">尤克里里</option></select></label>
-    <label><span class="lab">日期</span><input type="date" id="fDate"></label>
-    <div class="twocol">
-      <label><span class="lab">开始</span><input type="time" id="fStart"></label>
-      <label><span class="lab">结束</span><input type="time" id="fEnd"></label>
-    </div>
-    <div class="dur-display" id="courseDurDisplay"></div>
-    <label class="course-homework"><span class="lab">作业总结</span><textarea id="fHomework" rows="3" maxlength="2000" placeholder="如：每天练习 10 分钟；60 BPM，和弦转换保持连贯"></textarea></label>
-    <label><span class="lab">上课重点</span><textarea id="fLessonContent" rows="5" placeholder="如：左手基本功练习、C–G 和弦转换、《童年》前 8 小节"></textarea></label>
-    <details class="course-private-note" id="coursePrivateNote"><summary>私人备注 <span>不出现在分享图中</span></summary>
-      <label><span class="lab">备注</span><textarea id="fNote" placeholder="仅供老师查看"></textarea></label>
-    </details>
-    <label><span class="lab">状态</span>
-      <div class="status-radios" id="fStatusGroup">
-        <label><input type="radio" name="fStatus" value="planned"><span>待上</span></label>
-        <label><input type="radio" name="fStatus" value="done"><span>已上</span></label>
-        <label><input type="radio" name="fStatus" value="absent"><span>已请假</span></label>
-        <label><input type="radio" name="fStatus" value="cancelled"><span>取消</span></label>
-      </div>
-    </label>
-    </div></section>
+    <div class="course-workspace-scroll" id="courseWorkspaceScroll">
+      <section id="courseInfoPanel">
+        <div class="cw-course-grid">
+          <div class="cw-course-primary">
+            <section class="cw-form-card cw-basic-card">
+              <h4 class="cw-card-title"><span class="cw-card-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2.1" fill="#fff"/><circle cx="16" cy="12" r="2.1" fill="#fff"/><circle cx="8" cy="18" r="2.1" fill="#fff"/></svg></span>基础信息</h4>
+              <div class="course-form-body" id="courseFormBody">
+                <div class="cw-inline-field cw-kind-row">
+                  <span class="cw-field-caption cw-caption-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2.1" fill="#fff"/><circle cx="16" cy="12" r="2.1" fill="#fff"/><circle cx="8" cy="18" r="2.1" fill="#fff"/></svg>课程类型</span>
+                  <div class="cw-field-control">
+                    <div class="seg" id="fCourseType">
+                      <button type="button" class="seg-btn on" data-type="regular">常规课</button>
+                      <button type="button" class="seg-btn" data-type="trial">体验课</button>
+                      <button type="button" class="seg-btn" data-type="online">网课</button>
+                      <button type="button" class="seg-btn" data-type="home">上门教学</button>
+                    </div>
+                    <span class="course-type-hint" id="courseTypeHint" aria-live="polite"></span>
+                  </div>
+                </div>
+                <div class="cw-inline-field" id="fStudentRow">
+                  <label class="cw-field-caption cw-caption-icon" for="fStudent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.5" r="3.5"/><path d="M4.5 21v-2a7.5 7.5 0 0 1 15 0v2"/></svg>学员 <span class="cw-required">*</span></label>
+                  <div class="cw-field-control cw-student-control">
+                    <select id="fStudent" aria-label="选择学员"></select>
+                    <button type="button" class="inlinenew" id="newStudentQuick">＋ 新建学员</button>
+                  </div>
+                </div>
+                <div class="cw-inline-field" id="fTrialRow" hidden>
+                  <label class="cw-field-caption cw-caption-icon" for="fTrialName"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.5" r="3.5"/><path d="M4.5 21v-2a7.5 7.5 0 0 1 15 0v2"/></svg>学员姓名 <span class="cw-required">*</span></label>
+                  <div class="cw-field-control"><input id="fTrialName" placeholder="输入体验课学员姓名" maxlength="16" autocomplete="off"></div>
+                </div>
+                <div class="cw-inline-field" id="fInstrumentRow">
+                  <label class="cw-field-caption cw-caption-icon" for="fInstrument"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 2 7.5 7.5M17 5 9.5 12.5c-2-1.2-4.6-.8-6.1 1.2-2.2 2.8-1.9 6 .6 7.1 2.5 1.2 5.5-.1 6.6-2.7.9-2 1-3.1-.4-4.9L17 5Z"/><circle cx="7" cy="17" r="2"/></svg>乐器 <span class="cw-required">*</span></label>
+                  <div class="cw-field-control"><select id="fInstrument"><option value="guitar">木吉他</option><option value="electric">电吉他</option><option value="bass">电贝斯</option><option value="ukulele">尤克里里</option></select></div>
+                </div>
+                <div class="cw-when-row">
+                  <label class="cw-date-field"><span class="cw-field-caption cw-caption-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M7 3v4M17 3v4M3.5 10h17M7 14h3"/></svg>日期 <span class="cw-required">*</span></span><input type="date" id="fDate"></label>
+                  <div class="cw-time-field">
+                    <span class="cw-field-caption cw-caption-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>上课时间 <span class="cw-required">*</span></span>
+                    <div class="cw-time-controls">
+                      <input type="time" id="fStart" aria-label="开始时间">
+                      <span class="cw-time-dash" aria-hidden="true">—</span>
+                      <input type="time" id="fEnd" aria-label="结束时间">
+                      <span class="dur-display" id="courseDurDisplay"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <section class="cw-form-card cw-summary-card">
+              <h4 class="cw-card-title cw-notes-title"><span class="cw-card-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l4 4v14H5zM16 3v5h4M8 12h9M8 16h8"/></svg></span><label for="fHomework">作业总结 <small>（课后记录 / 课堂重点）</small></label></h4>
+              <textarea id="fHomework" rows="3" maxlength="2000" placeholder="如：每天练习 10 分钟；60 BPM，和弦转换保持连贯"></textarea>
+            </section>
+            <details class="cw-extra-course">
+              <summary>更多课程记录（上课重点、私人备注）</summary>
+              <label><span class="lab">上课重点</span><textarea id="fLessonContent" rows="4" placeholder="如：左手基本功练习、C–G 和弦转换、《童年》前 8 小节"></textarea></label>
+              <details class="course-private-note" id="coursePrivateNote"><summary>私人备注 <span>仅教师可见，不出现在分享图中</span></summary>
+                <label><span class="lab">备注</span><textarea id="fNote" placeholder="仅供老师查看"></textarea></label>
+              </details>
+            </details>
+          </div>
+          <aside class="cw-course-aside">
+            <section class="cw-overview-card">
+              <h4 class="cw-card-title"><span class="cw-card-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M7 3v4M17 3v4M3.5 10h17M7 14h3"/></svg></span>课程概览</h4>
+              <div class="cw-overview-row"><span>课程状态</span>
+                <details class="cw-status-control" id="cwStatusDetail">
+                  <summary id="cwOverviewStatus">待上课</summary>
+                  <div class="status-radios" id="fStatusGroup">
+                    <label><input type="radio" name="fStatus" value="planned"><span>待上</span></label>
+                    <label><input type="radio" name="fStatus" value="done"><span>已上</span></label>
+                    <label><input type="radio" name="fStatus" value="absent"><span>已请假</span></label>
+                    <label><input type="radio" name="fStatus" value="cancelled"><span>取消</span></label>
+                  </div>
+                </details>
+              </div>
+              <div class="cw-overview-row"><span>课程类型</span><strong id="cwOverviewType">常规课</strong></div>
+              <div class="cw-overview-row"><span>授课方式</span><strong class="cw-overview-mode" id="cwOverviewMode">线下授课</strong></div>
+              <div class="cw-overview-row"><span>课程时长</span><strong id="cwOverviewDuration">50 分钟</strong></div>
+            </section>
+            <section class="cw-tip-card">
+              <h4><span class="cw-tip-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M8.5 15c-2-1.8-3-3.8-2.5-6a6.2 6.2 0 0 1 12 0c.5 2.2-.5 4.2-2.5 6-.7.6-1.2 1.5-1.4 2.6h-4.2C9.7 16.5 9.2 15.6 8.5 15Z"/></svg></span>提示</h4>
+              <p>已上课的课程可在「布置作业」中记录课后练习，并同步到学员小程序。</p>
+            </section>
+          </aside>
+        </div>
+      </section>
     <section id="courseHomeworkPanel" hidden>
       <div class="cw-layout"><div class="cw-main" id="courseHomeworkMain"></div><aside class="cw-side" id="courseHomeworkSide"></aside></div>
     </section>
@@ -3342,7 +3403,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-20-course-homework-v1';
+const APP_VERSION = '2026-11-20-course-polish-v2';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */
@@ -3389,7 +3450,7 @@ if ('serviceWorker' in navigator) {
 <script src="./teaching-homework-actions.js?v=20261115-parity-v1"></script>
 <script src="./teaching-homework-model.js?v=20261112-v1"></script>
 <script src="./teaching-homework-editor.js?v=20261118-homework-generation-v1"></script>
-<script src="./teaching-course-workspace.js?v=20261120-course-homework-v1"></script>
+<script src="./teaching-course-workspace.js?v=20261120-course-polish-v2"></script>
 <script src="./teaching-homework-index.js?v=20261118-batch-recovery-v1"></script>
 <script src="./teaching-homework.js?v=20261115-parity-v1"></script>
 </body>
