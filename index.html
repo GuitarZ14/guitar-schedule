@@ -587,7 +587,7 @@
   }
 </style>
 <link rel="stylesheet" href="./workspace.css?v=20261118-student-search-v1">
-<link rel="stylesheet" href="./teaching-course-workspace.css?v=20261120-course-polish-v2">
+<link rel="stylesheet" href="./teaching-course-workspace.css?v=20261120-design-images-v3">
 </head>
 <body>
 <div id="toast"></div>
@@ -718,9 +718,7 @@
         <button type="button" id="courseNext">下一节 <span aria-hidden="true">›</span></button>
       </div>
       <div class="cw-hero-context">
-        <span class="cw-cat-avatar" aria-hidden="true">
-          <svg viewBox="0 0 54 54" fill="none"><circle cx="27" cy="27" r="24" fill="#FFE5C1"/><path d="M11 22 13 10 22 16M43 22 41 10 32 16" fill="#F7A64D" stroke="#9B6634" stroke-width="1.8" stroke-linejoin="round"/><ellipse cx="27" cy="29" rx="19" ry="17" fill="#F6B45F" stroke="#9B6634" stroke-width="1.5"/><path d="M13 29c4-4 7-2 10 0M41 29c-4-4-7-2-10 0" stroke="#FFDB9A" stroke-width="5" stroke-linecap="round"/><ellipse cx="27" cy="34" rx="10" ry="7" fill="#FFF5E9"/><circle cx="20" cy="28" r="2" fill="#71452B"/><circle cx="34" cy="28" r="2" fill="#71452B"/><path d="m25 33 2 2 2-2M27 35v3m0 0-4 2m4-2 4 2" stroke="#71452B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 35 4 34M12 39 6 41M42 35l8-1M42 39l6 2" stroke="#9B6634" stroke-width="1.1"/></svg>
-        </span>
+        <span class="cw-cat-avatar" aria-hidden="true"><img src="./design-cat.webp" alt="" width="42" height="42" decoding="async"></span>
         <span class="course-workspace-context" id="courseWorkspaceContext"></span>
       </div>
       <nav class="course-workspace-tabs" aria-label="课程与作业">
@@ -728,7 +726,7 @@
         <button type="button" data-course-tab="homework" aria-pressed="false"><span class="cw-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="15" height="16" rx="2"/><path d="M8 10h5M8 14h4M14 15 20.5 8.5l-2-2L12 13l-.8 3z"/></svg></span>布置作业</button>
         <button type="button" data-course-tab="progress" aria-pressed="false"><span class="cw-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M6 20V12h4v8M13 20V5h4v15M19 20v-9h2v9"/></svg></span>进度与验收</button>
       </nav>
-      <img class="cw-hero-illustration" src="./course-hero-illustration.svg" alt="" aria-hidden="true">
+      <img class="cw-hero-illustration" src="./design-hero.webp" alt="" aria-hidden="true" width="313" height="116" decoding="async">
     </header>
     <div class="course-workspace-scroll" id="courseWorkspaceScroll">
       <section id="courseInfoPanel">
@@ -3403,7 +3401,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-20-course-polish-v2';
+const APP_VERSION = '2026-11-20-design-images-v3';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */
@@ -3450,7 +3448,7 @@ if ('serviceWorker' in navigator) {
 <script src="./teaching-homework-actions.js?v=20261115-parity-v1"></script>
 <script src="./teaching-homework-model.js?v=20261112-v1"></script>
 <script src="./teaching-homework-editor.js?v=20261118-homework-generation-v1"></script>
-<script src="./teaching-course-workspace.js?v=20261120-course-polish-v2"></script>
+<script src="./teaching-course-workspace.js?v=20261120-design-images-v3"></script>
 <script src="./teaching-homework-index.js?v=20261118-batch-recovery-v1"></script>
 <script src="./teaching-homework.js?v=20261115-parity-v1"></script>
 </body>

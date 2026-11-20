@@ -377,3 +377,37 @@
 @media(max-width:700px){
   #courseModal .course-workspace-sheet{transform:none;}
 }
+
+
+/* 设计稿原图素材：直接贴图，不再用手绘 SVG 近似；混合模式消除右侧截图底色矩形。 */
+#courseModal .cw-cat-avatar{
+  border-radius:50%;overflow:hidden;display:block;
+  width:42px;height:42px;flex:0 0 42px;
+  background:transparent;isolation:isolate;
+}
+#courseModal .cw-cat-avatar img{
+  display:block;width:100%;height:100%;object-fit:cover;
+  background:transparent;border:0;
+}
+@media(min-width:701px){
+  #courseModal .cw-hero-illustration{
+    right:0;bottom:0;width:313px;height:116px;
+    object-fit:contain;object-position:right bottom;
+    mix-blend-mode:multiply;opacity:1;
+  }
+}
+@media(max-width:700px){
+  #courseModal .cw-hero-illustration{display:none;}
+}
+
+
+/* 原设计图片的轮廓遮罩：去除原图周围的米白矩形，不影响表单点击。 */
+@media(min-width:701px){
+ #courseModal .cw-hero-illustration{
+   -webkit-mask-image:url("./design-hero-mask.svg");
+   mask-image:url("./design-hero-mask.svg");
+   -webkit-mask-size:100% 100%;mask-size:100% 100%;
+   -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+   mix-blend-mode:normal;
+ }
+}
