@@ -34,7 +34,8 @@
       if(!assignment)state.form.title='本节课课后练习';
       let currentId=assignment ? assignment.id : crypto.randomUUID(), revision=plan ? plan.revision : 0;
       const draftKey='gb_hw_editor_v1_'+scope+'_'+course.id+'_'+(assignmentId||(legacyMode?'legacy':'new'));
-      let draftWarning='',staleDraft=false;
+      let draftWarning='',staleDraft=false,generating=false;
+      const courseHasDraft=!!(plan && plan.assignments.some(item=>item.lifecycle==='draft'));
       try {
         const draft=JSON.parse(localStorage.getItem(draftKey)||'null');
         if(draft && draft.revision===revision && draft.state && draft.currentId){state=draft.state;currentId=draft.currentId;draftWarning='已恢复本机草稿，提交前请核对。';}
@@ -53,7 +54,64 @@
           state.mode=value(root,'mode');const songId=value(root,'song');if(songId!==state.form.songId){const selected=songs.find(s=>s.id===songId);state.form.songId=songId;state.form.songVersion=selected?String(selected.version||''):'';state.form.songTitle=selected?selected.title:'';delete state.form.interactiveRef;}Object.assign(state.form,{title:value(root,'title'),notes:value(root,'notes'),trackingEnabled:root.querySelector('[name="tracking"]').checked,totalBars:value(root,'totalBars')});
           root.querySelectorAll('fieldset').forEach((element,i)=>{for(const key of ['contentText','acceptanceCriteria','startBar','endBar']) state.tasks[i][key]=element.querySelector('[data-task="'+key+'"]').value;});
         };
-        const saveLocal=()=>{if(staleDraft)return;try{localStorage.setItem(draftKey,JSON.stringify({revision,currentId,state}));}catch(_){message.textContent='本机草稿保存失败，请勿关闭页面';}};
+        const saveLocal=()=>{if(staleDraft)return;try{localStorage.setItem(draftKey,JSON.stringify({revision,currentId,state}));}catch(_){root.querySelector('[data-message]').textContent='本机草稿保存失败，请勿关闭页面';}};
+        const plainState=()=>state.mode==='staged' && state.form.title==='本节课课后练习' &&
+          state.tasks.length===1 && !Object.entries(state.tasks[0]).some(([key,input])=>key!=='id' && input) &&
+          !Object.entries(state.form).some(([key,input])=>key!=='title' && input);
+        if(!assignmentId && !legacyMode && !course.isTrial && course.studentId && ['guitar','electric'].includes(course.instrument||'guitar')){
+          const button=document.createElement('button');
+          button.type='button';
+          button.dataset.generateHomework='';
+          button.textContent='根据课堂记录生成作业草稿';
+          const status=document.createElement('p');
+          status.setAttribute('role','status');
+          status.hidden=true;
+          const report=text=>{status.textContent=text;status.hidden=false;};
+          const form=root.querySelector('.hw-form');
+          form.before(button,status);
+          button.onclick=async()=>{
+            if(generating)return;
+            const current=()=>root.isConnected && root.contains(button) && !root.closest('[hidden]');
+            generating=true;
+            button.disabled=true;
+            try{
+              collect();
+              if(staleDraft||courseHasDraft||!plainState()||localStorage.getItem(draftKey))
+                throw new Error('已有作业草稿，请继续编辑原草稿');
+              const lessonContent=String(course.lessonContent||'').trim(),focus=String(course.focus||'').trim();
+              if(!lessonContent&&!focus)throw new Error('请先在课表填写课堂记录并完成同步');
+              const before=JSON.stringify(state);
+              if(await writer.pending(course.id))throw new Error('本课有待确认的作业操作，请先核对');
+              if(!current())return;
+              collect();
+              if(before!==JSON.stringify(state)||localStorage.getItem(draftKey))
+                throw new Error('作业表单已修改，已保留当前内容');
+              report('正在根据课堂记录生成草稿…');
+              const result=await api.request({action:'generateHomeworkDraft',courseId:course.id,studentId:course.studentId,lessonContent,focus},scope);
+              if(!current())return;
+              collect();
+              if(before!==JSON.stringify(state)||localStorage.getItem(draftKey))
+                throw new Error('作业表单已修改，已保留当前内容');
+              const draft=result && result.draft;
+              const filled=(value,max)=>typeof value==='string' && value.trim() && value.length<=max;
+              if(result?.workspaceId!==scope || !filled(draft?.title,60) || !Array.isArray(draft.tasks) ||
+                 !draft.tasks.length || draft.tasks.length>3 ||
+                 draft.tasks.some(item=>!filled(item?.contentText,1000)||!filled(item?.acceptanceCriteria,1500)))
+                throw new Error('生成结果不完整，请核对课堂记录');
+              state.form.title=draft.title.trim();
+              state.tasks=draft.tasks.map(item=>({...model.emptyTask(crypto.randomUUID()),
+                contentText:item.contentText.trim(),acceptanceCriteria:item.acceptanceCriteria.trim()}));
+              draftWarning='已生成本机草稿，请核对练习内容和验收标准后再发布。';
+              paint();
+              saveLocal();
+            }catch(error){
+              if(current())report(error.code==='TIMEOUT'?'生成等待超时，请稍后手动重试。':error.message);
+            }finally{
+              generating=false;
+              if(current())button.disabled=false;
+            }
+          };
+        }
         root.querySelector('[data-add]').onclick=()=>{collect();if(state.mode!=='staged')return message.textContent='仅阶段作业可添加多个任务';if(state.tasks.length>=100)return message.textContent='最多 100 项任务';state.tasks.push(model.emptyTask(crypto.randomUUID()));saveLocal();paint();};
         root.querySelectorAll('[data-move]').forEach(button=>button.onclick=()=>{collect();const i=Number(button.dataset.index),j=i+Number(button.dataset.move);if(j<0||j>=state.tasks.length)return;[state.tasks[i],state.tasks[j]]=[state.tasks[j],state.tasks[i]];saveLocal();paint();});
         root.querySelectorAll('[data-copy]').forEach(button=>button.onclick=()=>{collect();if(state.tasks.length>=100)return message.textContent='最多 100 项任务';const i=Number(button.dataset.copy);state.tasks.splice(i+1,0,{...state.tasks[i],id:crypto.randomUUID()});saveLocal();paint();});

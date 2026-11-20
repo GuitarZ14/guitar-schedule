@@ -587,6 +587,7 @@
   }
 </style>
 <link rel="stylesheet" href="./workspace.css?v=20261118-student-search-v1">
+<link rel="stylesheet" href="./teaching-course-workspace.css?v=20261120-course-homework-v1">
 </head>
 <body>
 <div id="toast"></div>
@@ -703,9 +704,18 @@
 
 <!-- course modal -->
 <div class="modal" id="courseModal" hidden>
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="courseModalTitle">
+  <div class="sheet course-workspace-sheet" role="dialog" aria-modal="true" aria-labelledby="courseModalTitle">
     <button type="button" class="modal-x" id="courseCancel" aria-label="关闭">×</button>
-    <h3 id="courseModalTitle">新增课程</h3>
+    <header class="course-workspace-head">
+      <div><h3 id="courseModalTitle">新增课程</h3><div class="course-workspace-context" id="courseWorkspaceContext"></div></div>
+      <div class="course-workspace-nav"><button type="button" id="coursePrev">上一节</button><button type="button" id="courseNext">下一节</button></div>
+    </header>
+    <nav class="course-workspace-tabs" aria-label="课程与作业">
+      <button type="button" data-course-tab="course" aria-pressed="true">课程信息</button>
+      <button type="button" data-course-tab="homework" aria-pressed="false">布置作业</button>
+      <button type="button" data-course-tab="progress" aria-pressed="false">进度与验收</button>
+    </nav>
+    <div class="course-workspace-scroll" id="courseWorkspaceScroll"><section id="courseInfoPanel">
     <div class="course-form-body" id="courseFormBody">
     <label><span class="lab">课程类型</span>
       <div class="seg" id="fCourseType">
@@ -743,8 +753,14 @@
         <label><input type="radio" name="fStatus" value="cancelled"><span>取消</span></label>
       </div>
     </label>
-    </div>
-    <div class="sheet-actions course-actions">
+    </div></section>
+    <section id="courseHomeworkPanel" hidden>
+      <div class="cw-layout"><div class="cw-main" id="courseHomeworkMain"></div><aside class="cw-side" id="courseHomeworkSide"></aside></div>
+    </section>
+    <section id="courseProgressPanel" hidden>
+      <div class="cw-layout"><div class="cw-main" id="courseProgressMain"></div><aside class="cw-side" id="courseProgressSide"></aside></div>
+    </section></div>
+    <div class="sheet-actions course-actions" id="courseActions">
       <button type="button" id="courseDelete" class="danger">删除</button>
       <button type="button" id="courseScheduleVisibility" hidden>仅隐藏周课表</button>
       <span class="spacer"></span>
@@ -2255,6 +2271,7 @@ function openCourseModal(id){
   updateCourseDurDisplay();
   m.hidden=false;
   document.getElementById('courseFormBody').scrollTop=0;
+  globalThis.TeachingCourseWorkspace?.open(id||null);
 }
 // 复制单条课程：作为「新增」打开，自动带入原条目全部字段（可编辑）
 function openCourseModalAsCopy(sourceId){
@@ -2279,6 +2296,7 @@ function openCourseModalAsCopy(sourceId){
   updateCourseDurDisplay();
   document.getElementById('courseModal').hidden=false;
   document.getElementById('courseFormBody').scrollTop=0;
+  globalThis.TeachingCourseWorkspace?.open(null);
 }
 function copyDayLabel(ds){
   const d=parseYMD(ds);
@@ -2321,7 +2339,7 @@ function copyDaySchedule(ds){
   showToast(msg);
   return {count,skipped,target};
 }
-function closeCourseModal(){ closeModal('courseModal'); editingCourseId=null; editingCourseBaseline=null; pendingReturnToCourse=false; pendingCourseDraft=null; }
+function closeCourseModal(){ globalThis.TeachingCourseWorkspace?.close(); closeModal('courseModal'); editingCourseId=null; editingCourseBaseline=null; pendingReturnToCourse=false; pendingCourseDraft=null; }
 function saveCourse(){
   const isTrial = courseFormType==='trial';
   let studentId='', trialName='';
@@ -3324,7 +3342,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-13-homework-index-v1';
+const APP_VERSION = '2026-11-20-course-homework-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */
@@ -3364,13 +3382,14 @@ if ('serviceWorker' in navigator) {
 <script src="./teaching-package-actions.js?v=20261112-package-v1"></script>
 <script src="./teaching-package-dialog.js?v=20261112-package-v1"></script>
 <script src="./teaching-sync.js?v=20261112-history-v1"></script>
-<script src="./teaching-desktop.js?v=20261118-batch-recovery-v1"></script>
+<script src="./teaching-desktop.js?v=20261118-homework-generation-v1"></script>
 <script src="./teaching-reminders.js?v=20261112-v1"></script>
 <script src="./teaching-student-insights.js?v=20261112-v1"></script>
 <script src="./teaching-student-detail.js?v=20261117-schedule-v1"></script>
 <script src="./teaching-homework-actions.js?v=20261115-parity-v1"></script>
 <script src="./teaching-homework-model.js?v=20261112-v1"></script>
-<script src="./teaching-homework-editor.js?v=20261115-parity-v1"></script>
+<script src="./teaching-homework-editor.js?v=20261118-homework-generation-v1"></script>
+<script src="./teaching-course-workspace.js?v=20261120-course-homework-v1"></script>
 <script src="./teaching-homework-index.js?v=20261118-batch-recovery-v1"></script>
 <script src="./teaching-homework.js?v=20261115-parity-v1"></script>
 </body>
