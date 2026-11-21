@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>吉他教学工作台</title>
 <link rel="manifest" href="./manifest.webmanifest">
-<meta name="theme-color" content="#39765c">
+<meta name="theme-color" content="#A98A6A">
 <link rel="apple-touch-icon" href="./icons/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -13,23 +13,26 @@
 <style>
   /* ===== 设计系统：简约线性 (Minimal Line) ===== */
   :root{
-    /* 表面：扁平暖白，细边框，无模糊 */
-    --glass:#FDFBF6;
-    --glass-strong:#FDFBF6;
-    --glass-border:#E7DFD0;
+    /* === Scandinavian warm-wood palette (direction-1 prototype) === */
+    --paper:#F7F3EC; --greige:#E7E1D8; --wood:#A98A6A; --wood-d:#7A5F44;
+    --ink:#2F2B27; --sage:#7C8577; --clay:#B87A5B;
+    /* 表面：奶油白，米灰发丝线 */
+    --glass:#FFFFFF;
+    --glass-strong:#FFFDF9;
+    --glass-border:#E7E1D8;
     --blur:0px;
-    /* 文字（暖中性） */
-    --text:#2B2722; --text-2:#4A443B; --muted:#6B6356; --muted-2:#8A8273;
-    /* 主色：低饱和暖砂陶（与燕麦米色协调） */
-    --primary:#BD855C; --primary-d:#8C5733; --primary-soft:#F4ECDF;
+    /* 文字（暖墨） */
+    --text:#2F2B27; --text-2:#5F584E; --muted:#8C8377; --muted-2:#9B9286;
+    /* 主色：自然木色 */
+    --primary:#A98A6A; --primary-d:#7A5F44; --primary-soft:#F1E7DA;
     /* 语义色（低饱和，与暖调协调） */
-    --green:#5B9B6E; --green-soft:rgba(91,155,110,0.13);
-    --blue:#6E8AA3;  --blue-soft:rgba(110,138,163,0.13);
-    --red:#C26B5E;   --red-soft:rgba(194,107,94,0.12);
+    --green:#7C8577; --green-soft:rgba(124,133,119,0.15);
+    --blue:#7C8C93;  --blue-soft:rgba(124,140,147,0.13);
+    --red:#B5675A;   --red-soft:rgba(181,103,90,0.12);
     --gray:#9A9388;  --gray-soft:rgba(154,147,136,0.16);
     --warn:#C59A4E;  --warn-soft:rgba(197,154,78,0.13);
     /* 线条 / 间距标尺 */
-    --line:#EAE2D2;
+    --line:#E7E1D8;
     --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
     /* 圆角（利落但友好） */
     --r-sm:10px; --r-md:14px; --r-lg:18px; --r-pill:999px;
@@ -47,7 +50,7 @@
   html,body{margin:0;padding:0;}
   body{
     font-family:var(--font-body);
-    background:#F3EDE1;
+    background:#F7F3EC;
     min-height:100vh;
     color:var(--text); font-size:16px; line-height:1.6;
     -webkit-text-size-adjust:100%;
@@ -168,7 +171,7 @@
   .btn-absent.loading{color:#9A98B0; border-color:var(--line); pointer-events:none; opacity:.7;}
   .btn-absent.loading::after{content:''; position:absolute; right:8px;top:50%;margin-top:-7px;width:14px;height:14px;border:2px solid #ccc;border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
-  .btn-absent.done{background:var(--green-soft); color:var(--green); border-color:rgba(31,181,115,0.3); pointer-events:none;}
+  .btn-absent.done{background:var(--green-soft); color:var(--green); border-color:rgba(124,133,119,0.35); pointer-events:none;}
   .btn-absent.err{background:var(--red-soft); color:var(--red); border-color:rgba(242,92,106,0.3); animation:shake .35s ease;}
   @keyframes shake{0%,100%{transform:translateX(0);}20%{transform:translateX(-4px);}40%{transform:translateX(4px);}60%{transform:translateX(-3px);}80%{transform:translateX(3px);}}
 
@@ -209,15 +212,15 @@
   }
   .daycol:hover{border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-soft); transform:translateY(-2px);}
   .daycol.today{border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-soft);}
-  .daycol.day-active{border-color:var(--primary); box-shadow:0 0 0 4px rgba(189,133,92,0.22); background:rgba(189,133,92,0.05);}
+  .daycol.day-active{border-color:var(--primary); box-shadow:0 0 0 4px rgba(169,138,106,0.22); background:rgba(169,138,106,0.05);}
   .daycol .dh{display:flex; align-items:center; gap:4px; font-size:12px; color:var(--muted); padding-bottom:8px; border-bottom:1px dashed var(--line); margin-bottom:8px;}
   .daycol .dh .dh-date{flex:1; text-align:center;}
   .daycol .dh b{display:block; font-size:17px; color:var(--text); font-family:var(--font-display);}
   .daycol.today .dh b{color:var(--primary);}
-  .dhead-add{font-size:16px; line-height:1; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; color:var(--primary); background:var(--primary-soft); border:1px solid rgba(189,133,92,0.25); border-radius:8px; cursor:pointer; flex-shrink:0; font-weight:700; transition:var(--t);}
-  .dhead-add:hover{background:rgba(189,133,92,0.25); border-color:var(--primary);}
-  .dhead-copy{font-size:11px; color:var(--primary); background:var(--primary-soft); border:1px solid rgba(189,133,92,0.25); cursor:pointer; padding:2px 9px; border-radius:10px; flex-shrink:0; font-weight:600; transition:var(--t);}
-  .dhead-copy:hover{background:rgba(189,133,92,0.2);}
+  .dhead-add{font-size:16px; line-height:1; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; color:var(--primary); background:var(--primary-soft); border:1px solid rgba(169,138,106,0.25); border-radius:8px; cursor:pointer; flex-shrink:0; font-weight:700; transition:var(--t);}
+  .dhead-add:hover{background:rgba(169,138,106,0.25); border-color:var(--primary);}
+  .dhead-copy{font-size:11px; color:var(--primary); background:var(--primary-soft); border:1px solid rgba(169,138,106,0.25); cursor:pointer; padding:2px 9px; border-radius:10px; flex-shrink:0; font-weight:600; transition:var(--t);}
+  .dhead-copy:hover{background:rgba(169,138,106,0.2);}
   /* 课程卡（按学员分色，--c 由 JS 注入） */
   .ccard{
     --c:var(--primary);
@@ -268,7 +271,7 @@
   .card-list{display:flex; flex-direction:column; gap:12px;}
   .collapse{border:1px solid var(--glass-border); border-radius:var(--r-md); overflow:hidden; background:var(--glass); backdrop-filter:blur(12px); box-shadow:var(--sh-1);}
   .collapse-head{display:flex; align-items:center; gap:8px; padding:14px 16px; cursor:pointer; user-select:none; -webkit-user-select:none;}
-  .collapse-head:hover{background:rgba(189,133,92,0.06);}
+  .collapse-head:hover{background:rgba(169,138,106,0.06);}
   .collapse-head h3{margin:0; font-size:16px; color:var(--text); flex:1;}
   .collapse-arrow{width:20px;height:20px; transition:transform .25s ease; color:var(--muted); flex-shrink:0;}
   .collapse.open .collapse-arrow{transform:rotate(90deg);}
@@ -315,7 +318,7 @@
   /* 日期标签：全部展开 + 自动换行。max-width 迫使长日期列表折行，突破 td 的 nowrap */
   .stu-table td.dt-col{white-space:normal;}   /* 显式解除单元格 nowrap，保证 flex 容器能折行（双保险） */
   .dtags{display:flex; gap:4px; align-items:center; flex-wrap:wrap; max-width:210px;}
-  .dtag{font-size:13px; font-weight:600; padding:2px 7px; border-radius:var(--r-sm); background:rgba(189,133,92,.12); border:1px solid rgba(189,133,92,.3); color:var(--text-2); font-family:var(--font-display); white-space:nowrap;}
+  .dtag{font-size:13px; font-weight:600; padding:2px 7px; border-radius:var(--r-sm); background:rgba(169,138,106,.12); border:1px solid rgba(169,138,106,.3); color:var(--text-2); font-family:var(--font-display); white-space:nowrap;}
   .dtag.soon{background:var(--primary); border-color:var(--primary); color:#fff;}
   .dtag-none{color:var(--muted-2); font-size:12px;}
   .stu-table b{font-variant-numeric:tabular-nums; font-family:var(--font-display);}
@@ -323,7 +326,7 @@
   .h-low{color:var(--red);}
   .h-tip{display:inline-block; margin-left:6px; font-size:10px; padding:1px 6px; border-radius:999px; background:var(--red-soft); color:var(--red); font-weight:600;}
   .stu-tag{display:inline-block; font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px;}
-  .st-active{color:#3E8E5A; background:rgba(62,142,90,.12);}
+  .st-active{color:#66755F; background:rgba(124,133,119,.16);}
   .st-leave{color:#B0741F; background:rgba(232,150,76,.16);}
   .st-paused{color:#C0483E; background:rgba(217,83,79,.12);}
   .st-finished{color:var(--muted); background:rgba(0,0,0,.06);}
@@ -478,7 +481,7 @@
   .salary-note{font-size:13px;color:var(--muted);margin-top:var(--s3);line-height:1.6;}
   .salary-note b{color:var(--primary);}
   .salary-refresh{display:inline-flex;align-items:center;gap:4px;margin-left:auto;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--glass);color:var(--text-2);font-size:13px;font-family:var(--font-body);cursor:pointer;transition:background var(--t),color var(--t),border-color var(--t);}
-  .salary-refresh:hover{background:var(--primary-soft);color:var(--primary);border-color:rgba(189,133,92,0.3);}
+  .salary-refresh:hover{background:var(--primary-soft);color:var(--primary);border-color:rgba(169,138,106,0.3);}
   /* ===== 额外收入备注 ===== */
   .extra-income{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--r-lg);padding:var(--s5) var(--s6);box-shadow:var(--sh-1);}
   .extra-income h4{margin:0 0 var(--s3);font-size:15px;color:var(--text);font-weight:600;display:flex;align-items:center;gap:6px;}
@@ -488,7 +491,7 @@
   .extra-income-item .ei-desc{flex:1;font-size:14px;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .extra-income-item .ei-amt{font-size:14px;font-weight:600;color:var(--green);white-space:nowrap;}
   /* 业务发生日期徽标：让归属月份一眼可见，避免跨月错归 */
-  .extra-income-item .ei-date{font-size:12px;font-weight:600;color:var(--text-2);background:rgba(189,133,92,0.12);border:1px solid rgba(189,133,92,0.35);border-radius:var(--r-sm);padding:2px 7px;white-space:nowrap;flex-shrink:0;font-family:var(--font-display);}
+  .extra-income-item .ei-date{font-size:12px;font-weight:600;color:var(--text-2);background:rgba(169,138,106,0.12);border:1px solid rgba(169,138,106,0.35);border-radius:var(--r-sm);padding:2px 7px;white-space:nowrap;flex-shrink:0;font-family:var(--font-display);}
   /* 迁移补齐日期的提示条（旧数据无法回溯真实日期，需用户核对） */
   .extra-income-item .ei-needdate{flex-basis:100%;display:flex;align-items:center;gap:5px;font-size:12px;color:#A8561F;background:rgba(233,150,76,0.12);border:1px solid rgba(233,150,76,0.35);border-radius:var(--r-sm);padding:5px 8px;line-height:1.4;}
   .extra-income-item .ei-needdate svg{flex-shrink:0;}
@@ -590,8 +593,8 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261121-hero-gauge-v1">
-<link rel="stylesheet" href="./teaching-course-workspace.css?v=20261120-design-images-v3">
+<link rel="stylesheet" href="./workspace.css?v=20261121-scandi-theme-v1">
+<link rel="stylesheet" href="./teaching-course-workspace.css?v=20261121-scandi-theme-v1">
 </head>
 <body>
 <div id="toast"></div>
@@ -1726,20 +1729,20 @@ function createLessonShareImage(r){
   const headerHeight=names.length*54+142, homeworkHeight=homework.length*58+128;
   canvas.width=900; canvas.height=headerHeight+homeworkHeight+content.length*48+200;
   ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle='#202b27'; ctx.font='600 38px '+font;
+  ctx.fillStyle='#2F2B27'; ctx.font='600 38px '+font;
   names.forEach((line,i)=>ctx.fillText(line,72,90+i*54));
   const dateY=90+names.length*54;
-  ctx.fillStyle='#6b7770'; ctx.font='26px '+font; ctx.fillText(lessonDateLabel(r.date),72,dateY);
-  ctx.fillStyle='#202b27'; ctx.font='500 30px '+font; ctx.fillText(r.time,72,dateY+48);
+  ctx.fillStyle='#8C8377'; ctx.font='26px '+font; ctx.fillText(lessonDateLabel(r.date),72,dateY);
+  ctx.fillStyle='#2F2B27'; ctx.font='500 30px '+font; ctx.fillText(r.time,72,dateY+48);
   const top=headerHeight+30;
-  ctx.fillStyle='#edf4ef'; ctx.fillRect(44,top,812,homeworkHeight);
-  ctx.fillStyle='#285a44'; ctx.font='600 28px '+font; ctx.fillText('作业总结',100,top+55);
+  ctx.fillStyle='#F1EDE4'; ctx.fillRect(44,top,812,homeworkHeight);
+  ctx.fillStyle='#7A5F44'; ctx.font='600 28px '+font; ctx.fillText('作业总结',100,top+55);
   ctx.font='600 38px '+font;
   homework.forEach((line,i)=>ctx.fillText(line,100,top+115+i*58));
   const contentTop=top+homeworkHeight+50;
-  ctx.fillStyle='#e9ecea'; ctx.fillRect(72,contentTop,756,2);
-  ctx.fillStyle='#45524b'; ctx.font='600 28px '+font; ctx.fillText('上课重点',72,contentTop+58);
-  ctx.fillStyle='#202b27'; ctx.font='30px '+font;
+  ctx.fillStyle='#E7E1D8'; ctx.fillRect(72,contentTop,756,2);
+  ctx.fillStyle='#5F584E'; ctx.font='600 28px '+font; ctx.fillText('上课重点',72,contentTop+58);
+  ctx.fillStyle='#2F2B27'; ctx.font='30px '+font;
   content.forEach((line,i)=>ctx.fillText(line,72,contentTop+116+i*48));
   return canvas.toDataURL('image/png');
 }
@@ -3419,7 +3422,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-21-hero-gauge-v1';
+const APP_VERSION = '2026-11-21-scandi-theme-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */
