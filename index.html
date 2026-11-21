@@ -777,15 +777,16 @@
               </div>
             </section>
             <section class="cw-form-card cw-summary-card">
-              <h4 class="cw-card-title cw-notes-title"><span class="cw-card-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l4 4v14H5zM16 3v5h4M8 12h9M8 16h8"/></svg></span><label for="fHomework">作业总结 <small>（课后记录 / 课堂重点）</small></label></h4>
+              <h4 class="cw-card-title cw-notes-title"><span class="cw-card-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l4 4v14H5zM16 3v5h4M8 12h9M8 16h8"/></svg></span><label for="fHomework">作业总结 <small>（课后练习安排）</small></label></h4>
               <textarea id="fHomework" rows="3" maxlength="2000" placeholder="如：每天练习 10 分钟；60 BPM，和弦转换保持连贯"></textarea>
             </section>
-            <details class="cw-extra-course">
-              <summary>更多课程记录（上课重点、私人备注）</summary>
-              <label><span class="lab">上课重点</span><textarea id="fLessonContent" rows="4" placeholder="如：左手基本功练习、C–G 和弦转换、《童年》前 8 小节"></textarea></label>
-              <details class="course-private-note" id="coursePrivateNote"><summary>私人备注 <span>仅教师可见，不出现在分享图中</span></summary>
-                <label><span class="lab">备注</span><textarea id="fNote" placeholder="仅供老师查看"></textarea></label>
-              </details>
+            <section class="cw-form-card cw-lesson-focus-card">
+              <h4 class="cw-card-title cw-notes-title"><span class="cw-card-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l4 4v14H5zM16 3v5h4M8 12h9M8 16h8"/></svg></span><label for="fLessonContent">上课重点 <small>（显示于分享图）</small></label></h4>
+              <textarea id="fLessonContent" rows="4" placeholder="如：左手基本功练习、C–G 和弦转换、《童年》前 8 小节"></textarea>
+            </section>
+            <details class="cw-extra-course course-private-note" id="coursePrivateNote">
+              <summary>私人备注 <span>仅教师可见，不出现在分享图中</span></summary>
+              <label><span class="lab">备注</span><textarea id="fNote" placeholder="仅供老师查看"></textarea></label>
             </details>
           </div>
           <aside class="cw-course-aside">
@@ -3401,7 +3402,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-21-empty-homework-title-v1';
+const APP_VERSION = '2026-11-21-visible-lesson-focus-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */

@@ -411,3 +411,15 @@
    mix-blend-mode:normal;
  }
 }
+
+
+/* 课程分享图的「上课重点」默认可见，紧跟作业总结。 */
+#courseModal .cw-lesson-focus-card{padding:17px 20px 16px;}
+#courseModal .cw-lesson-focus-card .cw-notes-title{margin-bottom:11px;}
+#courseModal .cw-lesson-focus-card textarea{
+  background:#fff;border:1px solid #e1e5e2;border-radius:11px;
+  min-height:112px;width:100%;font-size:14px;line-height:1.7;padding:12px 14px;
+  resize:vertical;
+}
+#courseModal #coursePrivateNote{margin-bottom:12px;}
+#courseModal #coursePrivateNote summary span{font-size:12px;color:#78817a;font-weight:400;}
