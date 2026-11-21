@@ -792,16 +792,17 @@
           <aside class="cw-course-aside">
             <section class="cw-overview-card">
               <h4 class="cw-card-title"><span class="cw-card-symbol" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M7 3v4M17 3v4M3.5 10h17M7 14h3"/></svg></span>课程概览</h4>
-              <div class="cw-overview-row"><span>课程状态</span>
-                <details class="cw-status-control" id="cwStatusDetail">
-                  <summary id="cwOverviewStatus">待上课</summary>
+              <div class="cw-status-section">
+                <div class="cw-status-heading"><span>课程状态</span><strong id="cwOverviewStatus" aria-live="polite">待上课</strong></div>
+                <div class="cw-status-control" id="cwStatusDetail" role="group" aria-label="选择课程状态">
                   <div class="status-radios" id="fStatusGroup">
-                    <label><input type="radio" name="fStatus" value="planned"><span>待上</span></label>
-                    <label><input type="radio" name="fStatus" value="done"><span>已上</span></label>
-                    <label><input type="radio" name="fStatus" value="absent"><span>已请假</span></label>
-                    <label><input type="radio" name="fStatus" value="cancelled"><span>取消</span></label>
+                    <label><input type="radio" name="fStatus" value="planned"><span>待上课</span></label>
+                    <label><input type="radio" name="fStatus" value="done"><span>已上课</span></label>
+                    <label><input type="radio" name="fStatus" value="absent"><span>学生请假</span></label>
+                    <label><input type="radio" name="fStatus" value="cancelled"><span>取消课程</span></label>
                   </div>
-                </details>
+                </div>
+                <p class="cw-status-help" id="cwStatusSaveHint">更改状态后，请点击下方「保存」生效</p>
               </div>
               <div class="cw-overview-row"><span>课程类型</span><strong id="cwOverviewType">常规课</strong></div>
               <div class="cw-overview-row"><span>授课方式</span><strong class="cw-overview-mode" id="cwOverviewMode">线下授课</strong></div>
@@ -3402,7 +3403,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-21-visible-lesson-focus-v1';
+const APP_VERSION = '2026-11-21-direct-status-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */
@@ -3449,7 +3450,7 @@ if ('serviceWorker' in navigator) {
 <script src="./teaching-homework-actions.js?v=20261115-parity-v1"></script>
 <script src="./teaching-homework-model.js?v=20261112-v1"></script>
 <script src="./teaching-homework-editor.js?v=20261121-empty-homework-title-v1"></script>
-<script src="./teaching-course-workspace.js?v=20261120-design-images-v3"></script>
+<script src="./teaching-course-workspace.js?v=20261121-direct-status-v1"></script>
 <script src="./teaching-homework-index.js?v=20261118-batch-recovery-v1"></script>
 <script src="./teaching-homework.js?v=20261115-parity-v1"></script>
 </body>

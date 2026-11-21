@@ -68,6 +68,8 @@
     byId('courseHomeworkSide').replaceChildren();
     byId('courseProgressSide').replaceChildren();
     openedSignature=signature();
+    const hint=byId('cwStatusSaveHint');
+    if(hint){hint.textContent='更改状态后，请点击下方「保存」生效';hint.dataset.dirty='false';}
     context();applyTabVisibility();
   }
   function close(){
@@ -213,7 +215,10 @@
     if(modal){
       const update=event=>{
         if(event.target.closest('#courseInfoPanel'))refreshOverview();
-        if(event.target.matches('input[name="fStatus"]'))byId('cwStatusDetail').open=false;
+        if(event.target.matches('input[name="fStatus"]')){
+          const hint=byId('cwStatusSaveHint');
+          if(hint){hint.textContent='状态已选择，点击底部「保存」后生效';hint.dataset.dirty='true';}
+        }
       };
       modal.addEventListener('input',update);
       modal.addEventListener('change',update);
