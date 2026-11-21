@@ -31,7 +31,7 @@
       let assignment=assignmentId && plan && plan.assignments.find(a=>a.id===assignmentId);
       if(assignmentId && (!assignment || assignment.lifecycle!=='draft')) throw new Error('该作业不是可编辑草稿，请刷新');
       let state=assignment ? model.applyAssignment(assignment) : model.createState('staged',()=>crypto.randomUUID());
-      if(!assignment)state.form.title='本节课课后练习';
+      // 新建作业名称保持空白；仅显示 placeholder，避免教师每次先删除默认文字。
       let currentId=assignment ? assignment.id : crypto.randomUUID(), revision=plan ? plan.revision : 0;
       const draftKey='gb_hw_editor_v1_'+scope+'_'+course.id+'_'+(assignmentId||(legacyMode?'legacy':'new'));
       let draftWarning='',staleDraft=false,generating=false;
@@ -55,7 +55,7 @@
           root.querySelectorAll('fieldset').forEach((element,i)=>{for(const key of ['contentText','acceptanceCriteria','startBar','endBar']) state.tasks[i][key]=element.querySelector('[data-task="'+key+'"]').value;});
         };
         const saveLocal=()=>{if(staleDraft)return;try{localStorage.setItem(draftKey,JSON.stringify({revision,currentId,state}));}catch(_){root.querySelector('[data-message]').textContent='本机草稿保存失败，请勿关闭页面';}};
-        const plainState=()=>state.mode==='staged' && state.form.title==='本节课课后练习' &&
+        const plainState=()=>state.mode==='staged' && !state.form.title.trim() &&
           state.tasks.length===1 && !Object.entries(state.tasks[0]).some(([key,input])=>key!=='id' && input) &&
           !Object.entries(state.form).some(([key,input])=>key!=='title' && input);
         if(!assignmentId && !legacyMode && !course.isTrial && course.studentId && ['guitar','electric'].includes(course.instrument||'guitar')){
