@@ -593,7 +593,7 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261121-scandi-theme-v1">
+<link rel="stylesheet" href="./workspace.css?v=20261121-today-focus-v1">
 <link rel="stylesheet" href="./teaching-course-workspace.css?v=20261121-scandi-theme-v1">
 </head>
 <body>
@@ -1274,11 +1274,32 @@ function renderToday(){
                             .sort((a,b)=>a.start.localeCompare(b.start));
   const date=parseYMD(today);
   const todayAll=courses.filter(c=>c.date===today&&c.status!=='cancelled').length;
-  let html='<div class="today"><h2>今日课程<span class="today-count">'+todayItems.length+' 节待上</span></h2>'
-    +'<p class="today-date">'+(date.getMonth()+1)+'月'+date.getDate()+'日 · 周'+WEEKDAYS[(date.getDay()+6)%7]+'</p>'
-    +'<div class="today-hero" aria-label="今日共 '+todayAll+' 节课">'
-    +'<div class="today-hero-line"><span class="today-hero-word">今天</span><span class="today-hero-num">'+todayAll+'</span><span class="today-hero-unit">节课</span></div>'
-    +'</div>';
+  const todayDone=courses.filter(c=>c.date===today&&c.status==='done').length;
+  const monthDone=courses.filter(c=>c.date.slice(0,7)===today.slice(0,7)&&c.status==='done'&&c.studentId&&!isNonCountingCourse(c)).length;
+  // 时间轴节点：当天全部课程（含已完成），按开始时间排序；已完成用苔绿点，请假用陶土点
+  const axisAll=courses.filter(c=>c.date===today&&c.status!=='cancelled').sort((a,b)=>a.start.localeCompare(b.start));
+  const axisDot=c=>c.status==='done'?'done':(c.status==='absent'||c.status==='cancelled')?'warn':'';
+  const axisState=c=>c.status==='done'?'已上':c.status==='absent'?'请假':c.status==='cancelled'?'取消':'待上';
+  let html='<div class="today today-focus">'
+    +'<div class="tf-top"><span class="tf-eyebrow">今日课表</span><span class="tf-date">'+(date.getMonth()+1)+'月'+date.getDate()+'日 · 周'+WEEKDAYS[(date.getDay()+6)%7]+'</span></div>'
+    +'<div class="tf-hero" aria-label="今日共 '+todayAll+' 节课">'
+    +'<span class="tf-prefix">今天</span><span class="tf-num">'+todayAll+'</span><span class="tf-unit">节课</span>'
+    +'<span class="tf-strings" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>'
+    +'</div>'
+    +'<div class="tf-timeline">'
+    +'<div class="tf-axis" aria-hidden="true"></div>'
+    +'<div class="tf-nodes">'
+    +axisAll.map(c=>'<div class="tf-node"><div class="tf-time">'+esc(c.start)+'</div>'
+      +'<div class="tf-dot-wrap"><span class="tf-dot '+axisDot(c)+'"></span></div>'
+      +'<div class="tf-name">'+esc(courseWho(c))+'</div>'
+      +'<div class="tf-course">'+esc((isTrialCourse(c)?'体验 · ':'')+courseContent(c).split('\n')[0].slice(0,10))+'</div>'
+      +'<div class="tf-meta">'+esc(axisState(c))+'</div></div>').join('')
+    +'</div></div>'
+    +'<div class="tf-subs"><div class="tf-sub"><span class="tf-sub-n">'+todayItems.length+'</span><span class="tf-sub-l">待上</span></div>'
+    +'<div class="tf-sub"><span class="tf-sub-n">'+todayDone+'</span><span class="tf-sub-l">今日已上</span></div>'
+    +'<div class="tf-sub"><span class="tf-sub-n">'+monthDone+'</span><span class="tf-sub-l">本月已上</span></div></div>'
+    +'<div class="tf-sep"></div>'
+    +'<div class="tf-list-title">待上课程<span class="tf-count">'+todayItems.length+'</span></div>';
   if(!todayItems.length) html+='<div class="empty">今天没有待上课程。</div>';
   const renderItem=(c,over)=>{
     const d=parseYMD(c.date);
@@ -3422,7 +3443,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-21-scandi-theme-v1';
+const APP_VERSION = '2026-11-21-today-focus-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */

@@ -115,7 +115,7 @@ test('today action list keeps older courses collapsed and escapes course labels'
     courses.push({id:'6',studentId:'a',date:'2026-10-20',start:'09:00',end:'10:00',status:'planned'});
     renderToday()`);
   const result = elements.get('todayBar').innerHTML;
-  assert.match(result, /1 节待上/);
+  assert.match(result, /tf-sub-n">1<\/span><span class="tf-sub-l">待上/);
   assert.match(result, /<details class="overdue-list"><summary>/);
   assert.doesNotMatch(result, /<details[^>]*\sopen/);
   assert.equal((result.match(/data-done=/g) || []).length, 2);
