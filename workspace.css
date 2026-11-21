@@ -154,6 +154,11 @@ button.primary{background:var(--primary);}
 .today h2{font-size:14px;color:var(--text);margin:0;justify-content:space-between;}
 .today-date{font-size:11px;color:var(--muted);margin:5px 0 18px;}
 .today-count{font-size:11px;background:var(--primary-soft);color:var(--primary);border-radius:5px;padding:3px 7px;}
+/* 今日课表巨数仪表：借用方向1的排版手法，沿用现有绿色主题 */
+.today-hero{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:16px 0 18px;margin:0 0 14px;}
+.today-hero-line{display:flex;align-items:baseline;gap:8px;}
+.today-hero-word,.today-hero-unit{font-size:14px;color:var(--text-2);font-weight:400;}
+.today-hero-num{font-size:78px;line-height:.9;font-weight:600;color:var(--primary);letter-spacing:-.04em;font-family:var(--font-display);font-variant-numeric:tabular-nums;}
 .today .empty{font-size:12px;padding:24px 4px;text-align:left;}
 .titem{position:relative;display:grid;grid-template-columns:1fr auto;gap:8px;border:0;border-top:1px solid var(--line);border-radius:0;margin:0;padding:15px 0;background:transparent;}
 .titem .when{font-size:12px;font-weight:600;color:var(--text);min-width:0;}
@@ -198,6 +203,7 @@ button.primary{background:var(--primary);}
   .bottomnav{padding-top:5px;padding-bottom:calc(5px + env(safe-area-inset-bottom));}.bottomnav button{font-size:10px;}.bottomnav button.active{background:transparent;}
   .collapse-head{padding:12px;}.collapse-head h3{margin-right:auto;}.collapse-head .spacer{display:none;}
   .today{padding:18px;}.today .titem{grid-template-columns:1fr auto;}.titem .acts{grid-column:2;grid-row:2;}.titem .who{grid-column:1;}
+  .today-hero-num{font-size:64px;}
   .schedule-heading{padding:15px;}.schedule-head-actions{gap:8px;}.schedule-legend{gap:8px;}.schedule-repeat{font-size:10px;padding:4px 7px;}
 }
 @media(max-width:380px){.summary-metric{padding:0 10px;}.summary-metric small{margin-left:3px;font-size:10px;}.top-add-text{display:none;}.schedule-legend{gap:5px;font-size:9px;}}

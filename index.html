@@ -465,6 +465,10 @@
   .salary-result .amount{font-size:48px;font-weight:700;font-family:var(--font-display);color:var(--primary);line-height:1.1;margin-bottom:var(--s2);}
   .salary-result .amount small{font-size:20px;font-weight:500;}
   .salary-result .label{font-size:14px;color:var(--muted);margin-bottom:var(--s1);}
+  /* 规则拆解行：借用方向1的公式排版，沿用现有绿色主题 */
+  .salary-formula{display:flex;justify-content:center;align-items:baseline;gap:6px;flex-wrap:wrap;margin:0 auto var(--s4);padding:0 0 12px;border-bottom:1px solid var(--line);max-width:640px;font-size:13px;color:var(--text-2);font-variant-numeric:tabular-nums;}
+  .salary-formula .op{color:var(--muted-2);opacity:.65;}
+  .salary-formula .sum{font-weight:600;color:var(--primary);}
   .salary-breakdown{display:flex;justify-content:center;gap:var(--s5);flex-wrap:wrap;margin-top:var(--s3);}
   .salary-breakdown-item{text-align:center;padding:var(--s3) var(--s4);background:rgba(255,255,255,0.5);border-radius:var(--r-sm);min-width:120px;border:1px solid var(--line);}
   .salary-breakdown-item .val{font-size:20px;font-weight:600;font-family:var(--font-display);color:var(--text);}
@@ -586,7 +590,7 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261118-student-search-v1">
+<link rel="stylesheet" href="./workspace.css?v=20261121-hero-gauge-v1">
 <link rel="stylesheet" href="./teaching-course-workspace.css?v=20261120-design-images-v3">
 </head>
 <body>
@@ -1266,8 +1270,12 @@ function renderToday(){
   const todayItems = courses.filter(c=>c.date===today&&c.status!=='done'&&c.status!=='absent'&&c.status!=='cancelled')
                             .sort((a,b)=>a.start.localeCompare(b.start));
   const date=parseYMD(today);
+  const todayAll=courses.filter(c=>c.date===today&&c.status!=='cancelled').length;
   let html='<div class="today"><h2>今日课程<span class="today-count">'+todayItems.length+' 节待上</span></h2>'
-    +'<p class="today-date">'+(date.getMonth()+1)+'月'+date.getDate()+'日 · 周'+WEEKDAYS[(date.getDay()+6)%7]+'</p>';
+    +'<p class="today-date">'+(date.getMonth()+1)+'月'+date.getDate()+'日 · 周'+WEEKDAYS[(date.getDay()+6)%7]+'</p>'
+    +'<div class="today-hero" aria-label="今日共 '+todayAll+' 节课">'
+    +'<div class="today-hero-line"><span class="today-hero-word">今天</span><span class="today-hero-num">'+todayAll+'</span><span class="today-hero-unit">节课</span></div>'
+    +'</div>';
   if(!todayItems.length) html+='<div class="empty">今天没有待上课程。</div>';
   const renderItem=(c,over)=>{
     const d=parseYMD(c.date);
@@ -1945,6 +1953,14 @@ function salaryUpdate(val, box, month){
   const grandTotal=r.total+extra;
   box.innerHTML='<div class="label">应得工资</div>'
     +'<div class="amount">¥<span id="salaryTotal">'+grandTotal.toFixed(0)+'</span></div>'
+    +'<div class="salary-formula">'
+    +'<span>基础 ¥'+r.base.toFixed(0)+'</span>'
+    +'<span class="op">+</span>'
+    +'<span>超出 '+r.overtimeHours+' 节 × '+SALARY_OVERTIME_RATE+' = ¥'+r.overtime.toFixed(0)+'</span>'
+    +(extra>0?'<span class="op">+</span><span>额外 ¥'+extra.toFixed(0)+'</span>':'')
+    +'<span class="op">=</span>'
+    +'<span class="sum">¥'+grandTotal.toFixed(0)+'</span>'
+    +'</div>'
     +'<div class="salary-breakdown">'
     +'<div class="salary-breakdown-item"><div class="val">¥'+r.base.toFixed(0)+'</div><div class="lbl">基础工资</div></div>'
     +(r.overtimeHours>0?'<div class="salary-breakdown-item"><div class="val" style="color:var(--green)">+'+r.overtime.toFixed(0)+'</div><div class="lbl">超时('+r.overtimeHours+'节×90)</div></div>':'')
@@ -3403,7 +3419,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-21-direct-status-v1';
+const APP_VERSION = '2026-11-21-hero-gauge-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */
