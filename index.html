@@ -593,8 +593,8 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261121-today-focus-v2">
-<link rel="stylesheet" href="./teaching-course-workspace.css?v=20261121-scandi-theme-v1">
+<link rel="stylesheet" href="./workspace.css?v=20261122-student-search-v1">
+<link rel="stylesheet" href="./teaching-course-workspace.css?v=20261122-student-search-v1">
 </head>
 <body>
 <div id="toast"></div>
@@ -755,9 +755,14 @@
                   </div>
                 </div>
                 <div class="cw-inline-field" id="fStudentRow">
-                  <label class="cw-field-caption cw-caption-icon" for="fStudent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.5" r="3.5"/><path d="M4.5 21v-2a7.5 7.5 0 0 1 15 0v2"/></svg>学员 <span class="cw-required">*</span></label>
+                  <label class="cw-field-caption cw-caption-icon" for="fStudentSearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.5" r="3.5"/><path d="M4.5 21v-2a7.5 7.5 0 0 1 15 0v2"/></svg>学员 <span class="cw-required">*</span></label>
                   <div class="cw-field-control cw-student-control">
-                    <select id="fStudent" aria-label="选择学员"></select>
+                    <div class="stu-combo">
+                      <svg class="stu-combo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4 4"/></svg>
+                      <input id="fStudentSearch" class="stu-combo-input" type="text" placeholder="输入姓名搜索" autocomplete="off" aria-label="搜索学员" role="combobox" aria-expanded="false" aria-controls="fStudentOptions">
+                      <div id="fStudentOptions" class="stu-combo-list" role="listbox" hidden></div>
+                      <select id="fStudent" aria-label="选择学员" hidden></select>
+                    </div>
                     <button type="button" class="inlinenew" id="newStudentQuick">＋ 新建学员</button>
                   </div>
                 </div>
@@ -1643,6 +1648,7 @@ function renderEdit(){
     const id=b.dataset.stuBook;
     openCourseModal(null);                          // 排课 = 新增课程并预选该学员
     document.getElementById('fStudent').value=id;
+    if(typeof syncStudentSearchFromSelect==='function') syncStudentSearchFromSelect();
   });
   v.querySelectorAll('[data-stu-view]').forEach(el=>el.onclick=()=>{
     window.TeachingBalanceView.select(el.dataset.stuView);
@@ -2262,6 +2268,8 @@ let pendingCopyDay='';
 function captureCourseDraft(){
   const ids=['fStudent','fTrialName','fDate','fStart','fEnd','fNote','fHomework','fLessonContent'];
   const values={}; ids.forEach(id=>{ values[id]=document.getElementById(id).value; });
+  const studentSearch=document.getElementById('fStudentSearch');
+  if(studentSearch) values.fStudentSearch=studentSearch.value;
   return {
     values, type:courseFormType, status:getRadio('fStatus'),
     noteOpen:document.getElementById('coursePrivateNote').open,
@@ -2275,13 +2283,18 @@ function returnToCourseDraft(newStudentId){
   pendingCourseDraft=null;
   openCourseModal(editingCourseId||null);
   if(!draft) return;
-  Object.keys(draft.values).forEach(id=>{ document.getElementById(id).value=draft.values[id]; });
+  Object.keys(draft.values).forEach(id=>{ const el=document.getElementById(id); if(el) el.value=draft.values[id]; });
   setCourseType(draft.type);
   setRadio('fStatus',draft.status);
   document.getElementById('coursePrivateNote').open=draft.noteOpen;
   document.getElementById('courseModalTitle').textContent=draft.title;
   editingCourseBaseline=draft.originalCourse;
   if(newStudentId && draft.type!=='trial') document.getElementById('fStudent').value=newStudentId;
+  if(typeof syncStudentSearchFromSelect==='function') syncStudentSearchFromSelect();
+  if(!newStudentId && draft.values.fStudentSearch!=null){
+    const search=document.getElementById('fStudentSearch');
+    if(search) search.value=draft.values.fStudentSearch;
+  }
   document.getElementById('courseFormBody').scrollTop=draft.scroll;
   updateCourseDurDisplay();
 }
@@ -2308,6 +2321,88 @@ function fillStudentSelect(selId){
   const sel=document.getElementById(selId||'fStudent');
   sel.innerHTML=students.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join('')
     || '<option value="">（请先新增学员）</option>';
+  if(!selId || selId==='fStudent') syncStudentSearchFromSelect();
+}
+function hideStudentOptions(){
+  const list=document.getElementById('fStudentOptions');
+  const input=document.getElementById('fStudentSearch');
+  if(list){ list.hidden=true; list.innerHTML=''; }
+  if(input && typeof input.setAttribute==='function') input.setAttribute('aria-expanded','false');
+}
+function syncStudentSearchFromSelect(){
+  const sel=document.getElementById('fStudent');
+  const input=document.getElementById('fStudentSearch');
+  if(!sel||!input) return;
+  const chosen=students.find(s=>s.id===sel.value);
+  input.value=chosen?chosen.name:'';
+  hideStudentOptions();
+}
+function renderStudentOptions(){
+  const sel=document.getElementById('fStudent');
+  const list=document.getElementById('fStudentOptions');
+  const input=document.getElementById('fStudentSearch');
+  if(!sel||!list||!input) return;
+  const q=String(input.value||'').trim().toLowerCase();
+  const matched=students.filter(s=>!q||String(s.name||'').toLowerCase().indexOf(q)>=0);
+  if(!matched.length){
+    list.innerHTML='<div class="stu-combo-empty">'+(students.length?'未找到匹配学员':'请先新增学员')+'</div>';
+  }else{
+    let activeSet=false;
+    list.innerHTML=matched.map((s,i)=>{
+      const selected=sel.value===s.id;
+      const active=selected||(!activeSet&&i===0);
+      if(active) activeSet=true;
+      return '<div class="stu-combo-opt'+(active?' active':'')+'" data-stu-id="'+esc(s.id)+'" role="option" aria-selected="'+selected+'"><span>'+esc(s.name)+'</span>'+(selected?'<span class="stu-combo-check">✓</span>':'')+'</div>';
+    }).join('');
+  }
+  list.hidden=false;
+  if(typeof input.setAttribute==='function') input.setAttribute('aria-expanded','true');
+}
+function selectStudentOption(id){
+  const sel=document.getElementById('fStudent');
+  const input=document.getElementById('fStudentSearch');
+  if(!sel||!input) return;
+  sel.value=id;
+  const chosen=students.find(s=>s.id===id);
+  input.value=chosen?chosen.name:'';
+  hideStudentOptions();
+  if(typeof Event==='function') sel.dispatchEvent(new Event('change',{bubbles:true}));
+}
+function bindStudentCombo(){
+  const input=document.getElementById('fStudentSearch');
+  const list=document.getElementById('fStudentOptions');
+  if(!input||!list||input.dataset.bound) return;
+  input.dataset.bound='1';
+  input.addEventListener('focus',()=>{ input.select(); renderStudentOptions(); });
+  input.addEventListener('click',()=>renderStudentOptions());
+  input.addEventListener('input',()=>renderStudentOptions());
+  input.addEventListener('keydown',e=>{
+    if(e.isComposing) return;
+    if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); hideStudentOptions(); return; }
+    const opts=Array.from(list.querySelectorAll('.stu-combo-opt'));
+    if(!opts.length) return;
+    let idx=opts.findIndex(o=>o.classList.contains('active'));
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+      e.preventDefault();
+      idx=e.key==='ArrowDown'?Math.min(idx+1,opts.length-1):Math.max(idx-1,0);
+      opts.forEach((o,i)=>o.classList.toggle('active',i===idx));
+      if(opts[idx]&&opts[idx].scrollIntoView) opts[idx].scrollIntoView({block:'nearest'});
+    }else if(e.key==='Enter'){
+      e.preventDefault();
+      const opt=opts[idx>=0?idx:0];
+      if(opt) selectStudentOption(opt.dataset.stuId);
+    }
+  });
+  list.addEventListener('mousedown',e=>{
+    const opt=e.target.closest('.stu-combo-opt');
+    if(!opt) return;
+    e.preventDefault();
+    selectStudentOption(opt.dataset.stuId);
+  });
+  input.addEventListener('blur',()=>{ setTimeout(hideStudentOptions,0); });
+  document.addEventListener('click',e=>{
+    if(!e.target.closest('.stu-combo')) hideStudentOptions();
+  });
 }
 /* ===== 课程类型：常规课（默认）| 体验课 | 网课 | 上门教学 =====
    常规课 → 学员下拉，只能选在读名单，校验逻辑与原来完全一致（未做任何放宽）
@@ -2322,6 +2417,7 @@ function setCourseType(t){
   const triRow=document.getElementById('fTrialRow');
   if(regRow) regRow.hidden = courseFormType==='trial';
   if(triRow) triRow.hidden = courseFormType!=='trial';
+  if(courseFormType==='trial' && typeof hideStudentOptions==='function') hideStudentOptions();
   document.getElementById("fInstrumentRow").hidden = courseFormType==="trial";
   const hint=document.getElementById('courseTypeHint');
   if(hint) hint.textContent = (courseFormType==='online'||courseFormType==='home') ? '已上课会扣减学员课包，但不计入教师工资与月度教师课时。' : '';
@@ -2340,6 +2436,7 @@ function openCourseModal(id){
     editingCourseBaseline=snapshotEditable(c);
     document.getElementById('courseModalTitle').textContent='编辑课程';
     document.getElementById('fStudent').value=c.studentId;
+    syncStudentSearchFromSelect();
     document.getElementById('fDate').value=c.date;
     document.getElementById('fStart').value=c.start;
     document.getElementById('fEnd').value=c.end;
@@ -2356,6 +2453,7 @@ function openCourseModal(id){
     editingCourseId=null; editingCourseBaseline=null;
     document.getElementById('courseModalTitle').textContent='新增课程';
     document.getElementById('fStudent').selectedIndex=0;
+    syncStudentSearchFromSelect();
     document.getElementById('fDate').value=lastClickedDate || todayStr();
     document.getElementById('fStart').value='16:00';
     document.getElementById('fEnd').value=addMinutes('16:00', DEFAULT_COURSE_DURATION);
@@ -2382,6 +2480,7 @@ function openCourseModalAsCopy(sourceId){
   editingCourseId=null; editingCourseBaseline=null;
   document.getElementById('courseModalTitle').textContent='复制课程';
   document.getElementById('fStudent').value=src.studentId;
+  syncStudentSearchFromSelect();
   document.getElementById('fDate').value=src.date;
   document.getElementById('fStart').value=src.start;
   document.getElementById('fEnd').value=src.end;
@@ -3371,6 +3470,7 @@ function init(){
   document.getElementById('fStart').addEventListener('input', syncEndFromStart);
   document.getElementById('fEnd').addEventListener('change', updateCourseDurDisplay);
   document.getElementById('fEnd').addEventListener('input', updateCourseDurDisplay);
+  bindStudentCombo();
   document.getElementById('newStudentQuick').onclick=()=>{
     pendingCourseDraft=captureCourseDraft();
     pendingReturnToCourse=true;
@@ -3442,7 +3542,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-21-today-focus-v2';
+const APP_VERSION = '2026-11-22-student-search-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */

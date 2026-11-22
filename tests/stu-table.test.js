@@ -388,6 +388,35 @@ t('新增课程的默认值：开始 16:00、结束 16:50', () => {
   ok(body.indexOf("addMinutes('16:00', DEFAULT_COURSE_DURATION)") >= 0, '默认结束应为 开始+默认时长');
 });
 
+console.log('\n=== 9. 课程学员搜索选择器 ===');
+t('可见搜索框 + 结果列表 + 隐藏原生下拉同时存在', () => {
+  ok(HTML.indexOf('id="fStudentSearch"') >= 0, '缺少学员搜索输入框');
+  ok(HTML.indexOf('id="fStudentOptions"') >= 0, '缺少学员结果列表');
+  ok(HTML.indexOf('id="fStudent" aria-label="选择学员" hidden') >= 0, '应保留隐藏原生下拉作为数据出口');
+});
+t('输入姓名实时筛选，点选后回填并关闭列表', () => {
+  const sel={value:'s1', dispatchEvent(){ this.changed=true; }};
+  const input={value:'', setAttribute(k,v){ this[k]=v; }};
+  const list={hidden:true, innerHTML:''};
+  const doc={getElementById:id=>({fStudent:sel,fStudentSearch:input,fStudentOptions:list})[id]||null};
+  const students=[{id:'s1',name:'胡启桓'},{id:'s2',name:'胡煜千'},{id:'s3',name:'张元锐'}];
+  const api=new Function('document','students','Event',[
+    extractFn('esc'), extractFn('hideStudentOptions'),
+    extractFn('renderStudentOptions'), extractFn('selectStudentOption'),
+    'return {renderStudentOptions,selectStudentOption};'
+  ].join('\n'))(doc, students, class Event { constructor(type,opts){ this.type=type; Object.assign(this,opts||{}); } });
+  input.value='胡';
+  api.renderStudentOptions();
+  ok(list.hidden===false, '输入后应展开结果列表');
+  ok(list.innerHTML.indexOf('胡启桓')>=0 && list.innerHTML.indexOf('胡煜千')>=0, '应列出匹配学员');
+  ok(list.innerHTML.indexOf('张元锐')<0, '不应列出不匹配学员');
+  ok(list.innerHTML.indexOf('stu-combo-opt active')>=0, '应有默认高亮项供键盘选择');
+  api.selectStudentOption('s2');
+  ok(sel.value==='s2' && input.value==='胡煜千', '点选应同步隐藏下拉与可见输入框');
+  ok(sel.changed===true, '点选应发出 change 事件');
+  ok(list.hidden===true && list.innerHTML==='', '点选后应收起并清空结果列表');
+});
+
 console.log('\n' + '─'.repeat(52));
 console.log(fail === 0 ? `全部通过：${pass} 项 ✓` : `通过 ${pass} 项，失败 ${fail} 项 ✗`);
 process.exit(fail === 0 ? 0 : 1);
