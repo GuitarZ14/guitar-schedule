@@ -595,8 +595,8 @@
 </style>
 <link rel="stylesheet" href="./workspace.css?v=20261122-swiss-stage1">
 <link rel="stylesheet" href="./teaching-course-workspace.css?v=20261122-swiss-stage1">
-<link rel="stylesheet" href="./geist-fonts.css?v=20261122-student-empty-v1">
-<link rel="stylesheet" href="./theme-swiss.css?v=20261122-student-empty-v1">
+<link rel="stylesheet" href="./geist-fonts.css?v=20261122-dedup-cancelled-v1">
+<link rel="stylesheet" href="./theme-swiss.css?v=20261122-dedup-cancelled-v1">
 </head>
 <body>
 <div id="toast"></div>
@@ -3569,7 +3569,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-22-student-empty-v1';
+const APP_VERSION = '2026-11-22-dedup-cancelled-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */
@@ -3605,7 +3605,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-<script src="./teaching-core.js?v=20261112-safety-v1"></script>
+<script src="./teaching-core.js?v=20261122-dedup-cancelled-v1"></script>
 <script src="./teaching-package-actions.js?v=20261112-package-v1"></script>
 <script src="./teaching-package-dialog.js?v=20261112-package-v1"></script>
 <script src="./teaching-sync.js?v=20261112-history-v1"></script>
@@ -3616,10 +3616,10 @@ if ('serviceWorker' in navigator) {
 <script src="./teaching-homework-actions.js?v=20261115-parity-v1"></script>
 <script src="./teaching-homework-model.js?v=20261112-v1"></script>
 <script src="./teaching-homework-editor.js?v=20261121-empty-homework-title-v1"></script>
-<script src="./teaching-course-workspace.js?v=20261122-student-empty-v1"></script>
+<script src="./teaching-course-workspace.js?v=20261122-dedup-cancelled-v1"></script>
 <script src="./teaching-homework-index.js?v=20261118-batch-recovery-v1"></script>
 <script src="./teaching-homework.js?v=20261115-parity-v1"></script>
-<script src="./theme-swiss.js?v=20261122-student-empty-v1"></script>
+<script src="./theme-swiss.js?v=20261122-dedup-cancelled-v1"></script>
 </body>
 </html>
 

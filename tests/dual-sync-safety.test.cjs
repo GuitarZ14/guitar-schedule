@@ -8,6 +8,18 @@ const course=(id,category='regular',extra={})=>({id,studentId:student.id,date:'2
 const baseData={students:[student],courses:[course('reg'),course('online','online'),course('home','home'),course('trial','regular',{isTrial:true,trialName:'模拟体验'})],extraIncome:[{id:'income',date:'2026-11-06',amount:80,desc:'合成收入'}]};
 const versions=Object.fromEntries(['students_synthetic_student','courses_reg','courses_online','courses_home','courses_trial','extraIncome_income'].map(k=>[k,1]));
 const base={data:baseData,versions,revision:5};
+test('已取消的课不占用时段：取消后重新排课可通过，真正的重复仍被拒',()=>{
+ const mk=(id,status,date='2026-11-17')=>({id,studentId:student.id,date,start:'17:30',end:'18:20',status,instrument:'guitar',courseCategory:'regular'});
+ const empty={data:{students:[student],courses:[],extraIncome:[]},versions:{},revision:0};
+ const op=(id,status,date)=>({kind:'courses',id,version:0,data:mk(id,status,date)});
+ // 取消记录 + 同一时段新排课：应放行（否则同步会永久卡在「请勿重复排课」）
+ const ok=core.apply(empty,[op('cancel1','cancelled'),op('plan1','planned')]);
+ assert.equal(ok.data.courses.length,2);
+ // 两条仍占时段的课：必须继续拦截，避免同一节课被重复计课时
+ assert.throws(()=>core.apply(empty,[op('plan2','planned'),op('plan3','planned')]),/请勿重复排课/);
+ assert.throws(()=>core.apply(empty,[op('done1','done'),op('done2','done')]),/请勿重复排课/);
+ assert.throws(()=>core.apply(empty,[op('abs1','absent'),op('abs2','absent')]),/请勿重复排课/);
+});
 test('physical course and student deletion rejected by local shared teaching validation',()=>{
  for(const kind of ['courses','students']){
   const id=kind==='students'?'synthetic_student':'reg';

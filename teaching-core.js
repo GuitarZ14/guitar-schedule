@@ -146,6 +146,9 @@
     });
     const duplicates = new Set();
     next.data.courses.forEach(c => {
+      // 已取消的课只是历史留存，不再占用时段：取消后可以在同一时段重新排课。
+      // 待上/已上/请假仍占时段，避免同一节课被重复计入课时。
+      if (c.status === 'cancelled') return;
       const k = [c.date, c.start, c.end, c.isTrial ? 'trial:' + c.trialName : c.studentId].join('|');
       if (duplicates.has(k)) fail('同一学员存在完全相同的课程，请勿重复排课');
       duplicates.add(k);
