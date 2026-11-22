@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>吉他教学工作台</title>
 <link rel="manifest" href="./manifest.webmanifest">
-<meta name="theme-color" content="#D2BBA1">
+<meta name="theme-color" content="#F5EEE3">
 <link rel="apple-touch-icon" href="./icons/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -14,17 +14,17 @@
   /* ===== 设计系统：简约线性 (Minimal Line) ===== */
   :root{
     /* === Scandinavian warm-wood palette (direction-1 prototype) === */
-    --paper:#F7F3EC; --greige:#E7E1D8; --wood:#D2BBA1; --wood-d:#7A5F44;
+    --paper:#FFFFFF; --greige:#F0EAE2; --wood:#F5EEE3; --wood-d:#6B5138;
     --ink:#2F2B27; --sage:#7C8577; --clay:#B87A5B;
     /* 表面：奶油白，米灰发丝线 */
     --glass:#FFFFFF;
-    --glass-strong:#FFFDF9;
-    --glass-border:#E7E1D8;
+    --glass-strong:#FFFFFF;
+    --glass-border:#F0EAE2;
     --blur:0px;
     /* 文字（暖墨） */
     --text:#2F2B27; --text-2:#5F584E; --muted:#8C8377; --muted-2:#9B9286;
     /* 主色：自然木色 */
-    --primary:#A98A6A; --primary-d:#7A5F44; --primary-soft:#F1E7DA;
+    --primary:#D8C4AC; --primary-d:#6B5138; --primary-soft:#F4EDE2;
     /* 语义色（低饱和，与暖调协调） */
     --green:#7C8577; --green-soft:rgba(124,133,119,0.15);
     --blue:#7C8C93;  --blue-soft:rgba(124,140,147,0.13);
@@ -32,7 +32,7 @@
     --gray:#9A9388;  --gray-soft:rgba(154,147,136,0.16);
     --warn:#C59A4E;  --warn-soft:rgba(197,154,78,0.13);
     /* 线条 / 间距标尺 */
-    --line:#E7E1D8;
+    --line:#F0EAE2;
     --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
     /* 圆角（利落但友好） */
     --r-sm:10px; --r-md:14px; --r-lg:18px; --r-pill:999px;
@@ -50,7 +50,7 @@
   html,body{margin:0;padding:0;}
   body{
     font-family:var(--font-body);
-    background:#F7F3EC;
+    background:#FFFFFF;
     min-height:100vh;
     color:var(--text); font-size:16px; line-height:1.6;
     -webkit-text-size-adjust:100%;
@@ -135,7 +135,7 @@
   button:hover{background:var(--glass-strong); transform:translateY(-1px); box-shadow:var(--sh-2);}
   button:active{transform:translateY(0);}
   button svg{width:18px;height:18px;}
-  button.primary{background:var(--primary); color:#fff; border-color:transparent; box-shadow:var(--sh-1);}
+  button.primary{background:var(--primary); color:#6B5138; border-color:transparent; box-shadow:var(--sh-1);}
   button.primary:hover{background:var(--primary-d);}
   button.danger{background:var(--red-soft); color:var(--red); border-color:rgba(242,92,106,0.3);}
   button.danger:hover{background:rgba(242,92,106,0.20);}
@@ -319,7 +319,7 @@
   .stu-table td.dt-col{white-space:normal;}   /* 显式解除单元格 nowrap，保证 flex 容器能折行（双保险） */
   .dtags{display:flex; gap:4px; align-items:center; flex-wrap:wrap; max-width:210px;}
   .dtag{font-size:13px; font-weight:600; padding:2px 7px; border-radius:var(--r-sm); background:rgba(169,138,106,.12); border:1px solid rgba(169,138,106,.3); color:var(--text-2); font-family:var(--font-display); white-space:nowrap;}
-  .dtag.soon{background:var(--primary); border-color:var(--primary); color:#fff;}
+  .dtag.soon{background:var(--primary); border-color:var(--primary); color:#6B5138;}
   .dtag-none{color:var(--muted-2); font-size:12px;}
   .stu-table b{font-variant-numeric:tabular-nums; font-family:var(--font-display);}
   .h-ok{color:var(--text-2);}
@@ -509,14 +509,14 @@
   .extra-income-item .ei-inline-form input[type=text]{flex:1;min-width:0;font-size:13px;padding:6px 9px;border:1px solid var(--line);border-radius:var(--r-sm);background:#fff;font-family:var(--font-body);color:var(--text);}
   .extra-income-item .ei-inline-form input[type=number]{width:80px;min-width:60px;font-size:13px;padding:6px 9px;border:1px solid var(--line);border-radius:var(--r-sm);background:#fff;font-family:var(--font-display);font-weight:600;color:var(--green);text-align:center;}
   .extra-income-item .ei-inline-form input[type=date]{width:132px;min-width:118px;font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:var(--r-sm);background:#fff;font-family:var(--font-body);color:var(--text);}
-  .extra-income-item .ei-inline-form .ei-save{padding:5px 10px;border:none;background:var(--primary);color:#fff;border-radius:var(--r-sm);font-size:12px;cursor:pointer;white-space:nowrap;}
+  .extra-income-item .ei-inline-form .ei-save{padding:5px 10px;border:none;background:var(--primary);color:#6B5138;border-radius:var(--r-sm);font-size:12px;cursor:pointer;white-space:nowrap;}
   .extra-income-item .ei-inline-form .ei-cancel{padding:5px 10px;border:none;background:var(--glass);color:var(--text-2);border:1px solid var(--line);border-radius:var(--r-sm);font-size:12px;cursor:pointer;}
   .extra-income-form{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;}
   .extra-income-form input[type=date]{width:150px;min-width:130px;font-size:16px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:rgba(255,255,255,0.7);font-family:var(--font-body);color:var(--text);}
   .ei-date-hint{flex-basis:100%;font-size:12px;color:var(--muted);margin-top:-2px;}
   .extra-income-form input[type=text]{flex:1;min-width:0;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:rgba(255,255,255,0.7);font-family:var(--font-body);color:var(--text);}
   .extra-income-form input[type=number]{width:90px;min-width:70px;font-size:14px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm);background:rgba(255,255,255,0.7);font-family:var(--font-display);font-weight:600;color:var(--green);text-align:center;}
-  .extra-income-form button{padding:9px 14px;border:none;background:var(--primary);color:#fff;border-radius:var(--r-sm);font-size:13px;font-family:var(--font-body);cursor:pointer;white-space:nowrap;transition:opacity var(--t);}
+  .extra-income-form button{padding:9px 14px;border:none;background:var(--primary);color:#6B5138;border-radius:var(--r-sm);font-size:13px;font-family:var(--font-body);cursor:pointer;white-space:nowrap;transition:opacity var(--t);}
   .extra-income-form button:hover{opacity:.85;}
   .extra-income-sum{text-align:center;padding:var(--s2) var(--s4);margin-top:var(--s2);font-size:13px;color:var(--muted);}
   .extra-income-sum b{color:var(--green);font-size:16px;}
@@ -593,8 +593,8 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261122-sidebar-light-v1">
-<link rel="stylesheet" href="./teaching-course-workspace.css?v=20261122-sidebar-light-v1">
+<link rel="stylesheet" href="./workspace.css?v=20261122-extreme-white-v1">
+<link rel="stylesheet" href="./teaching-course-workspace.css?v=20261122-extreme-white-v1">
 </head>
 <body>
 <div id="toast"></div>
@@ -3542,7 +3542,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-22-sidebar-light-v1';
+const APP_VERSION = '2026-11-22-extreme-white-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */
