@@ -433,6 +433,25 @@ t('输入姓名实时筛选，点选后回填并关闭列表', () => {
   ok(list.hidden===true && list.innerHTML==='', '点选后应收起并清空结果列表');
 });
 
+console.log('\n=== 9.1 新增课程不预选学员（防止静默记错人） ===');
+t('学员下拉首项必须是空选项，且新增分支不按索引默认选中第一个学员', () => {
+  const sel = { innerHTML: '' };
+  const input = { value: 'should-be-cleared', setAttribute(){} };
+  const doc = { getElementById: id => ({ fStudent: sel, fStudentSearch: input, fStudentOptions: null })[id] || null };
+  const roster = [{ id: 's1', name: '乐乐' }, { id: 's2', name: '郑洁' }];
+  const fill = new Function('document', 'students',
+    [extractFn('esc'), extractFn('hideStudentOptions'), extractFn('syncStudentSearchFromSelect'), extractFn('fillStudentSelect'), 'return fillStudentSelect;'].join('\n')
+  )(doc, roster);
+  fill();
+  ok(sel.innerHTML.indexOf('<option value="">') === 0, '首项必须是 value="" 的空选项');
+  ok(sel.innerHTML.indexOf('乐乐') > 0, '学员仍应全部列出');
+  ok(input.value === '', '空选项时搜索框必须清空，不能残留上一个学员名');
+
+  const body = extractFn('openCourseModal');
+  ok(body.indexOf("fStudent').selectedIndex=0") < 0, '新增分支不得用 selectedIndex=0（会默认选中第一个学员）');
+  ok(body.indexOf("fStudent').value=''") >= 0, '新增分支应显式清空学员选择');
+});
+
 console.log('\n' + '─'.repeat(52));
 console.log(fail === 0 ? `全部通过：${pass} 项 ✓` : `通过 ${pass} 项，失败 ${fail} 项 ✗`);
 process.exit(fail === 0 ? 0 : 1);

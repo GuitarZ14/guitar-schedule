@@ -22,8 +22,9 @@
   function refreshOverview(){
     const kind=typeof courseFormType==='string'?courseFormType:'regular';
     const rawDate=byId('fDate')?.value||'',start=byId('fStart')?.value||'',end=byId('fEnd')?.value||'';
+    const stuSel=byId('fStudent');
     const name=kind==='trial'?(byId('fTrialName')?.value||'体验课学员'):
-      (byId('fStudent')?.selectedOptions?.[0]?.textContent||'未选择学员');
+      (stuSel&&stuSel.value?(stuSel.selectedOptions?.[0]?.textContent||'未选择学员'):'未选择学员');
     const status=getRadio('fStatus');
     const statuses={planned:'待上课',done:'已上课',absent:'已请假',cancelled:'已取消'};
     const type=kind==='trial'?'体验课':'常规课';

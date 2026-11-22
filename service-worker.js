@@ -3,7 +3,7 @@
  *       JSONBin 备份接口始终走网络（不缓存，避免脏数据）。
  * 更新：改 CACHE 版本号即可让旧缓存失效。
  */
-const CACHE = 'guitar-wb-v94-cancel-v1';
+const CACHE = 'guitar-wb-v95-student-empty-v1';
 
 // 应用外壳（缓存这些即可离线运行；任意文件缺失也不阻断安装）
 const SHELL = [
@@ -28,14 +28,14 @@ const SHELL = [
   './teaching-homework-actions.js?v=20261115-parity-v1',
   './teaching-homework-model.js?v=20261112-v1',
   './teaching-homework-editor.js?v=20261121-empty-homework-title-v1',
-  './teaching-course-workspace.js?v=20261121-direct-status-v1',
-  './teaching-course-workspace.css?v=20261122-cancel-v1',
+  './teaching-course-workspace.js?v=20261122-student-empty-v1',
+  './teaching-course-workspace.css?v=20261122-student-empty-v1',
   './teaching-homework-index.js?v=20261118-batch-recovery-v1',
   './teaching-homework.js?v=20261115-parity-v1',
-  './workspace.css?v=20261122-cancel-v1',
-  './geist-fonts.css?v=20261122-cancel-v1',
-  './theme-swiss.css?v=20261122-cancel-v1',
-  './theme-swiss.js?v=20261122-cancel-v1',
+  './workspace.css?v=20261122-student-empty-v1',
+  './geist-fonts.css?v=20261122-student-empty-v1',
+  './theme-swiss.css?v=20261122-student-empty-v1',
+  './theme-swiss.js?v=20261122-student-empty-v1',
   './manifest.webmanifest',
   './icon.svg',
   './icons/icon-16.png',
