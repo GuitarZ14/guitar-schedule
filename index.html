@@ -595,8 +595,8 @@
 </style>
 <link rel="stylesheet" href="./workspace.css?v=20261122-swiss-stage1">
 <link rel="stylesheet" href="./teaching-course-workspace.css?v=20261122-swiss-stage1">
-<link rel="stylesheet" href="./geist-fonts.css?v=20261122-swiss-stage1">
-<link rel="stylesheet" href="./theme-swiss.css?v=20261122-swiss-stage1">
+<link rel="stylesheet" href="./geist-fonts.css?v=20261122-swiss-stage2">
+<link rel="stylesheet" href="./theme-swiss.css?v=20261122-swiss-stage2">
 </head>
 <body>
 <div id="toast"></div>
@@ -1392,9 +1392,11 @@ function courseCardHTML(c){
     const bg  = st==='absent'?'var(--blue-soft)':'var(--gray-soft)';
     stat='<span class="cstat" style="color:'+col+';background:'+bg+'">'+txt+'</span>';
   }
-  return '<div class="ccard '+statCls+'" role="button" tabindex="0" aria-label="编辑 '+esc(courseWho(c)+' '+c.start+' '+(STATUS_TXT[st]||''))+'" style="--c:'+color+'" data-edit="'+c.id+'">'
-    +'<div class="ct">'+esc(c.start+'~'+c.end)+'</div>'
+  const brief=String(courseContent(c)||'').split('\n').map(s=>s.trim()).filter(Boolean)[0]||'';
+  return '<div class="ccard '+statCls+' k-'+courseKind(c)+'" role="button" tabindex="0" aria-label="编辑 '+esc(courseWho(c)+' '+c.start+' '+(STATUS_TXT[st]||''))+'" style="--c:'+color+'" data-edit="'+c.id+'">'
+    +'<div class="ct">'+esc(c.start+'–'+c.end)+'</div>'
     +'<div class="cn"><span class="cdot"></span>'+esc(courseWho(c))+trialBadge(c)+'</div>'
+    +(brief?'<div class="cc">'+esc(brief)+'</div>':'')
     +stat+'</div>';
 }
 function courseSurname(c){
@@ -3557,7 +3559,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-22-swiss-stage1';
+const APP_VERSION = '2026-11-22-swiss-stage2';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */

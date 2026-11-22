@@ -332,28 +332,534 @@ input[type=checkbox],input[type=radio]{accent-color:#000;}
   .tf-num{font-size:50px;}
 }
 
-/* ---------- 8. 周课表：去掉学员分色，改用状态编码（仅颜色，第二阶段再重排布局） ---------- */
-.ccard{
-  border-left:2px solid #000;background:#fff;border:1px solid #E5E5E5;border-left:2px solid #000;
-  padding:9px 8px;margin:0 0 7px;
+/* ---------- 8. 周课表：重排为七列等高时间格 ---------- */
+.schedule-panel{background:#fff;border:1px solid var(--line);}
+.schedule-heading{padding:14px 16px;border-bottom:1px solid var(--line);align-items:center;}
+.schedule-heading h2{font-size:15px;font-weight:600;letter-spacing:-.01em;}
+.schedule-head-actions{gap:14px;}
+.schedule-legend{gap:11px;font-family:var(--font-mono);font-size:10px;color:#5C5C5C;}
+.schedule-legend span{gap:5px;}
+.legend-dot{border-radius:0;width:9px;height:9px;background:#fff;border:1px solid #000;border-left-width:3px;}
+.legend-dot.done{background:#F2F2F2;border-color:#D4D4D4;border-left-width:1px;}
+.legend-dot.absent{background:#fff;border:1px dashed #6B6B6B;border-left-width:1px;}
+.schedule-repeat{border:1px solid #D4D4D4;border-radius:0;background:#fff;color:#000;font-size:11px;min-height:28px;padding:0 10px;}
+.schedule-repeat:hover{background:#000;color:#fff;border-color:#000;}
+
+/* 列：无内边距，头部与卡片各自留白，七列等高 */
+.weekgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0;border-top:0;}
+.daycol{
+  border:0;border-right:1px solid var(--line);border-radius:0;
+  padding:0 0 10px;margin:0;background:#fff;min-width:0;box-shadow:none;
+  display:flex;flex-direction:column;
 }
-.ccard:hover{transform:none;box-shadow:none;background:#FAFAFA;}
-.ccard .ct{font-family:var(--font-mono);font-size:10.5px;letter-spacing:-.01em;color:#000;}
-.ccard .cn{font-size:12.5px;font-weight:600;color:#000;margin-top:5px;}
-.ccard.done{background:#F5F5F5;border-color:#E5E5E5;border-left:2px solid #C9C9C9;}
-.ccard.done .ct,.ccard.done .cn{text-decoration:none;color:#6B6B6B;}
-.ccard.absent{border-left:2px dashed #000;background:#fff;}
-.ccard.absent .cn{color:#3D3D3D;}
-.ccard.cancelled{border-left:2px solid #E5E5E5;background:#FAFAFA;}
-.ccard.cancelled .ct,.ccard.cancelled .cn{text-decoration:line-through;color:#9B9B9B;}
+.daycol:last-child{border-right:0;}
+.daycol:hover,.daycol.today{border-color:var(--line);box-shadow:none;background:#fff;padding:0 0 10px;margin:0;}
 .daycol.today{background:#FAFAFA;}
-.daycol.today .dh b{background:#000;color:#fff;border-radius:0;}
 .daycol.day-active{background:#F5F5F5;box-shadow:inset 0 0 0 1px #000;}
-.dhead-add{background:#fff;border:1px solid #000;border-radius:0;color:#000;}
+
+/* 日期头：第一行「22 周日」+ 右侧 +，第二行「复制排课」 */
+.daycol .dh{
+  position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto;
+  grid-template-rows:auto 18px;align-items:center;gap:0 6px;
+  border-bottom:1px solid var(--line);padding:9px 9px 7px;min-height:0;flex-wrap:nowrap;
+}
+.daycol.today .dh{border-bottom-color:#000;box-shadow:inset 0 2px 0 #000;padding-top:11px;}
+.daycol .dh .dh-date{
+  flex:0 0 auto;flex-basis:auto;order:0;display:flex;align-items:baseline;gap:5px;
+  font-family:var(--font-mono);font-size:10.5px;color:#5C5C5C;
+}
+.daycol .dh b{
+  font-family:var(--font-mono);font-size:17px;font-weight:600;line-height:1.1;
+  letter-spacing:-.02em;display:inline;color:#000;
+}
+.daycol.today .dh b{background:none;color:#000;width:auto;margin:0;}
+.dhead-add{
+  grid-row:1;grid-column:2;justify-self:end;
+  width:22px;height:22px;min-height:22px;padding:0;font-size:15px;font-weight:400;line-height:1;
+  border:1px solid #D4D4D4;background:#fff;color:#000;border-radius:0;
+  display:inline-flex;align-items:center;justify-content:center;
+}
 .dhead-add:hover{background:#000;color:#fff;border-color:#000;}
-.dhead-copy{background:#fff;border:1px solid #D4D4D4;border-radius:0;color:#000;}
-.dhead-copy:hover{background:#000;color:#fff;border-color:#000;}
-.schedule-legend{font-family:var(--font-mono);font-size:10px;color:#6B6B6B;}
-.legend-dot{border-radius:0;width:7px;height:7px;background:#000;}
-.legend-dot.done{background:#C9C9C9;}.legend-dot.absent{background:#fff;border:1px dashed #000;}
-.schedule-repeat{border:1px solid #D4D4D4;border-radius:0;}
+.dhead-copy{
+  grid-row:2;grid-column:1 / -1;justify-self:start;
+  min-height:0;padding:0;border:0;background:transparent;
+  font-family:var(--font-mono);font-size:10px;font-weight:400;color:#6B6B6B;
+  letter-spacing:.02em;opacity:0;transition:opacity .12s ease,color .12s ease;
+}
+.daycol:hover .dhead-copy,.daycol:focus-within .dhead-copy,.dhead-copy:focus{opacity:1;}
+.dhead-copy:hover{color:#000;background:transparent;}
+
+/* 空列 */
+.daycol .none{
+  font-family:var(--font-mono);font-size:10px;color:#9B9B9B;text-align:left;
+  margin:10px 9px 0;padding:0;
+}
+
+/* 课程卡：三行 —— 时间 / 学员 / 内容 */
+.ccard{
+  display:block;margin:6px 8px 0;padding:6px 7px 7px;
+  border:1px solid #E5E5E5;border-left:2px solid #C9C9C9;border-radius:0;background:#fff;
+  text-align:left;
+}
+.ccard:hover{transform:none;box-shadow:none;background:#FAFAFA;border-color:#000;border-left-color:#000;}
+.ccard:focus-visible{outline:2px solid #000;outline-offset:1px;}
+.ccard .ct{
+  font-family:var(--font-mono);font-size:10px;font-weight:400;letter-spacing:0;
+  color:#5C5C5C;white-space:nowrap;
+}
+.ccard .cn{
+  font-size:12px;font-weight:600;color:#000;margin-top:4px;line-height:1.25;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;
+}
+.ccard .cdot{display:none;}
+.ccard .cc{
+  font-size:10px;color:#5C5C5C;margin-top:2px;line-height:1.35;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.ccard .tribadge{font-family:var(--font-mono);font-size:9px;font-weight:400;letter-spacing:0;color:#5C5C5C;margin-left:4px;}
+.ccard .cstat{
+  font-family:var(--font-mono);font-size:9px;padding:1px 4px;border-radius:0;margin-top:5px;
+  display:inline-block;font-weight:400;color:#5C5C5C !important;background:#F2F2F2 !important;
+  border:1px dashed #C9C9C9;
+}
+
+/* 状态编码 —— 待上＝白底黑左边线；已上＝浅灰无左边线；请假＝虚线；体验课＝斜纹 */
+.ccard.done{background:#F5F5F5;border-color:#E5E5E5;border-left-color:#E5E5E5;opacity:1;}
+.ccard.done .ct,.ccard.done .cn,.ccard.done .cc{text-decoration:none;color:#6B6B6B;}
+.ccard.done .cn{font-weight:500;}
+.ccard.absent{border-left-style:dashed;border-left-color:#6B6B6B;background:#fff;}
+.ccard.absent .ct,.ccard.absent .cn,.ccard.absent .cc{color:#6B6B6B;}
+.ccard.cancelled{background:#FAFAFA;border-left-color:#E5E5E5;opacity:1;}
+.ccard.cancelled .ct,.ccard.cancelled .cn,.ccard.cancelled .cc{text-decoration:line-through;color:#9B9B9B;}
+.ccard.k-trial{border-left-style:dashed;}
+.ccard.k-trial::after{content:"";position:absolute;}
+.ccard.k-trial{position:relative;overflow:hidden;}
+.ccard.k-trial:not(.done):not(.absent):not(.cancelled){background-image:repeating-linear-gradient(45deg,#F2F2F2 0 3px,transparent 3px 7px);}
+.ccard.k-online .ct::after,.ccard.k-home .ct::after{content:"";}
+.ccard.done.k-trial,.ccard.absent.k-trial,.ccard.cancelled.k-trial{background-image:none;}
+.ccard.k-trial:not(.done):not(.absent):not(.cancelled){border-left-color:#000;}
+
+/* 已隐藏课程折叠区 */
+.schedule-hidden{border-top:1px solid var(--line);padding:10px 16px;}
+.schedule-hidden summary{font-family:var(--font-mono);font-size:11px;color:#5C5C5C;cursor:pointer;}
+.schedule-hidden button{
+  display:block;width:100%;text-align:left;border:1px solid var(--line);border-radius:0;
+  background:#fff;color:#000;font-size:11px;padding:6px 8px;margin-top:6px;
+}
+.schedule-hidden button:hover{background:#000;color:#fff;border-color:#000;}
+
+/* 移动端：七列横向滚动，列宽 152px，头部与「复制排课」常显 */
+@media(max-width:860px){
+  .weekgrid{display:flex;gap:0;padding:0;min-height:300px;}
+  .daycol{flex:0 0 152px;min-width:152px;scroll-snap-align:start;}
+  .dhead-add{width:24px;height:24px;min-height:24px;border-color:#000;}
+  .dhead-copy{grid-row:3;grid-column:1 / -1;opacity:1;font-size:10.5px;min-height:20px;color:#000;}
+  .daycol .dh{grid-template-rows:auto 20px;padding:10px 10px 8px;}
+  .ccard .ct{font-size:11px;}
+  .ccard .cn{font-size:13px;}
+  .ccard .cc{font-size:11px;}
+  .daycol .none{font-size:11px;}
+}
+
+/* ---------- 9. 学员管理：工具条归位、表格压缩、彩色色点去色 ---------- */
+/* 只在桌面维持两栏；窄屏交给 workspace.css 原有的单列断点，否则档案卡会浮在表格上 */
+@media(min-width:901px){.balance-layout{grid-template-columns:minmax(0,1fr) 300px;gap:18px;}}
+.balance-overview,.balance-metric b{font-family:var(--font-mono);}
+.balance-metric span,.balance-metric small{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.02em;color:#5C5C5C;}
+.balance-metric b{font-size:26px;font-weight:600;letter-spacing:-.03em;}
+.balance-sync{font-family:var(--font-mono);font-size:10.5px;color:#5C5C5C;}
+
+.student-panel{border:1px solid var(--line);background:#fff;}
+.student-panel .sec-head{padding:13px 16px;border-bottom:1px solid var(--line);align-items:center;}
+.student-panel .sec-head h2{font-size:14px;font-weight:600;}
+
+.student-controls{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:12px 16px;background:#fff;border-bottom:1px solid var(--line);
+}
+.stu-monthbar{gap:7px;flex:0 0 auto;}
+.stu-monthbar .range{
+  font-family:var(--font-mono);font-size:10px;font-weight:400;letter-spacing:.04em;
+  color:#5C5C5C;text-transform:uppercase;
+}
+.stu-monthbar input[type=month]{
+  border:1px solid #D4D4D4;border-radius:0;background:#fff;color:#000;
+  font-family:var(--font-mono);font-size:11.5px;min-height:32px;padding:3px 7px;
+}
+.stu-monthbar input[type=month]:focus{outline:2px solid #000;outline-offset:1px;}
+.stu-toolbar{
+  display:flex;align-items:center;gap:7px;flex:1 1 auto;justify-content:flex-end;flex-wrap:wrap;
+  margin:0;
+}
+.stu-search-label{
+  font-family:var(--font-mono);font-size:10px;font-weight:400;letter-spacing:.04em;
+  color:#5C5C5C;white-space:nowrap;align-self:center;
+}
+.stu-toolbar input[type=search]{
+  min-width:170px;max-width:230px;min-height:32px;padding:4px 9px;
+  font-size:12px;border:1px solid #D4D4D4;border-radius:0;background:#fff;color:#000;
+}
+.stu-toolbar input[type=search]::placeholder{color:#9B9B9B;}
+.stu-toolbar input[type=search]:focus{outline:2px solid #000;outline-offset:1px;border-color:#000;}
+.stu-toolbar select{
+  min-height:32px;padding:3px 8px;font-size:11px;max-width:132px;
+  border:1px solid #D4D4D4;border-radius:0;background:#fff;color:#000;
+}
+.stu-toolbar select:focus{outline:2px solid #000;outline-offset:1px;}
+
+/* 表格：更紧凑 + 常显细滚动条（避免列被卡片裁掉却看不出可滚） */
+.stu-table-wrap{overflow-x:auto;scrollbar-width:thin;scrollbar-color:#C9C9C9 #F5F5F5;}
+.stu-table-wrap::-webkit-scrollbar{height:8px;}
+.stu-table-wrap::-webkit-scrollbar-track{background:#F5F5F5;}
+.stu-table-wrap::-webkit-scrollbar-thumb{background:#C9C9C9;}
+.stu-table{min-width:930px;font-size:11.5px;color:#000;}
+.stu-table th,.stu-table td{padding:11px 12px;border-bottom:1px solid #EEEEEE;}
+.stu-table thead th{
+  font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.02em;
+  color:#5C5C5C;background:#F7F7F7;border-bottom:1px solid #D4D4D4;position:static;
+}
+.stu-table th.sortable:hover{color:#000;}
+.stu-table tbody .stu-row:hover td{background:#FAFAFA;}
+.stu-table td:first-child,.stu-table th:first-child{background:#fff;box-shadow:1px 0 #E5E5E5;min-width:104px;}
+.stu-table th:first-child{background:#F7F7F7;}
+.stu-row.balance-selected td:first-child{background:#F0F0F0;}
+.stu-name .balance-name{font-size:12px;font-weight:600;gap:0;min-height:28px;color:#000;}
+.stu-name .balance-name:hover{text-decoration:underline;}
+.stu-name .swatch{display:none;}
+.stu-table b{font-family:var(--font-mono);font-weight:600;font-variant-numeric:tabular-nums;}
+.stu-table .num{font-family:var(--font-mono);font-size:11px;}
+.stu-table .num .sep{color:#6B6B6B;margin:0 3px;}
+
+/* 已上/待上日期块 */
+.stu-table .dtags{gap:4px;}
+.stu-table .dtag{
+  font-family:var(--font-mono);font-size:10px;font-weight:400;letter-spacing:0;
+  background:#fff;border:1px solid #D4D4D4;border-radius:0;color:#000;padding:1px 4px;
+}
+.stu-table .dtag.soon{background:#000;border-color:#000;color:#fff;}
+
+/* 学员状态 */
+.stu-status,.st-active,.st-leave,.st-paused,.st-finished{font-family:var(--font-mono);font-size:10px;font-weight:400;letter-spacing:0;border-radius:0;}
+.stu-pager{padding:12px 16px;border-top:1px solid var(--line);font-family:var(--font-mono);font-size:10.5px;color:#5C5C5C;}
+.stu-pager .tbtn{font-size:10.5px;min-height:28px;border-radius:0;}
+.stu-nomatch{font-family:var(--font-mono);font-size:11px;color:#5C5C5C;}
+
+/* 右侧学员档案卡 */
+.balance-detail{border:1px solid var(--line);background:#fff;}
+.balance-detail header{padding:16px 16px 14px;border-bottom:1px solid var(--line);}
+.balance-detail header h3{font-size:17px;font-weight:600;letter-spacing:-.01em;margin:0 0 4px;}
+.balance-detail header>span:last-child{font-family:var(--font-mono);font-size:10.5px;color:#5C5C5C;}
+.balance-body{padding:14px 16px;max-height:58vh;}
+
+/* ---------- 10. 课程弹窗：窄屏统一为「标签在上、控件满宽」 ---------- */
+#courseModal{--r-sm:0px;--r-md:0px;--r-lg:0px;}
+#courseModal .cw-form-card{
+  background:#fff;border:1px solid var(--line);border-radius:0;box-shadow:none;padding:16px;
+}
+#courseModal .cw-card-title{
+  font-size:13px;font-weight:600;letter-spacing:-.01em;color:#000;
+  padding-bottom:11px;margin-bottom:14px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:8px;
+}
+#courseModal .cw-card-title small{font-family:var(--font-mono);font-size:10px;font-weight:400;color:#5C5C5C;letter-spacing:0;}
+#courseModal .cw-card-symbol{width:16px;height:16px;color:#000;}
+#courseModal .cw-field-caption{font-family:var(--font-mono);font-size:10.5px;font-weight:500;letter-spacing:.02em;color:#5C5C5C;}
+#courseModal .cw-required{color:#000;}
+#courseModal .cw-course-grid{gap:14px;}
+#courseModal textarea{
+  border:1px solid #D4D4D4;border-radius:0;background:#fff;color:#000;
+  font-size:12.5px;line-height:1.6;padding:10px 12px;
+}
+#courseModal textarea:focus{outline:2px solid #000;outline-offset:1px;border-color:#000;}
+#courseModal textarea::placeholder{color:#9B9B9B;}
+
+/* 段选按钮：选中＝实心黑 */
+#courseModal #fCourseType .seg-btn{
+  border:1px solid #D4D4D4;background:#fff;color:#000;border-radius:0;
+  font-size:12px;font-weight:500;letter-spacing:0;
+}
+#courseModal #fCourseType .seg-btn:hover{border-color:#000;}
+#courseModal #fCourseType .seg-btn.on{background:#000;border-color:#000;color:#fff;}
+#courseModal #courseTypeHint{font-family:var(--font-mono);font-size:10px;color:#5C5C5C;letter-spacing:0;}
+
+/* 弹窗里输入框 / 选择器 */
+#courseModal input[type=text],#courseModal input[type=date],#courseModal input[type=time],
+#courseModal .cw-field-control select{
+  border:1px solid #D4D4D4;border-radius:0;background:#fff;color:#000;font-size:13px;
+}
+#courseModal input:focus,#courseModal select:focus{outline:2px solid #000;outline-offset:1px;border-color:#000;}
+#courseModal .cw-time-controls input{font-family:var(--font-mono);}
+#courseModal .cw-time-dash{color:#5C5C5C;}
+#courseModal .dur-display{
+  background:#000;color:#fff;border-radius:0;
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:0;min-width:64px;
+}
+#courseModal .inlinenew{
+  border:1px solid #000;background:#fff;color:#000;border-radius:0;
+  font-size:11px;font-weight:500;
+}
+#courseModal .inlinenew:hover{background:#000;color:#fff;}
+
+/* 弹窗页签 */
+#courseModal .course-workspace-tabs{border-bottom:1px solid var(--line);gap:0;}
+#courseModal .course-workspace-tabs button{
+  border:1px solid transparent;border-bottom:0;border-radius:0;background:transparent;color:#5C5C5C;
+  font-size:12px;font-weight:500;
+}
+#courseModal .course-workspace-tabs button[aria-pressed=true]{
+  background:#fff;border-color:var(--line);color:#000;box-shadow:inset 0 2px 0 #000;
+}
+#courseModal .course-workspace-tabs button[aria-pressed=true] span{color:#000;}
+#courseModal .course-workspace-context{font-family:var(--font-mono);font-size:10.5px;color:#5C5C5C;}
+#courseModal #courseActions{
+  background:#fff;border-top:1px solid var(--line);padding:12px 16px;gap:8px;
+}
+#courseModal #courseActions button{font-size:12px;min-height:38px;border-radius:0;}
+
+/* 窄屏：一行一个字段，标签在上 */
+@media(max-width:700px){
+  #courseModal .cw-inline-field{
+    grid-template-columns:minmax(0,1fr) !important;
+    align-items:start;gap:7px;margin-bottom:14px;min-height:0;
+  }
+  #courseModal .cw-field-caption{font-size:10.5px;display:block;}
+  #courseModal #fCourseType{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;width:100%;}
+  #courseModal #fCourseType .seg-btn{width:100%;min-height:38px;padding:0 6px;}
+  #courseModal .cw-student-control{grid-template-columns:minmax(0,1fr) 96px;gap:6px;}
+  #courseModal .cw-when-row{grid-template-columns:1fr;gap:14px;margin-top:14px;padding-top:14px;}
+  #courseModal .cw-field-control input,#courseModal .cw-field-control select{width:100%;}
+  #courseModal .cw-form-card{padding:14px 13px;}
+  #courseModal .course-workspace-tabs button{font-size:11px;padding:0 4px;}
+}
+
+/* ---------- 11. 概览条与移动端细节 ---------- */
+.summary-metric b{font-family:var(--font-mono);font-weight:600;letter-spacing:-.03em;}
+.summary-metric span,.summary-metric small{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.02em;color:#5C5C5C;}
+.balance-metric small{display:inline;}
+@media(max-width:900px){
+  /* 单位不换行，数字与单位保持同一行 */
+  .balance-metric small{display:inline;font-size:10px;margin-left:3px;}
+  .balance-metric b{font-size:24px;}
+  .summary-metric small{display:inline;}
+  .stu-toolbar input[type=search]{flex:1 1 100%;max-width:none;}
+  .stu-toolbar select{flex:1 1 calc(50% - 4px);max-width:none;}
+  .stu-search-label{flex:0 0 100%;}
+}
+
+/* ---------- 12. 工资统计页 ---------- */
+.salary-calc{gap:14px;}
+.salary-card{
+  background:#fff;border:1px solid var(--line);border-radius:0;box-shadow:none;
+  padding:18px 20px;
+}
+.salary-card:hover{box-shadow:none;transform:none;}
+
+/* 月份行与课时行共用一套网格，标签列固定宽，输入框左缘对齐 */
+.salary-month-row,.salary-input-row{
+  display:grid;grid-template-columns:90px auto minmax(0,1fr);justify-content:start;
+  align-items:center;gap:10px 14px;flex-wrap:nowrap;
+}
+.salary-month-row label,.salary-input-row label{
+  font-family:var(--font-mono);font-size:10.5px;font-weight:400;letter-spacing:.02em;
+  color:#5C5C5C;white-space:nowrap;
+}
+.salary-input-row label:last-child{font-size:11px;color:#000;}
+.salary-month-row input[type=month]{
+  width:150px;border:1px solid #D4D4D4;border-radius:0;background:#fff;color:#000;
+  font-family:var(--font-mono);font-size:11.5px;min-height:34px;padding:4px 8px;
+}
+.salary-input-row input[type=number]{
+  width:110px;border:1px solid #000;border-radius:0;background:#fff;
+  font-family:var(--font-mono);font-size:18px;font-weight:600;letter-spacing:-.02em;
+  color:#000;text-align:center;padding:5px 8px;min-height:38px;
+}
+.salary-month-row input:focus,.salary-input-row input:focus{outline:2px solid #000;outline-offset:1px;}
+.salary-month-row .month-count{font-family:var(--font-mono);font-size:10.5px;color:#5C5C5C;letter-spacing:0;}
+.salary-month-row .month-count b{color:#000;font-family:var(--font-mono);font-weight:600;font-size:12px;margin:0 3px;}
+.salary-note{
+  font-family:var(--font-mono);font-size:10px;line-height:1.7;color:#5C5C5C;
+  margin-top:14px;padding-top:12px;border-top:1px solid var(--line);
+}
+.salary-note b{color:#000;font-weight:600;}
+
+/* 结果卡 */
+.salary-result{
+  background:#fff;border:1px solid var(--line);border-radius:0;text-align:center;padding:26px 20px 22px;
+}
+.salary-result .label{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;color:#5C5C5C;margin-bottom:6px;}
+.salary-result .amount{
+  font-family:var(--font-mono);font-size:54px;font-weight:600;letter-spacing:-.045em;
+  color:#000;line-height:1;margin-bottom:0;
+}
+.salary-result .amount small{font-size:20px;font-weight:500;}
+.salary-formula{
+  display:flex;justify-content:center;align-items:baseline;gap:5px;flex-wrap:wrap;
+  max-width:none;margin:16px 0 0;padding:0;border-bottom:0;border-top:1px solid var(--line);
+  padding-top:14px;font-family:var(--font-mono);font-size:10.5px;color:#5C5C5C;letter-spacing:0;
+}
+.salary-formula .op{color:#6B6B6B;opacity:1;}
+.salary-formula .sum{color:#000;font-weight:600;}
+.salary-breakdown{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;margin-top:16px;border-top:1px solid var(--line);}
+.salary-breakdown-item{
+  background:#fff;border:0;border-radius:0;padding:14px 10px;min-width:0;
+}
+.salary-breakdown-item+.salary-breakdown-item{border-left:1px solid var(--line);}
+.salary-breakdown-item .val{font-family:var(--font-mono);font-size:19px;font-weight:600;letter-spacing:-.02em;color:#000;}
+.salary-breakdown-item .lbl{font-family:var(--font-mono);font-size:10px;color:#5C5C5C;margin-top:3px;letter-spacing:0;}
+
+/* 额外收入 */
+.extra-income{background:#fff;border:1px solid var(--line);border-radius:0;padding:18px 20px;}
+.extra-income h4{
+  font-size:13px;font-weight:600;color:#000;letter-spacing:-.01em;
+  display:flex;align-items:center;gap:7px;margin:0 0 12px;
+  padding-bottom:11px;border-bottom:1px solid var(--line);
+}
+.extra-income h4 svg{width:15px;height:15px;color:#000;flex-shrink:0;}
+.extra-income-item{
+  display:grid;grid-template-columns:52px minmax(0,1fr) 82px auto;align-items:center;gap:10px;
+  border:0;border-bottom:1px solid #EEEEEE;border-radius:0;padding:9px 0;background:#fff;
+}
+.extra-income-item:last-child{border-bottom:0;}
+.ei-date{font-family:var(--font-mono);font-size:10.5px;color:#5C5C5C;}
+.ei-desc{font-size:12px;color:#000;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ei-amt{font-family:var(--font-mono);font-size:12.5px;font-weight:600;text-align:right;color:#000;}
+.ei-edit,.ei-del{
+  border:1px solid #D4D4D4;border-radius:0;background:#fff;color:#000;
+  font-size:10.5px;min-height:26px;padding:0 8px;
+}
+.ei-edit{display:inline-flex;align-items:center;gap:4px;}
+.ei-edit:hover,.ei-del:hover{background:#000;color:#fff;border-color:#000;}
+.ei-del{width:26px;padding:0;font-size:14px;line-height:1;}
+.extra-income-sum{
+  font-family:var(--font-mono);font-size:10.5px;color:#5C5C5C;text-align:right;
+  margin:12px 0;padding-top:11px;border-top:1px solid var(--line);
+}
+.extra-income-sum b{font-size:14px;color:#000;font-weight:600;letter-spacing:-.01em;}
+.extra-income-form{display:grid;grid-template-columns:minmax(0,1fr) 104px 148px auto;gap:8px;align-items:center;}
+.extra-income-form input{
+  border:1px solid #D4D4D4;border-radius:0;background:#fff;color:#000;
+  font-size:12px;min-height:34px;padding:4px 9px;width:100%;
+}
+.extra-income-form input:focus{outline:2px solid #000;outline-offset:1px;border-color:#000;}
+.extra-income-form input::placeholder{color:#9B9B9B;}
+.extra-income-form #eiAmt{font-family:var(--font-mono);text-align:right;}
+.extra-income-form #eiDate{font-family:var(--font-mono);font-size:11px;}
+.extra-income-form #eiAdd{
+  border:1px solid #000;background:#000;color:#fff;border-radius:0;
+  font-size:11.5px;min-height:34px;padding:0 16px;white-space:nowrap;
+}
+.extra-income-form #eiAdd:hover{background:#fff;color:#000;}
+.ei-date-hint{
+  grid-column:1 / -1;font-family:var(--font-mono);font-size:10px;color:#5C5C5C;line-height:1.6;
+}
+
+/* 历史月份 */
+.salary-history{background:#fff;border:1px solid var(--line);border-radius:0;padding:18px 20px;}
+.salary-history h4{
+  font-size:13px;font-weight:600;color:#000;margin:0 0 12px;
+  padding-bottom:11px;border-bottom:1px solid var(--line);
+}
+.salary-history-list{display:flex;flex-direction:column;gap:0;}
+.salary-history-item{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  border:0;border-bottom:1px solid #EEEEEE;border-radius:0;
+  border-left:2px solid transparent;padding:11px 10px;background:#fff;
+}
+.salary-history-item:last-child{border-bottom:0;}
+.salary-history-item:hover{background:#FAFAFA;transform:none;box-shadow:none;}
+.salary-history-item.active{background:#F5F5F5;border-left-color:#000;}
+.shm-main b{font-family:var(--font-mono);font-size:12px;font-weight:600;color:#000;display:block;letter-spacing:-.01em;}
+.shm-main span{font-family:var(--font-mono);font-size:10px;color:#5C5C5C;margin-top:2px;display:block;}
+.shm-money{text-align:right;}
+.shm-total{font-family:var(--font-mono);font-size:15px;font-weight:600;color:#000;display:block;letter-spacing:-.02em;}
+.shm-detail{font-family:var(--font-mono);font-size:10px;color:#5C5C5C;display:block;margin-top:2px;}
+.salary-rules{
+  background:#F7F7F7;border:1px solid var(--line);border-left:2px solid #000;border-radius:0;
+  font-family:var(--font-mono);font-size:10.5px;line-height:1.9;color:#5C5C5C;padding:14px 16px;
+}
+.salary-rules code{
+  background:#fff;border:1px solid #D4D4D4;border-radius:0;color:#000;
+  font-family:var(--font-mono);font-size:10.5px;padding:0 4px;
+}
+
+@media(max-width:700px){
+  .salary-month-row,.salary-input-row{grid-template-columns:82px auto minmax(0,1fr);gap:8px 10px;}
+  .salary-month-row input[type=month]{width:100%;min-width:0;}
+  .salary-month-row .month-count{grid-column:1 / -1;margin-top:2px;}
+  .salary-input-row label:last-child{display:inline;font-size:11px;}
+  .salary-result .amount{font-size:42px;}
+  .extra-income-form{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .extra-income-form #eiDesc{grid-column:1 / -1;}
+  .extra-income-form #eiDate{grid-column:1 / -1;}
+  .extra-income-form #eiAdd{grid-column:1 / -1;min-height:38px;}
+  .extra-income-item{grid-template-columns:44px minmax(0,1fr) 72px;}
+  .extra-income-item .ei-edit{grid-column:2;justify-self:start;}
+  .extra-income-item .ei-del{grid-column:3;justify-self:end;}
+}
+
+/* ---------- 13. 月度统计 ---------- */
+.kpis{border:1px solid var(--line);background:#fff;}
+.kpi{padding:16px 20px;border-right:1px solid var(--line);}
+.kpi:last-child{border-right:0;}
+.kpi span{font-family:var(--font-mono);font-size:10px;letter-spacing:.05em;color:#5C5C5C;text-transform:uppercase;}
+.kpi b{font-family:var(--font-mono);font-size:34px;font-weight:600;letter-spacing:-.04em;color:#000;line-height:1.15;margin-top:8px;}
+.kpi b small{font-size:11px;font-weight:400;letter-spacing:0;color:#5C5C5C;margin-left:4px;}
+
+.stats-panels{gap:18px;}
+.panel{background:#fff;border:1px solid var(--line);border-radius:0;box-shadow:none;padding:0;}
+.panel h2{
+  font-size:13px;font-weight:600;letter-spacing:-.01em;color:#000;
+  padding:14px 18px;margin:0;border-bottom:1px solid var(--line);
+}
+.panel .empty{font-family:var(--font-mono);font-size:10.5px;color:#5C5C5C;padding:16px 18px;margin:0;}
+
+/* 时长分布：细轨 + 等宽数值 */
+.duration-bars{padding:6px 18px 14px;}
+.duration-row{border-bottom:1px solid #EEEEEE;padding:9px 0;}
+.duration-row:last-child{border-bottom:0;}
+.duration-label{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+.duration-label span{font-size:11.5px;color:#000;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.duration-label b{font-family:var(--font-mono);font-size:10.5px;font-weight:500;letter-spacing:0;color:#5C5C5C;flex-shrink:0;}
+.duration-track{height:3px;background:#F0F0F0;border-radius:0;margin-top:7px;overflow:hidden;}
+.duration-track span{display:block;height:100%;background:#000;border-radius:0;}
+
+/* 课程明细表 */
+.report-table-wrap{overflow-x:auto;scrollbar-width:thin;}
+.report-table-wrap::-webkit-scrollbar{height:8px;}
+.report-table-wrap::-webkit-scrollbar-thumb{background:#C9C9C9;}
+.report-table-wrap table{width:100%;border-collapse:collapse;font-size:11.5px;}
+.report-table-wrap th{
+  font-family:var(--font-mono);font-size:10px;font-weight:500;letter-spacing:.02em;
+  color:#5C5C5C;background:#F7F7F7;border-bottom:1px solid #D4D4D4;
+  padding:10px 16px;text-align:left;
+}
+.report-table-wrap th.num,.report-table-wrap td.num{text-align:right;}
+.report-table-wrap td{padding:10px 16px;border-bottom:1px solid #EEEEEE;color:#000;}
+.report-table-wrap tbody tr:last-child td{border-bottom:0;}
+.report-table-wrap tbody tr:hover td{background:#FAFAFA;}
+.report-table-wrap td.num{font-family:var(--font-mono);font-size:11px;}
+.stat-dates summary{font-family:var(--font-mono);font-size:11px;display:inline-flex;align-items:center;gap:3px;cursor:pointer;color:#000;}
+.stat-dates-list{border:1px solid var(--line);background:#fff;padding:6px 8px;margin-top:5px;}
+.stat-dates-list span{font-family:var(--font-mono);font-size:10px;color:#5C5C5C;margin-right:8px;}
+
+/* 数据容量 */
+.capacity-panel{padding:14px 18px 16px;}
+.capacity-panel h2{padding:0 0 12px;border-bottom:1px solid var(--line);margin-bottom:12px;}
+.capacity-row{margin-bottom:12px;}
+.capacity-label{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:11px;color:#5C5C5C;}
+.capacity-label b{font-family:var(--font-mono);font-size:11px;font-weight:500;color:#000;}
+.capacity-track{height:3px;background:#F0F0F0;margin-top:6px;}
+.capacity-track i{display:block;height:100%;background:#000;}
+.capacity-row small{font-family:var(--font-mono);font-size:10px;color:#5C5C5C;}
+.capacity-warn{
+  font-family:var(--font-mono);font-size:10px;line-height:1.7;color:#000;
+  background:#F7F7F7;border-left:2px solid #000;padding:8px 10px;margin:10px 0 0;
+}
+@media(max-width:860px){
+  .kpi{padding:14px 16px;}
+  .kpi b{font-size:28px;}
+  .stats-panels{gap:14px;}
+  .duration-bars{padding:4px 14px 12px;}
+  .panel h2{padding:12px 14px;}
+  .report-table-wrap th,.report-table-wrap td{padding:9px 12px;}
+}

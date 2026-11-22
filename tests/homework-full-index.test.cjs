@@ -72,8 +72,31 @@ test('page now scans all assignments and PWA assets have a fresh version',()=>{
  assert(html.includes('部分课程未能读取'));
  assert(!html.includes('courses.slice(page * 28'));
  assert(index.includes('./teaching-homework-index.js?v=20261118-batch-recovery-v1'));
- assert(cache.includes('guitar-wb-v90-swiss-stage1'));
+ assert(cache.includes('guitar-wb-v91-swiss-stage2'));
 });
+test('swiss stage 2: week grid rows, student table scroll, modal single column',()=>{
+ const theme=fs.readFileSync(path.join(__dirname,'../theme-swiss.css'),'utf8');
+ const index=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+ // 周课表课程卡：三行结构（时间 / 学员 / 内容摘要），内容行由 courseContent 首行渲染
+ assert(index.includes('<div class="cc">'));
+ assert(index.includes("const brief=String(courseContent(c)||'')"));
+ assert(theme.includes('.ccard .cc{'));
+ // 课程类型以 class 暴露，供状态编码使用（k-trial 斜纹 / k-online / k-home）
+ assert(index.includes("' k-'+courseKind(c)"));
+ assert(theme.includes('.ccard.k-trial{'));
+ // 日期头两行：日期与「+」同行，复制排课在第二行（hover 显示）
+ assert(theme.includes('.dhead-copy{'));
+ assert(theme.includes('.daycol:hover .dhead-copy'));
+ // 学员表：常显细滚动条 + 彩色色点去色（黑白主题下色点无法区分）
+ assert(theme.includes('.stu-table-wrap::-webkit-scrollbar{height:8px;}'));
+ assert(theme.includes('.stu-name .swatch{display:none;}'));
+ // 两栏布局只在桌面生效，窄屏必须交给原有单列断点，否则档案卡会浮在表格上
+ assert(theme.includes('@media(min-width:901px){.balance-layout{'));
+ // 课程弹窗窄屏：字段单列、标签在上、课程类型两列按钮
+ assert(theme.includes('grid-template-columns:minmax(0,1fr) !important;'));
+ assert(theme.includes('#courseModal #fCourseType{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));'));
+});
+
 test('swiss monochrome theme: black/white tokens, sharp corners, monochrome sidebar',()=>{
  const theme=fs.readFileSync(path.join(__dirname,'../theme-swiss.css'),'utf8');
  const index=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
@@ -92,8 +115,8 @@ test('swiss monochrome theme: black/white tokens, sharp corners, monochrome side
  assert(theme.includes('.tf-node::before{'));
  assert(theme.includes('grid-template-columns:40px 12px minmax(0,1fr) auto;'));
  // 主题层必须被页面与 Service Worker 引用，否则线上不生效、离线不缓存
- assert(index.includes('./theme-swiss.css?v=20261122-swiss-stage1'));
- assert(index.includes('./geist-fonts.css?v=20261122-swiss-stage1'));
+ assert(index.includes('./theme-swiss.css?v=20261122-swiss-stage2'));
+ assert(index.includes('./geist-fonts.css?v=20261122-swiss-stage2'));
  // 旧暖木色不得残留在具体规则里（:root 里的旧令牌由主题层覆盖，保留仅为可回滚）
  const wsRules=ws.replace(/:root\{[^}]*\}/g,'');
  assert(!wsRules.includes('#F5EEE3'));
