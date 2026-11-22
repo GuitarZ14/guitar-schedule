@@ -42,7 +42,7 @@
 @media(max-width:900px){.balance-layout{grid-template-columns:minmax(0,1fr);}.balance-detail{position:static;}.balance-body{max-height:450px;}.balance-metric{padding:0 12px;}.balance-metric b{font-size:23px;}.balance-metric small{display:block;}.balance-sync{line-height:1.8;}}
 /* === Scandinavian warm-wood theme (aligned with direction-1 prototype) === */
 :root{
-  --paper:#F7F3EC; --greige:#E7E1D8; --wood:#A98A6A; --wood-d:#7A5F44;
+  --paper:#F7F3EC; --greige:#E7E1D8; --wood:#D2BBA1; --wood-d:#7A5F44;
   --ink:#2F2B27; --sage:#7C8577; --clay:#B87A5B;
   --glass:#FFFFFF; --glass-strong:#FFFDF9; --glass-border:#E7E1D8; --line:#E7E1D8;
   --text:#2F2B27; --text-2:#5F584E; --muted:#8C8377; --muted-2:#9B9286;
@@ -431,25 +431,25 @@ button:disabled:hover{transform:none;box-shadow:none;}
 .capacity-panel{padding:0;border-radius:10px;overflow:hidden;margin:22px 0 0;min-width:0}.capacity-panel h2{padding:20px 22px;border-bottom:1px solid var(--line);font-size:14px;font-weight:600;margin:0}.capacity-row{padding:14px 22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line)}.capacity-row:last-of-type{border-bottom:0}.capacity-label{display:flex;justify-content:space-between;gap:16px;flex:1 1 260px;min-width:0}.capacity-label span{font-size:13px;color:var(--muted)}.capacity-label b{font-size:14px;font-weight:600;color:var(--text)}.capacity-row small{font-size:12px;color:var(--muted)}.capacity-track{flex:1 1 120px;height:6px;background:var(--line,#E7E1D8);border-radius:8px;overflow:hidden;min-width:120px}.capacity-track i{display:block;height:100%;background:var(--primary,#BD855C);border-radius:8px}.capacity-warn{padding:12px 22px 16px;font-size:13px;color:#8a5a00;line-height:1.6}
 .schedule-hidden{border-top:1px solid var(--line);padding:12px 18px;font-size:12px;color:var(--muted)}.schedule-hidden summary{cursor:pointer;color:var(--primary)}.schedule-hidden button{display:inline-block;margin:8px 8px 0 0;font-size:12px}
 
-/* === Scandinavian wood spine: sidebar surface + inverted text (visual only) === */
-.sidebar{background:var(--wood);border-right:1px solid var(--wood-d);}
-.sidebar .brand{color:#FBF7F0;}
-.sidebar .brand svg{color:#FBF7F0;}
-.sidebar .nav-caption{color:rgba(251,247,240,.7);}
-.sidebar .nav-item{color:#F7F1E7;}
-.sidebar .nav-item svg{color:#F7F1E7;}
-.sidebar .nav-item:hover{background:rgba(255,255,255,.14);color:#FFFFFF;}
-.sidebar .nav-item.active{background:#FDFBF7;color:var(--wood-d);border-left:3px solid #FDFBF7;}
+/* === Scandinavian wood spine: light wood surface + ink text (visual only) === */
+.sidebar{background:var(--wood);border-right:1px solid #B99E80;}
+.sidebar .brand{color:#3A2E1F;}
+.sidebar .brand svg{color:#3A2E1F;}
+.sidebar .nav-caption{color:rgba(58,46,31,.62);}
+.sidebar .nav-item{color:#3A2E1F;}
+.sidebar .nav-item svg{color:#3A2E1F;}
+.sidebar .nav-item:hover{background:rgba(255,255,255,.62);color:#241C14;}
+.sidebar .nav-item.active{background:#FFFFFF;color:var(--wood-d);border-left:3px solid #FFFFFF;}
 .sidebar .nav-item.active svg{color:var(--wood-d);}
-.sidebar .remind-card{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28);}
-.sidebar .remind-head{color:#FBF7F0;}
-.sidebar .remind-head svg{color:#FBF7F0;}
-.sidebar .remind-sub{color:rgba(251,247,240,.82);}
-.sidebar .remind-sub.on{color:#E7EFE1;}
-.sidebar .sidebar-foot{border-top-color:rgba(255,255,255,.28);}
-.sidebar .data-tools summary,.sidebar .cloud-status{color:rgba(251,247,240,.85);}
-.sidebar .data-tools button{color:rgba(251,247,240,.9);}
-.sidebar .data-tools button.danger{color:#FFD9D2;}
+.sidebar .remind-card{background:rgba(255,255,255,.58);border-color:rgba(58,46,31,.16);}
+.sidebar .remind-head{color:#3A2E1F;}
+.sidebar .remind-head svg{color:#3A2E1F;}
+.sidebar .remind-sub{color:rgba(58,46,31,.72);}
+.sidebar .remind-sub.on{color:#4F6B4A;}
+.sidebar .sidebar-foot{border-top-color:rgba(58,46,31,.18);}
+.sidebar .data-tools summary,.sidebar .cloud-status{color:rgba(58,46,31,.78);}
+.sidebar .data-tools button{color:rgba(58,46,31,.85);}
+.sidebar .data-tools button.danger{color:#A33E35;}
 .sidebar .switch .slider{background:rgba(255,255,255,.35);}
 .sidebar .switch input:checked + .slider{background:var(--sage);}
 

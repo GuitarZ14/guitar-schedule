@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>吉他教学工作台</title>
 <link rel="manifest" href="./manifest.webmanifest">
-<meta name="theme-color" content="#A98A6A">
+<meta name="theme-color" content="#D2BBA1">
 <link rel="apple-touch-icon" href="./icons/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -14,7 +14,7 @@
   /* ===== 设计系统：简约线性 (Minimal Line) ===== */
   :root{
     /* === Scandinavian warm-wood palette (direction-1 prototype) === */
-    --paper:#F7F3EC; --greige:#E7E1D8; --wood:#A98A6A; --wood-d:#7A5F44;
+    --paper:#F7F3EC; --greige:#E7E1D8; --wood:#D2BBA1; --wood-d:#7A5F44;
     --ink:#2F2B27; --sage:#7C8577; --clay:#B87A5B;
     /* 表面：奶油白，米灰发丝线 */
     --glass:#FFFFFF;
@@ -593,8 +593,8 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261122-student-search-v1">
-<link rel="stylesheet" href="./teaching-course-workspace.css?v=20261122-student-search-v1">
+<link rel="stylesheet" href="./workspace.css?v=20261122-sidebar-light-v1">
+<link rel="stylesheet" href="./teaching-course-workspace.css?v=20261122-sidebar-light-v1">
 </head>
 <body>
 <div id="toast"></div>
@@ -3542,7 +3542,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-22-student-search-v1';
+const APP_VERSION = '2026-11-22-sidebar-light-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */

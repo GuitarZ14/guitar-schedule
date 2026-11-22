@@ -72,5 +72,14 @@ test('page now scans all assignments and PWA assets have a fresh version',()=>{
  assert(html.includes('部分课程未能读取'));
  assert(!html.includes('courses.slice(page * 28'));
  assert(index.includes('./teaching-homework-index.js?v=20261118-batch-recovery-v1'));
- assert(cache.includes('guitar-wb-v86-student-search-v1'));
+ assert(cache.includes('guitar-wb-v87-sidebar-light-v1'));
+});
+test('sidebar uses light wood surface with readable dark text',()=>{
+ const css=fs.readFileSync(path.join(__dirname,'../workspace.css'),'utf8');
+ const index=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
+ assert(css.includes('--wood:#D2BBA1'));
+ assert(css.includes('.sidebar{background:var(--wood)'));
+ assert(css.includes('.sidebar .nav-item{color:#3A2E1F;}'));
+ assert(css.includes('--primary:#A98A6A'));
+ assert(index.includes('theme-color" content="#D2BBA1'));
 });
