@@ -109,16 +109,18 @@ test('week view removes the schedule detail section and keeps repeat scheduling 
   assert.match(result, /id="addRepeat"/);
 });
 
-test('today action list keeps older courses collapsed and escapes course labels', () => {
+test('today overview keeps stats while pending action list moves to its own right-side bar', () => {
   const { run, elements } = workspace();
   run(`todayStr=()=> '2026-10-24';
     courses.push({id:'6',studentId:'a',date:'2026-10-20',start:'09:00',end:'10:00',status:'planned'});
-    renderToday()`);
-  const result = elements.get('todayBar').innerHTML;
-  assert.match(result, /tf-sub-n">1<\/span><span class="tf-sub-l">待上/);
-  assert.match(result, /<details class="overdue-list"><summary>/);
-  assert.doesNotMatch(result, /<details[^>]*\sopen/);
-  assert.equal((result.match(/data-done=/g) || []).length, 2);
+    renderToday(); renderPendingBar()`);
+  const overview = elements.get('todayBar').innerHTML;
+  const pending = elements.get('pendingBar').innerHTML;
+  assert.match(overview, /tf-sub-n">1<\/span><span class="tf-sub-l">待上/);
+  assert.doesNotMatch(overview, /data-done=/);
+  assert.match(pending, /<details class="overdue-list"><summary>/);
+  assert.doesNotMatch(pending, /<details[^>]*\sopen/);
+  assert.equal((pending.match(/data-done=/g) || []).length, 2);
   run(`students[0].name='<script>alert(1)</script>'`);
   assert.match(run('courseCardHTML(courses[1])'), /&lt;script&gt;/);
   assert.match(run('courseCardHTML(courses[1])'), /tabindex="0"/);

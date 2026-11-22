@@ -593,8 +593,8 @@
     display:inline-block;
   }
 </style>
-<link rel="stylesheet" href="./workspace.css?v=20261122-extreme-white-v1">
-<link rel="stylesheet" href="./teaching-course-workspace.css?v=20261122-extreme-white-v1">
+<link rel="stylesheet" href="./workspace.css?v=20261122-pending-right-v1">
+<link rel="stylesheet" href="./teaching-course-workspace.css?v=20261122-pending-right-v1">
 </head>
 <body>
 <div id="toast"></div>
@@ -679,7 +679,7 @@
     <div class="wrap">
       <section id="workspaceSummary" class="workspace-summary" aria-label="课程概览"></section>
       <div class="workspace-layout" id="workspaceLayout">
-        <aside id="todayBar" aria-label="今日课程与待处理课程"></aside>
+        <aside id="todayBar" aria-label="今日课表概览"></aside>
         <main>
           <section id="view-week" class="view" aria-label="课程表"></section>
           <section id="view-edit" class="view" hidden></section>
@@ -687,6 +687,7 @@
           <section id="view-stats" class="view" hidden></section>
           <section id="view-salary" class="view" hidden></section>
         </main>
+        <aside id="pendingBar" aria-label="待上课程"></aside>
       </div>
       <div id="dataHint" class="hint" hidden></div>
     </div>
@@ -1267,16 +1268,13 @@ function load(){
 function saveStudents(){ localStorage.setItem(STORE.students, JSON.stringify(students)); markLocalUpdated(); scheduleAutoBackup(); }
 function saveCourses(){ localStorage.setItem(STORE.courses, JSON.stringify(courses)); markLocalUpdated(); scheduleAutoBackup(); }
 
-/* ===== today bar ===== */
+/* ===== today bar: 今日聚焦（巨数 + 时间轴 + 统计）。待上课程列表见 renderPendingBar ===== */
 function renderToday(){
   const el=document.getElementById('todayBar');
-  /* 「今天要处理」区块仅在课表页展示；其余页面保持为空，不渲染该块 */
+  /* 今日聚焦区块仅在课表页展示；其余页面保持为空 */
   if(currentTab!=='week'){ el.innerHTML=''; return; }
   const today=todayStr();
-  const overdue = courses.filter(c=>c.status!=='done'&&c.status!=='absent'&&c.status!=='cancelled'&&c.date<today)
-                         .sort((a,b)=>a.date.localeCompare(b.date));
-  const todayItems = courses.filter(c=>c.date===today&&c.status!=='done'&&c.status!=='absent'&&c.status!=='cancelled')
-                            .sort((a,b)=>a.start.localeCompare(b.start));
+  const todayItems = courses.filter(c=>c.date===today&&c.status!=='done'&&c.status!=='absent'&&c.status!=='cancelled');
   const date=parseYMD(today);
   const todayAll=courses.filter(c=>c.date===today&&c.status!=='cancelled').length;
   const todayDone=courses.filter(c=>c.date===today&&c.status==='done').length;
@@ -1302,7 +1300,21 @@ function renderToday(){
     +'<div class="tf-subs"><div class="tf-sub"><span class="tf-sub-n">'+todayItems.length+'</span><span class="tf-sub-l">待上</span></div>'
     +'<div class="tf-sub"><span class="tf-sub-n">'+todayDone+'</span><span class="tf-sub-l">今日已上</span></div>'
     +'<div class="tf-sub"><span class="tf-sub-n">'+monthDone+'</span><span class="tf-sub-l">本月已上</span></div></div>'
-    +'<div class="tf-sep"></div>'
+    +'</div>';
+  el.innerHTML=html;
+}
+
+/* ===== pending bar: 待上课程操作列表（周课表右侧）。完成/请假/填写记录绑定随之迁移 ===== */
+function renderPendingBar(){
+  const el=document.getElementById('pendingBar');
+  if(!el) return;
+  if(currentTab!=='week'){ el.innerHTML=''; return; }
+  const today=todayStr();
+  const overdue = courses.filter(c=>c.status!=='done'&&c.status!=='absent'&&c.status!=='cancelled'&&c.date<today)
+                         .sort((a,b)=>a.date.localeCompare(b.date));
+  const todayItems = courses.filter(c=>c.date===today&&c.status!=='done'&&c.status!=='absent'&&c.status!=='cancelled')
+                            .sort((a,b)=>a.start.localeCompare(b.start));
+  let html='<div class="today pending-card">'
     +'<div class="tf-list-title">待上课程<span class="tf-count">'+todayItems.length+'</span></div>';
   if(!todayItems.length) html+='<div class="empty">今天没有待上课程。</div>';
   const renderItem=(c,over)=>{
@@ -3351,6 +3363,7 @@ function renderWorkspaceSummary(){
   const layout=document.getElementById('workspaceLayout');
   layout.classList.toggle('workspace-layout',currentTab==='week');
   document.getElementById('todayBar').hidden=currentTab!=='week';
+  document.getElementById('pendingBar').hidden=currentTab!=='week';
   if(currentTab!=='week') return;
   let start, end, label;
   if(viewMode==='week'){
@@ -3373,7 +3386,7 @@ function render(){
   switchTab();
   renderWorkspaceSummary();
   populateFilter();
-  renderToday(); renderHint();
+  renderToday(); renderPendingBar(); renderHint();
   if(currentTab==='week'){ if(viewMode==='day') renderDay(); else if(viewMode==='month') renderMonth(); else renderWeek(); }
   else if(currentTab==='edit') renderEdit();
   else if(currentTab==='homework') window.TeachingHomeworkPage.render(document.getElementById('view-homework'),courses,students);
@@ -3542,7 +3555,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-22-extreme-white-v1';
+const APP_VERSION = '2026-11-22-pending-right-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */

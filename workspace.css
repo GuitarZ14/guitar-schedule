@@ -97,10 +97,10 @@ button.primary{background:var(--primary);}
 .summary-metric span{display:block;color:var(--muted);font-size:12px;margin-bottom:7px;}
 .summary-metric b{font-size:26px;font-weight:550;line-height:1.2;font-family:var(--font-display);font-variant-numeric:tabular-nums;}
 .summary-metric small{font-size:12px;font-weight:400;color:var(--muted);margin-left:7px;}
-.workspace-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:22px;align-items:start;}
-.workspace-layout main{min-width:0;}
-#todayBar{grid-column:1;grid-row:1;min-width:0;}
-.workspace-layout main{grid-column:1;grid-row:2;}
+.workspace-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:22px;align-items:start;}
+#todayBar{grid-column:1 / -1;grid-row:1;min-width:0;}
+.workspace-layout main{grid-column:1;grid-row:2;min-width:0;}
+#pendingBar{grid-column:2;grid-row:2;min-width:0;}
 .schedule-panel{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
 .month-panel{display:block;}
 .schedule-heading{padding:17px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;}
@@ -182,7 +182,7 @@ button.primary{background:var(--primary);}
 .ccard:focus-visible{outline:2px solid var(--primary);outline-offset:2px;}
 @media(min-width:861px) and (max-width:1250px){
   .sidebar{width:184px;padding-left:12px;padding-right:12px;}
-  .brand{font-size:13px;}.workspace-layout{grid-template-columns:minmax(0,1fr) 240px;gap:16px;}
+  .brand{font-size:13px;}.workspace-layout{grid-template-columns:minmax(0,1fr) 260px;gap:16px;}
   .topbar{padding:24px 24px 18px;}.wrap{padding:0 24px 28px;}
   .weekgrid{overflow-x:auto;grid-template-columns:repeat(7,minmax(100px,1fr));}
 }
@@ -196,7 +196,7 @@ button.primary{background:var(--primary);}
   .filter{flex:0 1 150px;min-height:36px;margin-left:auto;}.view-toggle button{min-height:28px;padding:4px 11px;}
   .wrap{padding:0 16px calc(96px + env(safe-area-inset-bottom));}
   .workspace-summary{padding:16px 0;margin-bottom:16px;}.summary-metric{padding:0 14px;}.summary-metric span{font-size:11px;}.summary-metric b{font-size:23px;}
-  .workspace-layout{display:flex;flex-direction:column;gap:16px;}#todayBar{width:100%;order:0;}.workspace-layout main{width:100%;order:1;}
+  .workspace-layout{display:flex;flex-direction:column;gap:16px;}#todayBar{width:100%;order:0;}.workspace-layout main{width:100%;order:1;}#pendingBar{width:100%;order:2;}
   .weekgrid{display:flex;gap:0;padding:0;min-height:320px;scroll-padding:0;}.daycol{flex:0 0 148px;min-width:148px;}
   .month-weekdays,.month-grid{grid-template-columns:repeat(7,88px);min-width:616px;}
   .month-grid{min-height:max(348px,calc(100dvh - 470px));}
@@ -482,6 +482,11 @@ button:disabled:hover{transform:none;box-shadow:none;}
 .tf-list-title{display:flex;align-items:center;gap:9px;margin:22px 0 4px;font-size:13px;color:var(--text-2);letter-spacing:.04em;}
 .tf-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;font-size:11px;color:var(--wood-d);background:var(--primary-soft);border-radius:5px;font-variant-numeric:tabular-nums;}
 .today-focus .titem{border-top:1px solid var(--line);}
+/* 周课表右侧待上课程卡：复用 .today 表面，压紧内边距适配窄栏 */
+.pending-card{padding:20px 18px;}
+.pending-card .tf-list-title{margin:0 0 6px;}
+.pending-card .titem{padding:14px 0;}
+.pending-card .empty{padding:20px 2px;}
 @media(max-width:700px){
   .today-focus{padding:26px 20px 22px;}
   .tf-num{font-size:88px;}
