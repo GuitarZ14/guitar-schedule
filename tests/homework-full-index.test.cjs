@@ -72,17 +72,35 @@ test('page now scans all assignments and PWA assets have a fresh version',()=>{
  assert(html.includes('部分课程未能读取'));
  assert(!html.includes('courses.slice(page * 28'));
  assert(index.includes('./teaching-homework-index.js?v=20261118-batch-recovery-v1'));
- assert(cache.includes('guitar-wb-v89-pending-right-v1'));
+ assert(cache.includes('guitar-wb-v90-swiss-stage1'));
 });
-test('extreme whitespace palette: white page, pale wood sidebar, light primary with dark button text',()=>{
- const css=fs.readFileSync(path.join(__dirname,'../workspace.css'),'utf8');
+test('swiss monochrome theme: black/white tokens, sharp corners, monochrome sidebar',()=>{
+ const theme=fs.readFileSync(path.join(__dirname,'../theme-swiss.css'),'utf8');
  const index=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
- assert(css.includes('--paper:#FFFFFF'));
- assert(css.includes('--wood:#F5EEE3'));
- assert(css.includes('.sidebar{background:var(--wood)'));
- assert(css.includes('.sidebar .nav-item{color:#3A2E1F;}'));
- assert(css.includes('--primary:#D8C4AC'));
- assert(css.includes('--primary-d:#6B5138'));
- assert(index.includes('button.primary{background:var(--primary); color:#6B5138;'));
- assert(index.includes('theme-color" content="#F5EEE3'));
+ const ws=fs.readFileSync(path.join(__dirname,'../workspace.css'),'utf8');
+ // 令牌：纯黑白 + 直角 + 无阴影
+ assert(theme.includes('--paper:#FFFFFF'));
+ assert(theme.includes('--primary:#000000'));
+ assert(theme.includes('--text:#000000'));
+ assert(theme.includes('--line:#E5E5E5'));
+ assert(theme.includes('--r-sm:0px; --r-md:0px; --r-lg:0px'));
+ assert(theme.includes('--sh-1:none'));
+ // 侧栏与按钮：黑字白底、主按钮黑底
+ assert(theme.includes('.sidebar .nav-item.active{'));
+ assert(theme.includes('button.primary{background:#000;color:#fff;border-color:#000;}'));
+ // 今日卡：移动端纵向时间轴（≤700px 换成单列，靠竖线串联）
+ assert(theme.includes('.tf-node::before{'));
+ assert(theme.includes('grid-template-columns:40px 12px minmax(0,1fr) auto;'));
+ // 主题层必须被页面与 Service Worker 引用，否则线上不生效、离线不缓存
+ assert(index.includes('./theme-swiss.css?v=20261122-swiss-stage1'));
+ assert(index.includes('./geist-fonts.css?v=20261122-swiss-stage1'));
+ // 旧暖木色不得残留在具体规则里（:root 里的旧令牌由主题层覆盖，保留仅为可回滚）
+ const wsRules=ws.replace(/:root\{[^}]*\}/g,'');
+ assert(!wsRules.includes('#F5EEE3'));
+ assert(!wsRules.includes('#D8C4AC'));
+ assert(!wsRules.includes('#F0EAE2'));
+ assert(!wsRules.includes('#FBF8F2'));
+ assert(!wsRules.includes('#F7F5F0'));
+ // 浏览器状态栏底色跟随主题
+ assert(index.includes('theme-color" content="#FFFFFF'));
 });

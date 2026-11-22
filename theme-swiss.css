@@ -1,0 +1,359 @@
+/* ============================================================================
+   Swiss Monochrome 主题层 · 阶段一（外框 + 今日卡）
+   纯样式覆盖，不修改结构、ID、脚本；删除本文件即可回到暖木风。
+   阶段一范围：设计令牌 / 侧栏 / 顶栏 / 按钮与表单控件 / 概览条 / 今日卡（含移动端纵向时间轴）
+   ========================================================================== */
+
+/* ---------- 1. 设计令牌：把暖木色板整体换成黑白灰阶 ---------- */
+:root{
+  --paper:#FFFFFF;
+  --greige:#E5E5E5;
+  --wood:#FFFFFF; --wood-d:#000000;
+  --ink:#000000; --sage:#000000; --clay:#000000;
+  --glass:#FFFFFF; --glass-strong:#FFFFFF; --glass-border:#E5E5E5;
+  --line:#E5E5E5;
+  --text:#000000; --text-2:#3D3D3D; --muted:#5C5C5C; --muted-2:#6B6B6B;
+  --primary:#000000; --primary-d:#000000; --primary-soft:#F2F2F2;
+  --green:#000000; --green-soft:#F2F2F2;
+  --blue:#6B6B6B;  --blue-soft:#F7F7F7;
+  --red:#000000;   --red-soft:#F7F7F7;
+  --gray:#6B6B6B;  --gray-soft:#F2F2F2;
+  --warn:#3D3D3D;  --warn-soft:#F7F7F7;
+  --r-sm:0px; --r-md:0px; --r-lg:0px; --r-pill:2px;
+  --sh-1:none; --sh-2:none; --sh-3:0 14px 44px rgba(0,0,0,.16);
+  --font-body:"Geist","PingFang SC","Hiragino Sans GB","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif;
+  --font-display:var(--font-body);
+  --font-mono:"Geist Mono",ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --t:.12s ease;
+}
+
+/* ---------- 2. 基础 ---------- */
+html{background:#fff;}
+body{
+  background:#fff; color:#000; font-family:var(--font-body);
+  font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased;
+}
+::selection{background:#000;color:#fff;}
+.num,.tabular{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+
+/* 按钮：白底黑框，悬停反相；primary 为实心黑 */
+button{
+  border-radius:0; border:1px solid #000; background:#fff; color:#000;
+  box-shadow:none; font-weight:500;
+  transition:background var(--t),color var(--t),border-color var(--t),opacity var(--t);
+}
+button:hover{background:#000;color:#fff;box-shadow:none;transform:none;}
+button:active{transform:none;}
+button svg{flex-shrink:0;}
+button.primary{background:#000;color:#fff;border-color:#000;}
+button.primary:hover{background:#000;color:#fff;opacity:.82;}
+button.primary:disabled:hover{opacity:.35;}
+button.danger{background:#fff;color:#000;border:1px dashed #000;}
+button.danger:hover{background:#000;color:#fff;border-style:solid;}
+button.ghost{background:transparent;border-color:transparent;color:#6B6B6B;}
+button.ghost:hover{background:#F2F2F2;color:#000;}
+button:disabled{opacity:.35;}
+button:disabled:hover{background:#fff;color:#000;}
+button:focus-visible{outline:2px solid #000;outline-offset:2px;}
+.tbtn{border-radius:0;border:1px solid #D4D4D4;background:#fff;color:#000;}
+.tbtn:hover{background:#000;color:#fff;border-color:#000;}
+
+/* 表单控件：直角细边，聚焦时黑框 */
+input,select,textarea{
+  border-radius:0;border:1px solid #D4D4D4;background:#fff;color:#000;
+  font-family:var(--font-body);
+}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:#000;box-shadow:inset 0 0 0 1px #000;
+}
+select{appearance:none;-webkit-appearance:none;padding-right:26px;
+  background-image:linear-gradient(45deg,transparent 50%,#000 50%),linear-gradient(135deg,#000 50%,transparent 50%);
+  background-position:calc(100% - 14px) 50%,calc(100% - 10px) 50%;
+  background-size:4px 4px,4px 4px;background-repeat:no-repeat;}
+input[type=checkbox],input[type=radio]{accent-color:#000;}
+.chk{border-radius:0;border:1px solid #D4D4D4;background:#fff;}
+
+/* 提示条：灰阶，不用黄色 */
+.hint{background:#F7F7F7;border:1px solid #E5E5E5;border-left:2px solid #000;border-radius:0;color:#3D3D3D;}
+
+/* 分段控件（状态 / 课程类型） */
+.seg-btn{border-radius:0;border:1px solid #D4D4D4;background:#fff;color:#6B6B6B;}
+.seg-btn:hover{border-color:#000;color:#000;}
+.seg-btn.on{background:#000;color:#fff;border-color:#000;}
+.status-radios label{border-radius:0;border:1px solid #D4D4D4;background:#fff;}
+.status-radios label:hover{border-color:#000;}
+.status-radios label:has(input[value="planned"]:checked),
+.status-radios label:has(input[value="done"]:checked),
+.status-radios label:has(input[value="absent"]:checked),
+.status-radios label:has(input[value="cancelled"]:checked){
+  border-color:#000;background:#000;color:#fff;
+}
+.tribadge{border-radius:2px;border:1px solid #D4D4D4;background:#fff;color:#000;}
+.titem .who span.tribadge{color:#000;}
+
+/* 状态标签：靠灰度与描边区分，不靠色相 */
+.stu-tag{border-radius:2px;}
+.st-active{color:#000;background:#F2F2F2;box-shadow:inset 0 0 0 1px #D4D4D4;}
+.st-leave{color:#000;background:#fff;box-shadow:inset 0 0 0 1px #000,inset 0 0 0 4px #fff;border:1px dashed #000;}
+.st-paused{color:#6B6B6B;background:#fff;border:1px solid #D4D4D4;}
+.st-finished{color:#6B6B6B;background:#fff;border:1px solid #E5E5E5;}
+.badge{border-radius:2px;}
+.badge.done{background:#F2F2F2;color:#000;}
+.badge.planned{background:#fff;color:#000;border:1px solid #000;}
+.badge.absent{background:#fff;color:#6B6B6B;border:1px dashed #6B6B6B;}
+.badge.cancelled{background:#fff;color:#9B9B9B;border:1px solid #E5E5E5;}
+.pill{border-radius:2px;background:#F2F2F2;color:#000;}
+
+/* ---------- 3. 侧栏 ---------- */
+.sidebar{
+  background:#fff;border-right:1px solid #E5E5E5;
+  padding-left:0;padding-right:0;
+}
+.brand{
+  color:#000;font-size:13.5px;font-weight:600;letter-spacing:-.01em;
+  padding:0 18px 20px;gap:10px;
+}
+.brand svg{color:#000;width:26px;height:26px;stroke-width:1.6;}
+.nav-caption{
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;
+  color:#6B6B6B;padding:0 18px 8px;text-transform:uppercase;font-weight:400;
+}
+.nav{gap:0;}
+.sidebar .nav-item{
+  height:42px;padding:0 18px;border:0;border-left:2px solid transparent;border-radius:0;
+  font-size:13.5px;font-weight:400;color:#6B6B6B;background:transparent;gap:11px;min-height:42px;
+}
+.sidebar .nav-item svg{width:17px;height:17px;opacity:1;stroke-width:1.7;}
+.sidebar .nav-item:hover{background:#FAFAFA;color:#000;}
+.sidebar .nav-item.active{
+  background:#F5F5F5;color:#000;font-weight:600;border-left:2px solid #000;
+}
+.sidebar .nav-item.active svg{color:#000;}
+
+/* 提醒卡：改成侧栏底部的一个分区，去掉卡片感 */
+.sidebar .remind-card{
+  margin:auto 0 0;padding:14px 18px;background:#fff;
+  border:0;border-top:1px solid #E5E5E5;border-radius:0;
+}
+.sidebar .remind-head{color:#000;font-size:12.5px;font-weight:600;gap:7px;}
+.sidebar .remind-head svg{color:#000;width:15px;height:15px;}
+.sidebar .remind-sub{color:#6B6B6B;font-size:11.5px;line-height:1.6;margin-top:6px;}
+.sidebar .remind-sub.on{color:#000;}
+.switch .slider{border-radius:0;background:#E5E5E5;}
+.switch input:checked + .slider{background:#000;}
+.switch .slider::before{border-radius:0;background:#fff;box-shadow:none;}
+.sidebar-foot{border-top:1px solid #E5E5E5;padding:14px 18px 16px;gap:10px;}
+.cloud-status{border:0;background:transparent;padding:0;color:#6B6B6B;font-size:11.5px;box-shadow:none;}
+.cloud-status.ok{color:#000;}
+.cloud-status.err{color:#000;}
+.sidebar .data-tools summary{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;color:#6B6B6B;padding:4px 0;}
+.sidebar .data-tools .acts button{
+  font-size:12px;min-height:32px;justify-content:flex-start;
+  border:0;border-bottom:1px solid #F2F2F2;background:transparent;color:#3D3D3D;padding:6px 0;
+}
+.sidebar .data-tools .acts button:hover{background:transparent;color:#000;border-bottom-color:#000;}
+.sidebar .data-tools .acts button.danger{color:#000;border-bottom-color:#F2F2F2;border-style:solid;}
+.sidebar .data-tools .acts button.danger:hover{background:#000;color:#fff;padding-left:8px;}
+
+/* ---------- 4. 顶栏 ---------- */
+.topbar{background:#fff;border-bottom:1px solid #E5E5E5;padding:22px 32px 16px;}
+.top-title{font-size:23px;font-weight:600;letter-spacing:-.02em;color:#000;}
+.page-kicker{font-family:var(--font-mono);font-size:10px;letter-spacing:.16em;color:#6B6B6B;margin-bottom:7px;}
+.top-add{min-height:36px;padding:0 14px;font-size:13px;}
+
+/* 视图切换：分格，选中实心黑 */
+.view-toggle{
+  display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;
+  border:1px solid #D4D4D4;border-radius:0;background:#fff;padding:0;gap:0;
+}
+.view-toggle button{
+  border:0;border-right:1px solid #D4D4D4;border-radius:0;background:#fff;
+  min-height:32px;padding:0 15px;font-size:12.5px;color:#6B6B6B;box-shadow:none;
+}
+.view-toggle button:last-child{border-right:0;}
+.view-toggle button:hover{background:#FAFAFA;color:#000;transform:none;}
+.view-toggle button.active{background:#000;color:#fff;font-weight:600;}
+
+/* 日期导航：三段式带分隔线 */
+.datenav{border:1px solid #D4D4D4;gap:0;align-items:stretch;}
+.datenav .range{
+  font-family:var(--font-mono);font-size:11.5px;letter-spacing:-.01em;font-weight:500;color:#000;
+  min-width:0;text-align:center;padding:0 12px;border-left:1px solid #D4D4D4;border-right:1px solid #D4D4D4;
+  display:flex;align-items:center;justify-content:center;
+}
+.datenav button{
+  border:0;border-radius:0;background:transparent;color:#000;
+  min-height:32px;min-width:34px;padding:0 10px;font-size:13px;box-shadow:none;
+}
+.datenav button:hover{background:#000;color:#fff;transform:none;}
+.filter{border:1px solid #D4D4D4;border-radius:0;background:#fff;color:#000;font-size:12.5px;min-height:32px;padding:0 26px 0 10px;}
+.filter:focus{border-color:#000;outline:none;box-shadow:inset 0 0 0 1px #000;}
+.menu-btn{border:1px solid #000;background:#fff;color:#000;border-radius:0;}
+
+/* ---------- 5. 概览条（本周课程 / 已完成 / 排课时长） ---------- */
+.workspace-summary{
+  background:#fff;border:1px solid #E5E5E5;border-top:1px solid #000;border-radius:0;
+  padding:16px 0;margin-bottom:20px;
+}
+.summary-metric{padding:0 22px;border-right:1px solid #E5E5E5;}
+.summary-metric span{font-size:11.5px;color:#6B6B6B;margin-bottom:6px;letter-spacing:0;}
+.summary-metric b{
+  font-family:var(--font-mono);font-size:26px;font-weight:600;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;line-height:1;
+}
+.summary-metric small{font-size:11px;color:#6B6B6B;margin-left:5px;}
+
+/* ---------- 6. 今日卡 ---------- */
+.today-focus{
+  background:#fff;border:1px solid #E5E5E5;border-top:1px solid #000;
+  border-radius:0;padding:22px 26px 20px;
+}
+.tf-top{align-items:baseline;}
+.tf-eyebrow{
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.14em;
+  color:#6B6B6B;text-transform:uppercase;font-weight:400;
+}
+.tf-date{font-family:var(--font-mono);font-size:11px;color:#6B6B6B;letter-spacing:0;}
+.tf-hero{gap:10px;margin-top:16px;align-items:baseline;}
+.tf-prefix,.tf-unit{font-size:13px;color:#6B6B6B;font-weight:400;}
+.tf-num{
+  font-family:var(--font-mono);font-size:84px;line-height:1;font-weight:600;
+  color:#000;letter-spacing:-.05em;font-variant-numeric:tabular-nums;
+  display:block;margin-bottom:-6px;
+}
+/* 时间轴：横向轴 + 方块节点 */
+.tf-timeline{margin-top:26px;}
+.tf-axis{top:35px;height:1px;background:#C9C9C9;}
+.tf-node{padding:0 10px 0 0;}
+.tf-time{
+  height:24px;font-family:var(--font-mono);font-size:12px;color:#000;
+  letter-spacing:-.01em;justify-content:center;align-items:flex-end;padding-bottom:6px;
+}
+.tf-dot-wrap{height:22px;justify-content:center;}
+.tf-dot{width:8px;height:8px;border-radius:0;background:#000;border:1px solid #000;}
+.tf-dot.done{background:#000;border-color:#000;}
+.tf-dot.warn{background:#fff;border:1px dashed #000;}
+.tf-name{
+  margin-top:10px;font-size:13px;font-weight:600;color:#000;line-height:1.35;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.tf-course{
+  font-size:11px;color:#6B6B6B;margin-top:3px;opacity:1;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.tf-meta{
+  font-family:var(--font-mono);font-size:10.5px;color:#6B6B6B;margin-top:4px;opacity:1;
+}
+.tf-empty{font-size:12px;color:#6B6B6B;padding:6px 0 4px;}
+.tf-subs{gap:48px;margin-top:22px;padding:16px 0 0;border-top:1px solid #E5E5E5;border-bottom:0;}
+.tf-sub{gap:4px;}
+.tf-sub-n{font-family:var(--font-mono);font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1;}
+.tf-sub-l{font-size:11px;color:#6B6B6B;}
+
+/* 右侧待上课程卡：同一套表面 */
+.pending-card{background:#fff;border:1px solid #E5E5E5;border-top:1px solid #000;border-radius:0;padding:18px 18px 14px;}
+.pending-card .tf-list-title{
+  font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:#6B6B6B;margin:0 0 4px;gap:8px;
+}
+.tf-count{
+  font-family:var(--font-mono);font-size:10.5px;color:#000;background:#fff;
+  border:1px solid #000;border-radius:0;min-width:18px;height:17px;padding:0 4px;
+}
+.pending-card .titem{border-top:1px solid #E5E5E5;padding:13px 0;border-radius:0;background:transparent;}
+.pending-card .titem:first-of-type{border-top:0;}
+.pending-card .titem:hover{transform:none;box-shadow:none;}
+.pending-card .titem .when{font-family:var(--font-mono);font-size:12px;font-weight:500;color:#000;min-width:0;}
+.pending-card .titem .who b{font-size:13px;font-weight:600;}
+.pending-card .titem .who span{font-size:11px;color:#6B6B6B;}
+.pending-card .titem .acts{gap:6px;margin-top:8px;}
+.pending-card .titem .acts button{
+  min-height:30px;padding:0 10px;font-size:11.5px;border:1px solid #000;background:#fff;color:#000;
+}
+.pending-card .titem .acts button:hover{background:#000;color:#fff;}
+.pending-card .titem .acts .primary{background:#000;color:#fff;border-color:#000;}
+.pending-card .titem .acts .primary:hover{opacity:.82;background:#000;color:#fff;}
+.pending-card .empty{font-size:12px;color:#6B6B6B;padding:16px 0 10px;}
+.overdue-list{border-top:1px solid #E5E5E5;margin-top:10px;padding-top:12px;}
+.overdue-list summary{font-size:11.5px;color:#000;border:0;}
+
+/* ---------- 7. 移动端：今日卡时间轴改纵向 ---------- */
+@media(max-width:700px){
+  .sidebar .nav-item{padding:0 16px;}
+  .sidebar .remind-card{padding:12px 16px;}
+  .sidebar-foot{padding:12px 16px 14px;}
+  .brand{padding:0 16px 18px;}
+  .nav-caption{padding:0 16px 8px;}
+
+  .topbar{padding:16px 16px 12px;}
+  .top-title{font-size:20px;}
+  .view-toggle button{min-height:34px;padding:0 14px;font-size:12px;}
+  .datenav{width:100%;}
+
+  .today-focus{padding:18px 16px 16px;}
+  .tf-num{font-size:56px;}
+  .tf-prefix,.tf-unit{font-size:12px;}
+  .tf-hero{margin-top:12px;gap:8px;}
+  .tf-timeline{margin-top:16px;}
+  .tf-axis{display:none;}
+  .tf-nodes{display:block;}
+  .tf-node{
+    display:grid;
+    grid-template-columns:40px 12px minmax(0,1fr) auto;
+    grid-template-areas:"t d n m" "t d c m";
+    align-items:center;column-gap:10px;
+    min-height:58px;padding:0;border-left:0;text-align:left;
+    position:relative;
+  }
+  .tf-node::before{content:"";position:absolute;left:55.5px;top:0;bottom:0;width:1px;background:#D4D4D4;z-index:1;}
+  .tf-node:first-child::before{top:50%;}
+  .tf-node:last-child::before{bottom:50%;}
+  .tf-time{
+    grid-area:t;height:auto;display:block;padding:0;margin:0;
+    font-family:var(--font-mono);font-size:12px;color:#000;line-height:1.4;
+  }
+  .tf-dot-wrap{grid-area:d;height:auto;margin:0;justify-content:center;align-self:center;}
+  .tf-dot{width:8px;height:8px;position:relative;z-index:2;}
+  .tf-name{grid-area:n;margin:0;font-size:13.5px;line-height:1.3;white-space:nowrap;}
+  .tf-course{grid-area:c;margin:1px 0 0;font-size:11px;line-height:1.3;white-space:nowrap;}
+  .tf-meta{
+    grid-area:m;margin:0;text-align:right;font-size:10.5px;color:#6B6B6B;
+    white-space:nowrap;align-self:center;
+  }
+  .tf-subs{gap:28px;margin-top:16px;padding-top:12px;}
+  .tf-sub-n{font-size:22px;}
+
+  .pending-card{padding:16px 16px 12px;}
+}
+
+@media(max-width:380px){
+  .tf-node{grid-template-columns:38px 12px minmax(0,1fr) auto;column-gap:8px;}
+  .tf-node::before{left:51.5px;}
+  .tf-num{font-size:50px;}
+}
+
+/* ---------- 8. 周课表：去掉学员分色，改用状态编码（仅颜色，第二阶段再重排布局） ---------- */
+.ccard{
+  border-left:2px solid #000;background:#fff;border:1px solid #E5E5E5;border-left:2px solid #000;
+  padding:9px 8px;margin:0 0 7px;
+}
+.ccard:hover{transform:none;box-shadow:none;background:#FAFAFA;}
+.ccard .ct{font-family:var(--font-mono);font-size:10.5px;letter-spacing:-.01em;color:#000;}
+.ccard .cn{font-size:12.5px;font-weight:600;color:#000;margin-top:5px;}
+.ccard.done{background:#F5F5F5;border-color:#E5E5E5;border-left:2px solid #C9C9C9;}
+.ccard.done .ct,.ccard.done .cn{text-decoration:none;color:#6B6B6B;}
+.ccard.absent{border-left:2px dashed #000;background:#fff;}
+.ccard.absent .cn{color:#3D3D3D;}
+.ccard.cancelled{border-left:2px solid #E5E5E5;background:#FAFAFA;}
+.ccard.cancelled .ct,.ccard.cancelled .cn{text-decoration:line-through;color:#9B9B9B;}
+.daycol.today{background:#FAFAFA;}
+.daycol.today .dh b{background:#000;color:#fff;border-radius:0;}
+.daycol.day-active{background:#F5F5F5;box-shadow:inset 0 0 0 1px #000;}
+.dhead-add{background:#fff;border:1px solid #000;border-radius:0;color:#000;}
+.dhead-add:hover{background:#000;color:#fff;border-color:#000;}
+.dhead-copy{background:#fff;border:1px solid #D4D4D4;border-radius:0;color:#000;}
+.dhead-copy:hover{background:#000;color:#fff;border-color:#000;}
+.schedule-legend{font-family:var(--font-mono);font-size:10px;color:#6B6B6B;}
+.legend-dot{border-radius:0;width:7px;height:7px;background:#000;}
+.legend-dot.done{background:#C9C9C9;}.legend-dot.absent{background:#fff;border:1px dashed #000;}
+.schedule-repeat{border:1px solid #D4D4D4;border-radius:0;}
