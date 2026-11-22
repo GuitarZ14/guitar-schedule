@@ -462,8 +462,8 @@ input[type=checkbox],input[type=radio]{accent-color:#000;}
 }
 
 /* ---------- 9. 学员管理：工具条归位、表格压缩、彩色色点去色 ---------- */
-/* 只在桌面维持两栏；窄屏交给 workspace.css 原有的单列断点，否则档案卡会浮在表格上 */
-@media(min-width:901px){.balance-layout{grid-template-columns:minmax(0,1fr) 300px;gap:18px;}}
+/* 学员档案改为右侧抽屉后，表格独占整行（各宽度统一单栏） */
+.balance-layout{grid-template-columns:minmax(0,1fr);gap:0;}
 .balance-overview,.balance-metric b{font-family:var(--font-mono);}
 .balance-metric span,.balance-metric small{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.02em;color:#5C5C5C;}
 .balance-metric b{font-size:26px;font-weight:600;letter-spacing:-.03em;}
@@ -524,7 +524,7 @@ input[type=checkbox],input[type=radio]{accent-color:#000;}
 .stu-table th:first-child{background:#F7F7F7;}
 .stu-row.balance-selected td:first-child{background:#F0F0F0;}
 .stu-name .balance-name{font-size:12px;font-weight:600;gap:0;min-height:28px;color:#000;}
-.stu-name .balance-name:hover{text-decoration:underline;}
+.stu-name .balance-name:hover{background:transparent;color:#000;text-decoration:underline;}
 .stu-name .swatch{display:none;}
 .stu-table b{font-family:var(--font-mono);font-weight:600;font-variant-numeric:tabular-nums;}
 .stu-table .num{font-family:var(--font-mono);font-size:11px;}
@@ -862,4 +862,70 @@ input[type=checkbox],input[type=radio]{accent-color:#000;}
   .duration-bars{padding:4px 14px 12px;}
   .panel h2{padding:12px 14px;}
   .report-table-wrap th,.report-table-wrap td{padding:9px 12px;}
+}
+
+/* ---------- 14. 学员档案改为右侧抽屉（表格独占整行） ---------- */
+/* #balanceDetail 仍是 #view-edit 里的空容器；真正的面板 .balance-detail 脱离文档流 */
+#balanceDetail{min-width:0;}
+.balance-detail{
+  position:fixed; top:0; right:0; bottom:0;
+  width:420px; max-width:calc(100vw - 28px);
+  z-index:46; display:flex; flex-direction:column;
+  background:#fff; border:0; border-left:1px solid #000; border-radius:0;
+  box-shadow:none; overflow:hidden;
+  transform:translateX(calc(100% + 2px));
+  transition:transform .24s cubic-bezier(.32,.72,0,1);
+  padding-top:env(safe-area-inset-top);
+  will-change:transform;
+}
+body.sw-drawer-open .balance-detail{transform:translateX(0);}
+@media(prefers-reduced-motion:reduce){.balance-detail{transition:none;}}
+
+/* 标题区让位给关闭按钮；整体由抽屉滚动，内部不再单独滚 */
+.balance-detail header{padding:18px 16px 14px;padding-right:56px;border-bottom:1px solid var(--line);flex:0 0 auto;}
+.balance-detail header h3{font-size:18px;margin:0 0 3px;}
+.balance-detail header>span:last-child{font-family:var(--font-mono);font-size:10.5px;color:#5C5C5C;}
+.balance-detail .page-kicker{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;color:#6B6B6B;}
+.balance-detail{overflow-y:auto;overscroll-behavior:contain;}
+.balance-body{max-height:none;overflow:visible;padding:14px 16px 22px;}
+.balance-detail .balance-hero{padding:14px 16px;}
+.balance-detail .balance-tabs{
+  padding:0 16px;background:#fff;
+  overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;
+}
+.balance-detail .balance-tabs::-webkit-scrollbar{display:none;}
+.balance-detail .balance-tabs button{
+  font-family:var(--font-mono);font-size:11px;padding:9px 8px;white-space:nowrap;flex:0 0 auto;
+}
+
+/* 关闭按钮：固定在抽屉右上角内侧 */
+.sw-drawer-close{
+  position:fixed; top:calc(12px + env(safe-area-inset-top)); right:12px; z-index:47;
+  width:30px; height:30px; min-height:30px; padding:0;
+  display:none; align-items:center; justify-content:center;
+  border:1px solid #D4D4D4; border-radius:0; background:#fff; color:#000;
+  font-size:17px; line-height:1; font-weight:400;
+}
+body.sw-drawer-open .sw-drawer-close{display:inline-flex;}
+.sw-drawer-close:hover{background:#000;color:#fff;border-color:#000;}
+.sw-drawer-close:focus-visible{outline:2px solid #000;outline-offset:1px;}
+
+@media(max-width:900px){
+  .balance-detail{width:calc(100vw - 28px);max-width:calc(100vw - 28px);}
+  .balance-detail .balance-tabs{padding:0 12px;}
+  .balance-body{padding:12px 12px 22px;}
+}
+
+/* 窄屏抽屉：六个分类页签排成 3×2，避免横向裁切后看不出还能滚动 */
+@media(max-width:520px){
+  .balance-detail .balance-tabs{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+    overflow:visible;padding:0 12px;
+  }
+  .balance-detail .balance-tabs button{
+    padding:9px 4px;text-align:center;justify-content:center;border:0;border-radius:0;
+  }
+  .balance-detail .balance-tabs button[aria-selected="true"]{
+    box-shadow:inset 0 -2px 0 #000;background:transparent;
+  }
 }
