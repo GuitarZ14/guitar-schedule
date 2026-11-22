@@ -865,11 +865,13 @@ input[type=checkbox],input[type=radio]{accent-color:#000;}
 }
 
 /* ---------- 14. 学员档案改为右侧抽屉（表格独占整行） ---------- */
+/* 抽屉宽度单一来源：覆盖层宽度与挤压留白同值，改一处即可 */
+:root{--sw-drawer-w:400px;}
 /* #balanceDetail 仍是 #view-edit 里的空容器；真正的面板 .balance-detail 脱离文档流 */
 #balanceDetail{min-width:0;}
 .balance-detail{
   position:fixed; top:0; right:0; bottom:0;
-  width:420px; max-width:calc(100vw - 28px);
+  width:var(--sw-drawer-w); max-width:calc(100vw - 28px);
   z-index:46; display:flex; flex-direction:column;
   background:#fff; border:0; border-left:1px solid #000; border-radius:0;
   box-shadow:none; overflow:hidden;
@@ -927,5 +929,40 @@ body.sw-drawer-open .sw-drawer-close{display:inline-flex;}
   }
   .balance-detail .balance-tabs button[aria-selected="true"]{
     box-shadow:inset 0 -2px 0 #000;background:transparent;
+  }
+}
+
+/* ---------- 15. 抽屉挤压式：学员档案跟着缩，不被盖住 ---------- */
+/* 桌面端（≥1200px）抽屉占用文档流右侧留白：表格让位重排，不再被覆盖。
+   操作列（查看/编辑/排课）与抽屉内容重复，抽屉打开时整列让位；
+   1200–1399（13 寸笔记本）再把「状态」列让位 —— 否则 7 列自然宽度约 691px，
+   挤不下只能横向滚动，等于没解决问题。≤1199 退回覆盖式（平板/手机）。 */
+#view-edit{transition:padding-right .24s cubic-bezier(.32,.72,0,1);}
+@media(min-width:1200px){
+  body.sw-drawer-open #view-edit{padding-right:var(--sw-drawer-w);}
+  body.sw-drawer-open .stu-table{min-width:0;}
+  body.sw-drawer-open .stu-table-wrap{overflow-x:auto;}  /* 数据再长也只在本行内滚，不顶破面板 */
+  body.sw-drawer-open .stu-table th:nth-child(8),
+  body.sw-drawer-open .stu-table td:nth-child(8){display:none;}
+}
+@media(min-width:1200px) and (max-width:1399px){
+  :root{--sw-drawer-w:360px;}
+  body.sw-drawer-open .stu-table th:nth-child(7),
+  body.sw-drawer-open .stu-table td:nth-child(7){display:none;}
+  body.sw-drawer-open .stu-table th,
+  body.sw-drawer-open .stu-table td{padding:9px 7px;}
+  body.sw-drawer-open .dtags{max-width:110px;}
+}
+@media(prefers-reduced-motion:reduce){
+  #view-edit{transition:none;}
+}
+
+
+/* 抽屉收窄到 400px 后，六个页签一行等分铺满（原先最后一格被裁掉 41px） */
+@media(min-width:521px){
+  .balance-detail .balance-tabs{padding:0 12px;}
+  .balance-detail .balance-tabs button{
+    flex:1 1 0;min-width:0;padding:9px 2px;
+    font-size:10.5px;letter-spacing:0;text-align:center;justify-content:center;
   }
 }
