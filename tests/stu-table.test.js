@@ -272,6 +272,22 @@ t('体验课与在读学员同名时互不判重（决策：体验课独立记�
   const dup = T.findDuplicateCourse('', '2026-09-05', '18:00', '19:00', null, '小明');
   ok(dup && dup.id === 'c3', '体验课自身的同名应能判重');
 });
+t('已取消的课程不占时段：同一时段可以重新排课', () => {
+  const T2 = buildTrial(STU, [
+    {id:'k1', studentId:'s1', date:'2026-09-10', start:'17:30', end:'18:20', status:'cancelled'},
+    {id:'k2', studentId:'s1', date:'2026-09-11', start:'17:30', end:'18:20', status:'planned'},
+    {id:'k3', studentId:'s1', date:'2026-09-12', start:'17:30', end:'18:20', status:'done'},
+    {id:'k4', studentId:'s1', date:'2026-09-13', start:'17:30', end:'18:20', status:'absent'},
+  ]);
+  ok(!T2.findDuplicateCourse('s1', '2026-09-10', '17:30', '18:20', null, ''),
+     '取消记录不应拦住重新录入（误取消后要能补回来）');
+  ok(T2.findDuplicateCourse('s1', '2026-09-11', '17:30', '18:20', null, ''),
+     '待上记录仍应判重');
+  ok(T2.findDuplicateCourse('s1', '2026-09-12', '17:30', '18:20', null, ''),
+     '已上记录仍应判重');
+  ok(T2.findDuplicateCourse('s1', '2026-09-13', '17:30', '18:20', null, ''),
+     '请假记录仍应判重');
+});
 
 const CRS_SALARY = [
   {studentId:'s1', date:'2026-09-03', status:'done'},

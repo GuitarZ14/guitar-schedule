@@ -595,8 +595,8 @@
 </style>
 <link rel="stylesheet" href="./workspace.css?v=20261122-swiss-stage1">
 <link rel="stylesheet" href="./teaching-course-workspace.css?v=20261122-swiss-stage1">
-<link rel="stylesheet" href="./geist-fonts.css?v=20261122-swiss-stage4">
-<link rel="stylesheet" href="./theme-swiss.css?v=20261122-swiss-stage4">
+<link rel="stylesheet" href="./geist-fonts.css?v=20261122-cancel-v1">
+<link rel="stylesheet" href="./theme-swiss.css?v=20261122-cancel-v1">
 </head>
 <body>
 <div id="toast"></div>
@@ -1165,12 +1165,14 @@ function getRadio(name){
 
 /* ===== 重复录入校验 ===== */
 // 查找「同名学生 + 同时间(日期+起止)」的课程；excludeId 用于编辑时排除自身
+// 已取消的记录不占时段：取消后同一时段重新排课是正常操作，不应被拦（原实现会误拦）
 function findDuplicateCourse(studentId, date, start, end, excludeId, trialName){
   /* 体验课（studentId 为空 + 传了 trialName）只在「体验课」空间内按姓名比对；
      常规课沿用 studentId 比对，两者互不干扰（体验课与在读学员同名也算两回事）。 */
   const trial=!studentId && !!trialName;
   return courses.find(c =>
     c.id !== excludeId &&
+    c.status !== 'cancelled' &&
     (trial
       ? (isTrialCourse(c) && String(c.trialName||'').trim() === String(trialName||'').trim())
       : (c.studentId === studentId)) &&
@@ -1422,7 +1424,12 @@ function renderWeek(){
     html+='</div>';
   }
   const hidden=courses.filter(c=>c.date>=weekStart && c.date<=ymd(sun) && c.status!=='cancelled' && c.hiddenFromSchedule && (!filterStudent||c.studentId===filterStudent));
-  html+='</div>'+(hidden.length?'<details class="schedule-hidden"><summary>已隐藏的周课表课程（'+hidden.length+'）</summary>'+hidden.map(c=>'<button type="button" data-open-hidden="'+esc(c.id)+'">'+esc(c.date+' '+c.start+' · '+courseWho(c))+' · 查看 / 恢复</button>').join('')+'</details>':'')+'</div>';
+  /* 已取消的课程不画进格子（格子只放有效课），但必须留一条可恢复的入口：
+     误点「取消课程」后原记录会从课表消失，没有这个列表就只能重新录入。 */
+  const cancelled=courses.filter(c=>c.date>=weekStart && c.date<=ymd(sun) && c.status==='cancelled' && (!filterStudent||c.studentId===filterStudent))
+    .sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
+  html+='</div>'+(hidden.length?'<details class="schedule-hidden"><summary>已隐藏的周课表课程（'+hidden.length+'）</summary>'+hidden.map(c=>'<button type="button" data-open-hidden="'+esc(c.id)+'">'+esc(c.date+' '+c.start+' · '+courseWho(c))+' · 查看 / 恢复</button>').join('')+'</details>':'')
+    +(cancelled.length?'<details class="schedule-cancelled" open><summary>本周已取消的课程（'+cancelled.length+'）· 点开改回「待上课」即可恢复</summary>'+cancelled.map(c=>'<button type="button" data-open-cancelled="'+esc(c.id)+'">'+esc(c.date.slice(5)+' '+WEEKDAYS[(parseYMD(c.date).getDay()+6)%7]+' '+c.start+'–'+c.end)+' · '+esc(courseWho(c))+' · 查看 / 恢复</button>').join('')+'</details>':'')+'</div>';
 
   const v=document.getElementById('view-week'); v.innerHTML=html;
   // 点击日期列空白区 → 记住该日期，新增课程时自动填入（表头与课程卡片不触发，避免误触）
@@ -1437,6 +1444,7 @@ function renderWeek(){
   });
   v.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>openCourseModal(el.dataset.edit));
   v.querySelectorAll('[data-open-hidden]').forEach(el=>el.onclick=()=>openCourseModal(el.dataset.openHidden));
+  v.querySelectorAll('[data-open-cancelled]').forEach(el=>el.onclick=()=>openCourseModal(el.dataset.openCancelled));
   v.querySelectorAll('[data-addday]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); lastClickedDate=b.dataset.addday; openCourseModal(null); });
   v.querySelectorAll('[data-copyday]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); openCopyDayModal(b.dataset.copyday); });
   document.getElementById('addRepeat').onclick=openRepeatModal;
@@ -3559,7 +3567,7 @@ init();
 /* 注册 Service Worker：支持「添加到主屏幕 / 安装为应用」与离线访问。
    仅在 https（或 localhost）下生效；file:// 打开会静默失败，不影响本地功能。
    版本哨兵：APP_VERSION 变更时强制清除旧缓存并重载，确保 UI 更新即时生效。 */
-const APP_VERSION = '2026-11-22-swiss-stage4';
+const APP_VERSION = '2026-11-22-cancel-v1';
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
     /* 清理旧版本缓存，但绝不在用户输入期间强制重载页面。 */
@@ -3609,7 +3617,7 @@ if ('serviceWorker' in navigator) {
 <script src="./teaching-course-workspace.js?v=20261121-direct-status-v1"></script>
 <script src="./teaching-homework-index.js?v=20261118-batch-recovery-v1"></script>
 <script src="./teaching-homework.js?v=20261115-parity-v1"></script>
-<script src="./theme-swiss.js?v=20261122-swiss-stage4"></script>
+<script src="./theme-swiss.js?v=20261122-cancel-v1"></script>
 </body>
 </html>
 

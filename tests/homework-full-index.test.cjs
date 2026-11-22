@@ -72,7 +72,7 @@ test('page now scans all assignments and PWA assets have a fresh version',()=>{
  assert(html.includes('部分课程未能读取'));
  assert(!html.includes('courses.slice(page * 28'));
  assert(index.includes('./teaching-homework-index.js?v=20261118-batch-recovery-v1'));
- assert(cache.includes('guitar-wb-v93-swiss-stage4'));
+ assert(cache.includes('guitar-wb-v94-cancel-v1'));
 });
 test('swiss stage 2: week grid rows, student table scroll, modal single column',()=>{
  const theme=fs.readFileSync(path.join(__dirname,'../theme-swiss.css'),'utf8');
@@ -94,7 +94,7 @@ test('swiss stage 2: week grid rows, student table scroll, modal single column',
  assert(theme.includes('.balance-layout{grid-template-columns:minmax(0,1fr);gap:0;}'));
  assert(theme.includes('body.sw-drawer-open .balance-detail{transform:translateX(0);}'));
  assert(theme.includes('.sw-drawer-close{'));
- assert(index.includes('./theme-swiss.js?v=20261122-swiss-stage4'));
+ assert(index.includes('./theme-swiss.js?v=20261122-cancel-v1'));
  // 阶段四：抽屉挤压式（≥1200px 让白，不覆盖表格；操作列让位避免横滚）
  assert(theme.includes(':root{--sw-drawer-w:400px;}'));
  assert(theme.includes('width:var(--sw-drawer-w);'));
@@ -106,6 +106,10 @@ test('swiss stage 2: week grid rows, student table scroll, modal single column',
  assert(theme.includes('@media(min-width:1200px) and (max-width:1399px){'));
  assert(theme.includes(':root{--sw-drawer-w:360px;}'));
  assert(theme.includes('body.sw-drawer-open .stu-table td:nth-child(7){display:none;}'));
+ // 误取消兜底：已取消的课程从格子消失但必须留可恢复入口（独立类名，不干扰「已隐藏」）
+ assert(index.includes('<details class="schedule-cancelled" open>'));
+ assert(index.includes('data-open-cancelled='));
+ assert(theme.includes('.schedule-cancelled{'));
  // 课程弹窗窄屏：字段单列、标签在上、课程类型两列按钮
  assert(theme.includes('grid-template-columns:minmax(0,1fr) !important;'));
  assert(theme.includes('#courseModal #fCourseType{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));'));
@@ -129,8 +133,8 @@ test('swiss monochrome theme: black/white tokens, sharp corners, monochrome side
  assert(theme.includes('.tf-node::before{'));
  assert(theme.includes('grid-template-columns:40px 12px minmax(0,1fr) auto;'));
  // 主题层必须被页面与 Service Worker 引用，否则线上不生效、离线不缓存
- assert(index.includes('./theme-swiss.css?v=20261122-swiss-stage4'));
- assert(index.includes('./geist-fonts.css?v=20261122-swiss-stage4'));
+ assert(index.includes('./theme-swiss.css?v=20261122-cancel-v1'));
+ assert(index.includes('./geist-fonts.css?v=20261122-cancel-v1'));
  // 旧暖木色不得残留在具体规则里（:root 里的旧令牌由主题层覆盖，保留仅为可回滚）
  const wsRules=ws.replace(/:root\{[^}]*\}/g,'');
  assert(!wsRules.includes('#F5EEE3'));
