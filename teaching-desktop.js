@@ -5,7 +5,7 @@
   const CONNECTION = 'gb_teaching_connection';
   const DEFAULT_ENDPOINT = 'https://cloud1-d8g72uobwdbbdb2eb-1452920132.ap-shanghai.app.tcloudbase.com/teaching';
   const CACHE = 'gb_teaching_sync_v1';
-  let client = null, connection = null, timer = null, conflictOpen = false, lastState = 'disconnected', lastSavedAt = 0;
+  let client = null, connection = null, flushTimer = null, pollTimer = null, conflictOpen = false, lastState = 'disconnected', lastSavedAt = 0;
   const snapshot = () => ({ students, courses, extraIncome: loadExtraIncome() });
   const label = document.createElement('span');
   label.style.cssText = 'display:block;font-size:12px;line-height:1.5;margin:6px 0;';
@@ -104,12 +104,24 @@
     client = instance;
     toggleLegacy(); flush();
   }
+  // 后台轮询按状态自适应：有未同步修改时 15 秒重试，空闲时 5 分钟即可。
+  // 原实现用固定 15 秒的 setInterval 无条件 pull，即使无改动也照样发请求，
+  // 是云端调用次数暴涨的直接原因。编辑后的即时同步仍由 schedule() 负责（500ms）。
+  const POLL_DIRTY_MS = 15000;
+  const POLL_IDLE_MS = 300000;
   async function flush() {
     if (!client || document.hidden) return;
     const ok = await client.sync();
     if (ok && client.dirty()) schedule();
   }
-  function schedule() { clearTimeout(timer); timer = setTimeout(flush, 500); }
+  function schedule() { clearTimeout(flushTimer); flushTimer = setTimeout(flush, 500); }
+  function pollTick() {
+    // 每次 tick 都 pull，保留「教师端改动电脑端可见」的双向同步；
+    // 只是把空闲间隔从 15 秒拉长到 5 分钟。用户切回页面时由 visibilitychange 立即同步。
+    if (client && !document.hidden) flush();
+    clearTimeout(pollTimer);
+    pollTimer = setTimeout(pollTick, client && client.dirty() ? POLL_DIRTY_MS : POLL_IDLE_MS);
+  }
   function changed() {
     if (!client) { balanceStatus('disconnected'); return; }
     try { client.write(snapshot()); schedule(); }
@@ -243,7 +255,7 @@
     d.append(connect);
     if (connection) {
       const disconnect = document.createElement('button'); disconnect.textContent = '断开本机连接'; disconnect.type = 'button'; disconnect.style.margin = '12px';
-      disconnect.onclick = () => { if (!window.confirm('断开连接？本地数据保留，未同步修改请先导出备份。')) return; client = null; connection = null; localStorage.removeItem(CONNECTION); localStorage.removeItem(CACHE); clearTimeout(timer); toggleLegacy(); balanceStatus('disconnected'); status('已断开，本地数据保留；刷新页面可重新使用原云备份'); d.close(); };
+      disconnect.onclick = () => { if (!window.confirm('断开连接？本地数据保留，未同步修改请先导出备份。')) return; client = null; connection = null; localStorage.removeItem(CONNECTION); localStorage.removeItem(CACHE); clearTimeout(flushTimer); clearTimeout(pollTimer); toggleLegacy(); balanceStatus('disconnected'); status('已断开，本地数据保留；刷新页面可重新使用原云备份'); d.close(); };
       d.append(disconnect);
     }
     d.append(close); d.showModal();
@@ -254,7 +266,10 @@
   saveExtraIncome = function (records) { originalSaveIncome(records); changed(); };
   window.addEventListener('online', flush);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) flush(); });
-  setInterval(flush, 15000);
+  // 用自适应 setTimeout 链替代原固定 15 秒 interval：
+  // 空闲 5 分钟轮询一次，未同步时才回到 15 秒，断开连接时完全停止请求。
+  clearTimeout(pollTimer);
+  pollTimer = setTimeout(pollTick, POLL_IDLE_MS);
   try { connection = JSON.parse(localStorage.getItem(CONNECTION) || 'null'); if (connection) start(); }
   catch (e) { status('连接配置无法读取，请重新连接'); balanceStatus('error'); }
 }());
