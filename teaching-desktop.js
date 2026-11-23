@@ -5,7 +5,22 @@
   const CONNECTION = 'gb_teaching_connection';
   const DEFAULT_ENDPOINT = 'https://cloud1-d8g72uobwdbbdb2eb-1452920132.ap-shanghai.app.tcloudbase.com/teaching';
   const CACHE = 'gb_teaching_sync_v1';
-  let client = null, connection = null, flushTimer = null, pollTimer = null, conflictOpen = false, lastState = 'disconnected', lastSavedAt = 0;
+  let client = null, connection = null, flushTimer = null, pollTimer = null, retryTimer = null, retryStreak = 0, conflictOpen = false, lastState = 'disconnected', lastSavedAt = 0;
+  // CONFLICT（服务端版本已更新）后的补同步：指数退避 + 次数上限，避免两端持续同时编辑时无限 300ms 空转。
+  const RETRY_BASE_MS = 300, RETRY_MAX_STREAK = 5;
+  function resetRetry() { clearTimeout(retryTimer); retryTimer = null; retryStreak = 0; }
+  function scheduleRetry() {
+    clearTimeout(retryTimer);
+    if (!client || document.hidden) return;
+    retryStreak += 1;
+    if (retryStreak > RETRY_MAX_STREAK) {
+      retryStreak = 0;
+      balanceStatus('error');
+      status('自动重试未成功，请在教师端核对后手动刷新');
+      return;
+    }
+    retryTimer = setTimeout(() => { retryTimer = null; flush(); }, Math.min(RETRY_BASE_MS * Math.pow(2, retryStreak - 1), 4800));
+  }
   const snapshot = () => ({ students, courses, extraIncome: loadExtraIncome() });
   const label = document.createElement('span');
   label.style.cssText = 'display:block;font-size:12px;line-height:1.5;margin:6px 0;';
@@ -96,7 +111,8 @@
         if (state === 'saved' || state === 'pending') apply(client.getData());
         balanceStatus(state);
         if (state === 'error') label.textContent += '：' + detail.message;
-        if (state === 'retry') setTimeout(flush, 300);
+        if (state === 'retry') scheduleRetry();
+        else if (state !== 'syncing') resetRetry();
         conflictButton.hidden = state !== 'conflict';
         if (state === 'conflict') resolveConflicts(detail);
       },
@@ -255,7 +271,7 @@
     d.append(connect);
     if (connection) {
       const disconnect = document.createElement('button'); disconnect.textContent = '断开本机连接'; disconnect.type = 'button'; disconnect.style.margin = '12px';
-      disconnect.onclick = () => { if (!window.confirm('断开连接？本地数据保留，未同步修改请先导出备份。')) return; client = null; connection = null; localStorage.removeItem(CONNECTION); localStorage.removeItem(CACHE); clearTimeout(flushTimer); clearTimeout(pollTimer); toggleLegacy(); balanceStatus('disconnected'); status('已断开，本地数据保留；刷新页面可重新使用原云备份'); d.close(); };
+      disconnect.onclick = () => { if (!window.confirm('断开连接？本地数据保留，未同步修改请先导出备份。')) return; client = null; connection = null; localStorage.removeItem(CONNECTION); localStorage.removeItem(CACHE); clearTimeout(flushTimer); clearTimeout(pollTimer); resetRetry(); toggleLegacy(); balanceStatus('disconnected'); status('已断开，本地数据保留；刷新页面可重新使用原云备份'); d.close(); };
       d.append(disconnect);
     }
     d.append(close); d.showModal();
@@ -265,7 +281,7 @@
   saveCourses = function () { originalSaveCourses(); changed(); };
   saveExtraIncome = function (records) { originalSaveIncome(records); changed(); };
   window.addEventListener('online', flush);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) flush(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) resetRetry(); else flush(); });
   // 用自适应 setTimeout 链替代原固定 15 秒 interval：
   // 空闲 5 分钟轮询一次，未同步时才回到 15 秒，断开连接时完全停止请求。
   clearTimeout(pollTimer);
